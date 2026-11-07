@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
 import * as Location from "expo-location";
 import { API_URL } from "@/lib/api";
@@ -34,6 +34,11 @@ export interface VisitaDetalhe {
   fiscalizadores?: UsuarioResumo[];
 }
 
+interface Coordenadas {
+  latitude: number;
+  longitude: number;
+}
+
 async function buscarVisitaPorId(id: string): Promise<VisitaDetalhe> {
   const token = await SecureStore.getItemAsync("token");
 
@@ -48,6 +53,26 @@ async function buscarVisitaPorId(id: string): Promise<VisitaDetalhe> {
   if (!response.ok) {
     const erro = await response.json().catch(() => null);
     throw new Error(erro?.mensagem || "Não foi possível carregar os detalhes da visita.");
+  }
+
+  return response.json();
+}
+
+async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<VisitaDetalhe> {
+  const token = await SecureStore.getItemAsync("token");
+
+  const response = await fetch(`${API_URL}/visitas/${id}/iniciar`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(coords),
+  });
+
+  if (!response.ok) {
+    const erro = await response.json().catch(() => null);
+    throw new Error(erro?.mensagem || "Erro ao iniciar a visita.");
   }
 
   return response.json();
@@ -78,6 +103,7 @@ function formatarStatus(status: VisitaDetalhe["status"]) {
 
 export default function VisitaDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const [carregandoGps, setCarregandoGps] = useState(false);
   const iniciarVisitaStore = useVisitaEmAndamentoStore((state) => state.iniciarVisitaStore);
 
@@ -93,6 +119,22 @@ export default function VisitaDetalheScreen() {
     enabled: Boolean(id),
   });
 
+  const iniciarMutation = useMutation({
+    mutationFn: (coords: Coordenadas) => iniciarVisitaRequest(id!, coords),
+    onSuccess: (visitaAtualizada, coords) => {
+      iniciarVisitaStore(Number(id), coords);
+      queryClient.setQueryData(["visita", id], visitaAtualizada);
+      queryClient.invalidateQueries({ queryKey: ["visitas"] });
+      router.push(`/visita/${id}/questionario`);
+    },
+    onError: (err) => {
+      Alert.alert(
+        "Erro ao iniciar visita",
+        err instanceof Error ? err.message : "Não foi possível iniciar a visita."
+      );
+    },
+  });
+
   const handleIniciarComGps = async () => {
     try {
       setCarregandoGps(true);
@@ -103,7 +145,6 @@ export default function VisitaDetalheScreen() {
           "Permissão negada",
           "Precisamos da sua localização (GPS) para iniciar a visita de fiscalização."
         );
-        setCarregandoGps(false);
         return;
       }
 
@@ -111,16 +152,17 @@ export default function VisitaDetalheScreen() {
         accuracy: Location.Accuracy.High,
       });
 
-      const coords = {
+      const coords: Coordenadas = {
         latitude: localizacao.coords.latitude,
         longitude: localizacao.coords.longitude,
       };
 
-      iniciarVisitaStore(Number(id), coords);
-      Alert.alert("GPS Capturado!", `Lat: ${coords.latitude.toFixed(4)}, Lng: ${coords.longitude.toFixed(4)}`);
-      
-    } catch (err) {
-      Alert.alert("Erro de GPS", "Não foi possível obter a sua localização atual. Verifique se o GPS está ligado.");
+      await iniciarMutation.mutateAsync(coords);
+    } catch {
+      Alert.alert(
+        "Erro de GPS",
+        "Não foi possível obter a sua localização atual. Verifique se o GPS está ligado."
+      );
     } finally {
       setCarregandoGps(false);
     }
@@ -152,6 +194,7 @@ export default function VisitaDetalheScreen() {
 
   const podeIniciar = visita.status === "agendada";
   const emAndamento = visita.status === "em_andamento";
+  const processandoInicio = carregandoGps || iniciarMutation.isPending;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -196,16 +239,24 @@ export default function VisitaDetalheScreen() {
         ) : null}
       </View>
 
+      {iniciarMutation.isError && (
+        <Text style={styles.erro}>
+          {iniciarMutation.error instanceof Error
+            ? iniciarMutation.error.message
+            : "Erro ao iniciar visita."}
+        </Text>
+      )}
+
       {podeIniciar && (
         <Pressable
           style={styles.botao}
           onPress={handleIniciarComGps}
-          disabled={carregandoGps}
+          disabled={processandoInicio}
         >
-          {carregandoGps ? (
+          {processandoInicio ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.botaoTexto}>Iniciar visita (Capturar GPS)</Text>
+            <Text style={styles.botaoTexto}>Iniciar visita</Text>
           )}
         </Pressable>
       )}
