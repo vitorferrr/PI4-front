@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   View,
   Text,
@@ -5,11 +6,14 @@ import {
   Pressable,
   ActivityIndicator,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
+import * as Location from "expo-location";
 import { API_URL } from "@/lib/api";
+import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 
 interface UsuarioResumo {
   id: number;
@@ -74,6 +78,8 @@ function formatarStatus(status: VisitaDetalhe["status"]) {
 
 export default function VisitaDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [carregandoGps, setCarregandoGps] = useState(false);
+  const iniciarVisitaStore = useVisitaEmAndamentoStore((state) => state.iniciarVisitaStore);
 
   const {
     data: visita,
@@ -86,6 +92,39 @@ export default function VisitaDetalheScreen() {
     queryFn: () => buscarVisitaPorId(id!),
     enabled: Boolean(id),
   });
+
+  const handleIniciarComGps = async () => {
+    try {
+      setCarregandoGps(true);
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permissão negada",
+          "Precisamos da sua localização (GPS) para iniciar a visita de fiscalização."
+        );
+        setCarregandoGps(false);
+        return;
+      }
+
+      const localizacao = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const coords = {
+        latitude: localizacao.coords.latitude,
+        longitude: localizacao.coords.longitude,
+      };
+
+      iniciarVisitaStore(Number(id), coords);
+      Alert.alert("GPS Capturado!", `Lat: ${coords.latitude.toFixed(4)}, Lng: ${coords.longitude.toFixed(4)}`);
+      
+    } catch (err) {
+      Alert.alert("Erro de GPS", "Não foi possível obter a sua localização atual. Verifique se o GPS está ligado.");
+    } finally {
+      setCarregandoGps(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -160,11 +199,14 @@ export default function VisitaDetalheScreen() {
       {podeIniciar && (
         <Pressable
           style={styles.botao}
-          onPress={() => {
-
-          }}
+          onPress={handleIniciarComGps}
+          disabled={carregandoGps}
         >
-          <Text style={styles.botaoTexto}>Iniciar visita</Text>
+          {carregandoGps ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.botaoTexto}>Iniciar visita (Capturar GPS)</Text>
+          )}
         </Pressable>
       )}
 
