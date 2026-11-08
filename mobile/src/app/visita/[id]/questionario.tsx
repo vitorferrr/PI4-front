@@ -14,51 +14,13 @@ import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { ItemPerguntaQuestionario } from "@/components/ItemPerguntaQuestionario";
 import { PerguntaQuestionario } from "@/types/visita";
 
-const PERGUNTAS_INICIAIS: PerguntaQuestionario[] = [
-  {
-    id: 1,
-    ordem: 1,
-    texto: "O estabelecimento possui exemplar do Código de Defesa do Consumidor visível?",
-    tipo_resposta: "sim_nao",
-  },
-  {
-    id: 2,
-    ordem: 2,
-    texto: "Os produtos expostos apresentam preços claros e visíveis ao consumidor?",
-    tipo_resposta: "sim_nao",
-  },
-  {
-    id: 3,
-    ordem: 3,
-    texto: "Quantidade de irregularidades constatadas no local:",
-    tipo_resposta: "numero",
-  },
-  {
-    id: 4,
-    ordem: 4,
-    texto: "Data limite informada para regularização (caso aplicável):",
-    tipo_resposta: "data",
-  },
-  {
-    id: 5,
-    ordem: 5,
-    texto: "Descrição detalhada da constatação fiscal:",
-    tipo_resposta: "texto",
-  },
-];
-
-const PERGUNTAS_INICIAIS_ORDENADAS: PerguntaQuestionario[] = [
-  ...PERGUNTAS_INICIAIS,
-].sort((a, b) => a.ordem - b.ordem);
 async function buscarPerguntasQuestionario(): Promise<PerguntaQuestionario[]> {
-  try {
-    const perguntas = await apiFetch<PerguntaQuestionario[]>("/perguntas", {
-      method: "GET",
-    });
-    return [...perguntas].sort((a, b) => a.ordem - b.ordem);
-  } catch {
-    return PERGUNTAS_INICIAIS_ORDENADAS;
-  }
+  const perguntas = await apiFetch<PerguntaQuestionario[]>(
+    "/questionario",
+    { method: "GET" },
+    "Não foi possível carregar as perguntas do questionário."
+  );
+  return [...perguntas].sort((a, b) => a.ordem - b.ordem);
 }
 
 export default function QuestionarioScreen() {
@@ -81,8 +43,11 @@ export default function QuestionarioScreen() {
   }, [visitaIdNumero, visitaIdStore, iniciarVisitaStore]);
 
   const {
-    data: perguntasOrdenadas = PERGUNTAS_INICIAIS_ORDENADAS,
+    data: perguntasOrdenadas = [],
     isLoading,
+    isError,
+    error,
+    refetch,
   } = useQuery({
     queryKey: ["perguntas-questionario"],
     queryFn: buscarPerguntasQuestionario,
@@ -93,6 +58,18 @@ export default function QuestionarioScreen() {
       <View style={styles.centralizado}>
         <Stack.Screen options={{ title: `Questionário - Visita #${id}` }} />
         <ActivityIndicator size="large" color="#1F3864" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.centralizado}>
+        <Stack.Screen options={{ title: `Questionário - Visita #${id}` }} />
+        <Text style={styles.mensagemErro}>{error.message}</Text>
+        <Pressable style={styles.botaoTentarNovamente} onPress={() => refetch()}>
+          <Text style={styles.botaoTexto}>Tentar novamente</Text>
+        </Pressable>
       </View>
     );
   }
@@ -143,6 +120,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f5f6fa",
+    padding: 20,
+    gap: 16,
+  },
+  mensagemErro: {
+    fontSize: 15,
+    color: "#c0392b",
+    textAlign: "center",
+  },
+  botaoTentarNovamente: {
+    backgroundColor: "#1F3864",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
   },
   resumoTopo: {
     backgroundColor: "#fff",
