@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Precisamos da sua localização para registrar o início da visita de fiscalização."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import type { Visita } from "@/types/visitas";
+import type { VisitaDetalhe } from "@/types/visita";
 
 export function useVisitas() {
   return useQuery({
     queryKey: ["visitas"],
-    queryFn: () => apiFetch<Visita[]>("/visitas"),
+    queryFn: () =>
+      apiFetch<VisitaDetalhe[]>("/visitas", {}, "Não foi possível carregar as visitas."),
   });
 }
