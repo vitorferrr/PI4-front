@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +35,12 @@ export default function QuestionarioScreen() {
   );
   const definirResposta = useVisitaEmAndamentoStore(
     (state) => state.definirResposta
+  );
+  const observacoesLivres = useVisitaEmAndamentoStore(
+    (state) => state.observacoesLivres
+  );
+  const definirObservacoesLivres = useVisitaEmAndamentoStore(
+    (state) => state.definirObservacoesLivres
   );
 
   useEffect(() => {
@@ -98,6 +105,19 @@ export default function QuestionarioScreen() {
         />
       ))}
 
+      <View style={styles.cardObservacoes}>
+        <Text style={styles.tituloObservacoes}>Observações livres</Text>
+        <TextInput
+          style={styles.inputObservacoes}
+          placeholder="Anote aqui qualquer observação sobre a visita"
+          multiline
+          numberOfLines={5}
+          textAlignVertical="top"
+          value={observacoesLivres}
+          onChangeText={definirObservacoesLivres}
+        />
+      </View>
+
       <Pressable
         style={styles.botao}
         onPress={() => router.push(`/visita/${id}/documento`)}
@@ -150,6 +170,29 @@ const styles = StyleSheet.create({
   subtitulo: {
     fontSize: 14,
     color: "#6c757d",
+  },
+  cardObservacoes: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e1e4e8",
+    gap: 12,
+  },
+  tituloObservacoes: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#212529",
+  },
+  inputObservacoes: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+    backgroundColor: "#fff",
+    minHeight: 110,
   },
   botao: {
     backgroundColor: "#1F3864",
