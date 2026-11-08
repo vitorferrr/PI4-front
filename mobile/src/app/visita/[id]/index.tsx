@@ -10,72 +10,28 @@ import {
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import * as SecureStore from "expo-secure-store";
 import * as Location from "expo-location";
-import { API_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
-
-interface UsuarioResumo {
-  id: number;
-  nome: string;
-  email: string;
-}
-
-export interface VisitaDetalhe {
-  id: number;
-  denunciado: string;
-  status: "agendada" | "em_andamento" | "concluida" | "cancelada";
-  latitude: string | number | null;
-  longitude: string | number | null;
-  data_agendada: string;
-  data_realizacao: string | null;
-  observacoes_livres: string | null;
-  gestor?: UsuarioResumo;
-  fiscalizadores?: UsuarioResumo[];
-}
-
-interface Coordenadas {
-  latitude: number;
-  longitude: number;
-}
+import { VisitaDetalhe, Coordenadas } from "@/types/visita";
 
 async function buscarVisitaPorId(id: string): Promise<VisitaDetalhe> {
-  const token = await SecureStore.getItemAsync("token");
-
-  const response = await fetch(`${API_URL}/visitas/${id}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-
-  if (!response.ok) {
-    const erro = await response.json().catch(() => null);
-    throw new Error(erro?.mensagem || "Não foi possível carregar os detalhes da visita.");
-  }
-
-  return response.json();
+  return apiFetch<VisitaDetalhe>(
+    `/visitas/${id}`,
+    { method: "GET" },
+    "Não foi possível carregar os detalhes da visita."
+  );
 }
 
 async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<VisitaDetalhe> {
-  const token = await SecureStore.getItemAsync("token");
-
-  const response = await fetch(`${API_URL}/visitas/${id}/iniciar`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  return apiFetch<VisitaDetalhe>(
+    `/visitas/${id}/iniciar`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(coords),
     },
-    body: JSON.stringify(coords),
-  });
-
-  if (!response.ok) {
-    const erro = await response.json().catch(() => null);
-    throw new Error(erro?.mensagem || "Erro ao iniciar a visita.");
-  }
-
-  return response.json();
+    "Erro ao iniciar a visita."
+  );
 }
 
 function formatarData(dataIso?: string | null) {
@@ -136,8 +92,19 @@ export default function VisitaDetalheScreen() {
   });
 
   const handleIniciarComGps = async () => {
+    let coords: Coordenadas;
+
     try {
       setCarregandoGps(true);
+
+      const servicoAtivo = await Location.hasServicesEnabledAsync();
+      if (!servicoAtivo) {
+        Alert.alert(
+          "GPS Desativado",
+          "Ative os serviços de localização do dispositivo para iniciar a visita."
+        );
+        return;
+      }
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -148,24 +115,44 @@ export default function VisitaDetalheScreen() {
         return;
       }
 
-      const localizacao = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+      const posicaoPromise = Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
       });
 
-      const coords: Coordenadas = {
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("TIMEOUT_GPS")), 15000)
+      );
+
+      let localizacao: Location.LocationObject | null = null;
+      try {
+        localizacao = await Promise.race([posicaoPromise, timeoutPromise]);
+      } catch {
+        localizacao = await Location.getLastKnownPositionAsync();
+      }
+
+      if (!localizacao) {
+        Alert.alert(
+          "Erro de GPS",
+          "Não foi possível obter a sua localização atual. Verifique se o GPS está ligado."
+        );
+        return;
+      }
+
+      coords = {
         latitude: localizacao.coords.latitude,
         longitude: localizacao.coords.longitude,
       };
-
-      await iniciarMutation.mutateAsync(coords);
     } catch {
       Alert.alert(
         "Erro de GPS",
         "Não foi possível obter a sua localização atual. Verifique se o GPS está ligado."
       );
+      return;
     } finally {
       setCarregandoGps(false);
     }
+
+    iniciarMutation.mutate(coords);
   };
 
   if (isLoading) {
@@ -264,7 +251,10 @@ export default function VisitaDetalheScreen() {
       {emAndamento && (
         <Pressable
           style={styles.botao}
-          onPress={() => router.push(`/visita/${visita.id}/questionario`)}
+          onPress={() => {
+            iniciarVisitaStore(visita.id);
+            router.push(`/visita/${visita.id}/questionario`);
+          }}
         >
           <Text style={styles.botaoTexto}>Continuar para o questionário</Text>
         </Pressable>
