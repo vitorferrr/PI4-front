@@ -1,98 +1,112 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from "react";
+import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { Redirect, Stack } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useVisitas } from "@/hooks/use-visitas";
+import { sair, TOKEN_KEY } from "@/lib/api";
+import type { Visita, StatusVisita } from "@/types/visitas";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+const STATUS_LABEL: Record<StatusVisita, string> = {
+  agendada: "Agendada",
+  em_andamento: "Em andamento",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+function VisitaCard({ visita }: { visita: Visita }) {
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <Pressable
+      style={styles.card}
+      onPress={() => console.log("abrir visita", visita.id)}
+    >
+      <Text style={styles.cardTitulo}>{visita.denunciado}</Text>
+      <Text>{STATUS_LABEL[visita.status]}</Text>
+      <Text>
+        Agendada para {new Date(visita.data_agendada).toLocaleDateString("pt-BR")}
+      </Text>
+    </Pressable>
   );
 }
 
-export default function HomeScreen() {
+// Só é montada depois do guard confirmar o token
+function ListaVisitas() {
+  const { data, isPending, isError, error, refetch, isRefetching } = useVisitas();
+
+  if (isPending) {
+    return (
+      <View style={styles.centro}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.centro}>
+        <Text>{error.message}</Text>
+        <Pressable style={styles.botao} onPress={() => refetch()}>
+          <Text>Tentar novamente</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <FlatList
+      data={data}
+      keyExtractor={(item) => String(item.id)}
+      renderItem={({ item }) => <VisitaCard visita={item} />}
+      contentContainerStyle={styles.lista}
+      refreshing={isRefetching}
+      onRefresh={refetch}
+      ListEmptyComponent={
+        <Text style={styles.vazio}>Nenhuma visita atribuída a você.</Text>
+      }
+    />
+  );
+}
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+export default function VisitasScreen() {
+  const [autenticado, setAutenticado] = useState<boolean | null>(null);
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+  useEffect(() => {
+    SecureStore.getItemAsync(TOKEN_KEY).then((token) => {
+      setAutenticado(token !== null);
+    });
+  }, []);
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+  if (autenticado === null) {
+    return (
+      <View style={styles.centro}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (!autenticado) {
+    return <Redirect href="/login" />;
+  }
+
+  return (
+    <View style={styles.container}>
+      <Stack.Screen options={{ title: "Minhas visitas" }} />
+
+      <ListaVisitas />
+
+      {/* só para testar o login enquanto não tem tela de perfil */}
+      <Pressable style={styles.botao} onPress={sair}>
+        <Text>Sair (temporário)</Text>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  container: { flex: 1 },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  lista: { padding: 16, gap: 12 },
+  card: { padding: 16, borderWidth: 1, borderColor: "#ccc", borderRadius: 8, gap: 4 },
+  cardTitulo: { fontWeight: "600" },
+  vazio: { textAlign: "center", marginTop: 40 },
+  botao: { padding: 16, alignItems: "center" },
 });
