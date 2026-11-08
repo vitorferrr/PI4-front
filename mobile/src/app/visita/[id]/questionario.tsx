@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TextInput,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -24,9 +25,15 @@ async function buscarPerguntasQuestionario(): Promise<PerguntaQuestionario[]> {
   return [...perguntas].sort((a, b) => a.ordem - b.ordem);
 }
 
+// o back ainda não tem o campo obrigatoria, então toda pergunta é obrigatória por padrão
+function ehObrigatoria(pergunta: PerguntaQuestionario) {
+  return pergunta.obrigatoria !== false;
+}
+
 export default function QuestionarioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const visitaIdNumero = Number(id);
+  const [tentouAvancar, setTentouAvancar] = useState(false);
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
   const respostas = useVisitaEmAndamentoStore((state) => state.respostas);
@@ -81,9 +88,27 @@ export default function QuestionarioScreen() {
     );
   }
 
-  const totalRespondidas = perguntasOrdenadas.filter(
-    (p) => respostas[p.id] !== undefined && String(respostas[p.id]).trim() !== ""
-  ).length;
+  const estaRespondida = (pergunta: PerguntaQuestionario) =>
+    respostas[pergunta.id] !== undefined &&
+    String(respostas[pergunta.id]).trim() !== "";
+
+  const totalRespondidas = perguntasOrdenadas.filter(estaRespondida).length;
+
+  const pendentes = perguntasOrdenadas.filter(
+    (p) => ehObrigatoria(p) && !estaRespondida(p)
+  );
+
+  const handleAvancar = () => {
+    if (pendentes.length > 0) {
+      setTentouAvancar(true);
+      Alert.alert(
+        "Respostas obrigatórias",
+        `Responda as ${pendentes.length} pergunta(s) obrigatória(s) antes de avançar.`
+      );
+      return;
+    }
+    router.push(`/visita/${id}/documento`);
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -97,12 +122,16 @@ export default function QuestionarioScreen() {
       </View>
 
       {perguntasOrdenadas.map((pergunta) => (
-        <ItemPerguntaQuestionario
-          key={pergunta.id}
-          pergunta={pergunta}
-          valorAtual={respostas[pergunta.id] ?? ""}
-          onResponder={(valor) => definirResposta(pergunta.id, valor)}
-        />
+        <View key={pergunta.id} style={styles.itemPergunta}>
+          <ItemPerguntaQuestionario
+            pergunta={pergunta}
+            valorAtual={respostas[pergunta.id] ?? ""}
+            onResponder={(valor) => definirResposta(pergunta.id, valor)}
+          />
+          {tentouAvancar && pendentes.includes(pergunta) && (
+            <Text style={styles.erroPergunta}>Resposta obrigatória</Text>
+          )}
+        </View>
       ))}
 
       <View style={styles.cardObservacoes}>
@@ -120,7 +149,7 @@ export default function QuestionarioScreen() {
 
       <Pressable
         style={styles.botao}
-        onPress={() => router.push(`/visita/${id}/documento`)}
+        onPress={handleAvancar}
       >
         <Text style={styles.botaoTexto}>Avançar para o documento</Text>
       </Pressable>
@@ -170,6 +199,14 @@ const styles = StyleSheet.create({
   subtitulo: {
     fontSize: 14,
     color: "#6c757d",
+  },
+  itemPergunta: {
+    gap: 6,
+  },
+  erroPergunta: {
+    color: "#c0392b",
+    fontSize: 13,
+    marginLeft: 4,
   },
   cardObservacoes: {
     backgroundColor: "#fff",
