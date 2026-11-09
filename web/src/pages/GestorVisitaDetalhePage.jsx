@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { isCancel } from 'axios';
 import SectionCard from '../components/SectionCard';
 import { api } from '../lib/api';
 import styles from './GestorVisitaDetalhePage.module.css';
@@ -24,6 +26,14 @@ const ERROS_VISITA = {
     titulo: 'Visita não encontrada',
     mensagem: 'Não foi encontrada uma visita com o ID informado.',
   },
+};
+
+const ERROS_CONCLUSAO = {
+  400: 'A visita não pôde ser concluída. Confira a mensagem do servidor e atualize os dados antes de tentar novamente.',
+  401: 'Sua sessão não foi reconhecida. Entre novamente para concluir a visita.',
+  403: 'Você não tem permissão para concluir esta visita.',
+  404: 'A visita não foi encontrada ou não está disponível para seu usuário.',
+  500: 'O servidor não conseguiu confirmar a conclusão. Atualize os dados antes de tentar novamente.',
 };
 
 const formatadorData = new Intl.DateTimeFormat('pt-BR', {
@@ -61,6 +71,14 @@ function repetirConsulta(falhas, erro) {
 async function buscarVisita(id, signal) {
   const { data } = await api.get(`/visitas/${id}`, { signal });
   return data ?? null;
+}
+
+async function concluirVisita(id) {
+  const { data } = await api.patch(`/visitas/${id}/concluir`);
+  if (data?.id !== Number(id) || data.status !== 'concluida') {
+    throw new Error('A resposta da API não confirmou a conclusão da visita.');
+  }
+  return data;
 }
 
 async function buscarQuestionario(signal) {
@@ -107,6 +125,73 @@ function TentarNovamente({ onClick, carregando }) {
     <button type="button" className={styles.button} onClick={onClick} disabled={carregando}>
       {carregando ? 'Tentando novamente…' : 'Tentar novamente'}
     </button>
+  );
+}
+
+function ConclusaoVisita({ id, status }) {
+  const queryClient = useQueryClient();
+  const enviando = useRef(false);
+  const concluirMutation = useMutation({
+    mutationKey: ['concluirVisita', id],
+    mutationFn: () => concluirVisita(id),
+    retry: false,
+    onMutate: () => queryClient.cancelQueries({ queryKey: ['visita', id], exact: true }),
+    onSuccess: (visitaAtualizada) => {
+      queryClient.setQueryData(['visita', id], visitaAtualizada);
+      void queryClient.invalidateQueries({ queryKey: ['visitas'] });
+    },
+    onError: () => {
+      enviando.current = false;
+    },
+  });
+
+  const handleConcluir = () => {
+    if (status !== 'em_andamento' || enviando.current || concluirMutation.isPending) return;
+    if (!window.confirm(`Deseja concluir a visita #${id}?`)) return;
+    enviando.current = true;
+    concluirMutation.mutate();
+  };
+
+  const temErro = concluirMutation.isError && !isCancel(concluirMutation.error);
+  if (status !== 'em_andamento' && !concluirMutation.isSuccess && !temErro) return null;
+
+  const statusErro = concluirMutation.error?.response?.status;
+  const detalhesErro = statusErro === 400 ? concluirMutation.error.response.data?.erros : null;
+
+  return (
+    <SectionCard title="Conclusão da visita">
+      <div className={styles.conclusionActions}>
+        {status === 'em_andamento' && (
+          <button
+            type="button"
+            className={`${styles.button} ${styles.primaryButton}`}
+            onClick={handleConcluir}
+            disabled={concluirMutation.isPending}
+            aria-busy={concluirMutation.isPending}
+          >
+            {concluirMutation.isPending
+              ? concluirMutation.isPaused ? 'Aguardando conexão…' : 'Concluindo visita…'
+              : 'Concluir visita'}
+          </button>
+        )}
+        {concluirMutation.isSuccess && (
+          <p className={styles.success} role="status">Visita concluída com sucesso.</p>
+        )}
+        {temErro && (
+          <div className={styles.error} role="alert">
+            <p>{ERROS_CONCLUSAO[statusErro] ?? 'Não foi possível confirmar a conclusão. Verifique sua conexão e atualize os dados antes de tentar novamente.'}</p>
+            {Array.isArray(detalhesErro) && (
+              <ul className={styles.validationErrors}>
+                {detalhesErro.filter((mensagem) => typeof mensagem === 'string').map((mensagem, indice) => (
+                  <li key={indice}>{mensagem}</li>
+                ))}
+              </ul>
+            )}
+            {statusErro === 401 && <Link to="/login" className={styles.textLink}>Entrar novamente</Link>}
+          </div>
+        )}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -320,7 +405,12 @@ export default function GestorVisitaDetalhePage() {
             <TentarNovamente onClick={() => visitaQuery.refetch()} carregando={visitaQuery.isFetching} />
           </div>
         </SectionCard>
-      ) : <DadosVisita visita={visita} />}
+      ) : (
+        <>
+          <DadosVisita visita={visita} />
+          <ConclusaoVisita key={id} id={id} status={visita.status} />
+        </>
+      )}
     </article>
   );
 }
