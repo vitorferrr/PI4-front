@@ -2,7 +2,8 @@ import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 import { queryClient } from "./queryClient";
 
-export const API_URL = "https://pi4-back-one.vercel.app";
+export const API_URL =
+  process.env.EXPO_PUBLIC_API_URL ?? "https://pi4-back-one.vercel.app";
 
 export const TOKEN_KEY = "token";
 
