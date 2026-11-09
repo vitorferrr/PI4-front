@@ -13,6 +13,7 @@ export default function RootLayout() {
 
   if (!carregada) return null;
 
+  // toda tela nova precisa ser listada aqui, pq as rotas fora do Stack.Protected ficam liberadas
   return (
     <QueryClientProvider client={queryClient}>
       <Stack>
