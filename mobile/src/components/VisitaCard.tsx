@@ -5,7 +5,7 @@ import { formatarData, formatarStatus } from "@/lib/formatadores";
 
 export function VisitaCard({ visita }: { visita: VisitaDetalhe }) {
   return (
-    <Pressable style={styles.card} onPress={() => router.push(`/visita/${visita.id}`)}>
+    <Pressable style={styles.card} accessibilityRole="button" onPress={() => router.push(`/visita/${visita.id}`)}>
       <Text style={styles.titulo}>{visita.denunciado}</Text>
       <Text>{formatarStatus(visita.status)}</Text>
       <Text>Agendada para {formatarData(visita.data_agendada)}</Text>

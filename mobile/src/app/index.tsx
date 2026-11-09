@@ -21,7 +21,7 @@ function ListaVisitas() {
     return (
       <View style={styles.centro}>
         <Text>{error.message}</Text>
-        <Pressable style={styles.botao} onPress={() => refetch()}>
+        <Pressable style={styles.botao} accessibilityRole="button" onPress={() => refetch()}>
           <Text>Tentar novamente</Text>
         </Pressable>
       </View>
@@ -71,7 +71,7 @@ export default function VisitasScreen() {
       <ListaVisitas />
 
       {/* TEMPORÁRIO: só para testar o login enquanto não há tela de perfil */}
-      <Pressable style={styles.botao} onPress={sair}>
+      <Pressable style={styles.botao} accessibilityRole="button" onPress={sair}>
         <Text>Sair (temporário)</Text>
       </Pressable>
     </View>
