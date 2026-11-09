@@ -1,14 +1,13 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
+import { endSession, useSession } from '../lib/session';
 
 export default function AppLayout() {
-  const navigate = useNavigate();
-  
-  const userRole = localStorage.getItem('role') || 'GESTOR'; 
+  const userRole = useSession((state) => (
+    typeof state.claims?.role === 'string' ? state.claims.role.toUpperCase() : null
+  ));
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    navigate('/login');
+    endSession();
   };
 
   return (
@@ -33,9 +32,12 @@ export default function AppLayout() {
               <div style={{ cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}>
                 Fiscalizadores
               </div>
-              <div style={{ cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}>
+              <Link to="/gestor/visitas/nova" style={{ color: 'inherit', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>
                 Nova Visita
-              </div>
+              </Link>
+              <Link to="/gestor/visitas" style={{ color: 'inherit', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>
+                Visitas
+              </Link>
             </>
           )}
         </nav>

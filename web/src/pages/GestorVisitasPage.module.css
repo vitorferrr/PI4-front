@@ -1,0 +1,180 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  min-width: 0;
+  color: #333;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: normal;
+}
+
+.button {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.6rem 1rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 4px;
+  color: #2c3e50;
+  background: #fff;
+  font: inherit;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: #edf1f5;
+}
+
+.button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.primaryButton {
+  border-color: #2c3e50;
+  background: #2c3e50;
+  color: #fff;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #1f3041;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  color: #555;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.button:focus-visible,
+.detailsLink:focus-visible,
+.field input:focus-visible,
+.field select:focus-visible,
+.tableContainer:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 3px;
+}
+
+.message,
+.summary {
+  margin: 0;
+  color: #606b75;
+}
+
+.summary {
+  margin-bottom: 1rem;
+}
+
+.error {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  color: #a32e24;
+}
+
+.error p {
+  margin: 0;
+}
+
+.tableContainer {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  contain: inline-size;
+}
+
+.table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e1e4e8;
+  vertical-align: top;
+}
+
+.table thead th {
+  background: #f4f6f8;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.table tbody th {
+  font-weight: 500;
+}
+
+.caption {
+  padding-bottom: 0.75rem;
+  color: #606b75;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.detailsLink {
+  color: #075aab;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+}
