@@ -4,10 +4,12 @@ export interface UsuarioResumo {
   email: string;
 }
 
+export type StatusVisita = "agendada" | "em_andamento" | "concluida" | "cancelada";
+
 export interface VisitaDetalhe {
   id: number;
   denunciado: string;
-  status: "agendada" | "em_andamento" | "concluida" | "cancelada";
+  status: StatusVisita;
   latitude: string | number | null;
   longitude: string | number | null;
   data_agendada: string;

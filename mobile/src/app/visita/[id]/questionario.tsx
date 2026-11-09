@@ -1,12 +1,5 @@
 import { useEffect } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
@@ -47,9 +40,9 @@ const PERGUNTAS_INICIAIS: PerguntaQuestionario[] = [
   },
 ];
 
-const PERGUNTAS_INICIAIS_ORDENADAS: PerguntaQuestionario[] = [
-  ...PERGUNTAS_INICIAIS,
-].sort((a, b) => a.ordem - b.ordem);
+const PERGUNTAS_INICIAIS_ORDENADAS: PerguntaQuestionario[] = [...PERGUNTAS_INICIAIS].sort(
+  (a, b) => a.ordem - b.ordem
+);
 async function buscarPerguntasQuestionario(): Promise<PerguntaQuestionario[]> {
   try {
     const perguntas = await apiFetch<PerguntaQuestionario[]>("/perguntas", {
@@ -67,12 +60,8 @@ export default function QuestionarioScreen() {
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
   const respostas = useVisitaEmAndamentoStore((state) => state.respostas);
-  const iniciarVisitaStore = useVisitaEmAndamentoStore(
-    (state) => state.iniciarVisitaStore
-  );
-  const definirResposta = useVisitaEmAndamentoStore(
-    (state) => state.definirResposta
-  );
+  const iniciarVisitaStore = useVisitaEmAndamentoStore((state) => state.iniciarVisitaStore);
+  const definirResposta = useVisitaEmAndamentoStore((state) => state.definirResposta);
 
   useEffect(() => {
     if (visitaIdNumero && visitaIdStore !== visitaIdNumero) {
@@ -80,10 +69,7 @@ export default function QuestionarioScreen() {
     }
   }, [visitaIdNumero, visitaIdStore, iniciarVisitaStore]);
 
-  const {
-    data: perguntasOrdenadas = PERGUNTAS_INICIAIS_ORDENADAS,
-    isLoading,
-  } = useQuery({
+  const { data: perguntasOrdenadas = PERGUNTAS_INICIAIS_ORDENADAS, isLoading } = useQuery({
     queryKey: ["perguntas-questionario"],
     queryFn: buscarPerguntasQuestionario,
   });
@@ -121,10 +107,7 @@ export default function QuestionarioScreen() {
         />
       ))}
 
-      <Pressable
-        style={styles.botao}
-        onPress={() => router.push(`/visita/${id}/documento`)}
-      >
+      <Pressable style={styles.botao} onPress={() => router.push(`/visita/${id}/documento`)}>
         <Text style={styles.botaoTexto}>Avançar para o documento</Text>
       </Pressable>
     </ScrollView>

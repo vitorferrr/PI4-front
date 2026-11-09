@@ -1,14 +1,23 @@
-import * as SecureStore from "expo-secure-store";
-import { router } from "expo-router";
+import { queryClient } from "./queryClient";
+import { useSessaoStore } from "@/store/sessaoStore";
 
-export const API_URL = "IP_LOCAL"; // mantenha exatamente como estava na sua linha 1
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://pi4-back-one.vercel.app";
+
+export class SessaoExpiradaError extends Error {
+  sessaoExpirada = true;
+}
+
+export async function sair() {
+  await useSessaoStore.getState().encerrar();
+  queryClient.clear();
+}
 
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
   mensagemErroPadrao = "Erro na comunicação com o servidor."
 ): Promise<T> {
-  const token = await SecureStore.getItemAsync("token");
+  const token = useSessaoStore.getState().token;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -25,9 +34,8 @@ export async function apiFetch<T>(
   });
 
   if (response.status === 401) {
-    await SecureStore.deleteItemAsync("token");
-    router.replace("/login");
-    throw new Error("Sessão expirada. Faça login novamente.");
+    await sair();
+    throw new SessaoExpiradaError("Sessão expirada. Faça login novamente.");
   }
 
   if (!response.ok) {
