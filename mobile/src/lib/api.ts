@@ -6,6 +6,9 @@ export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "https://pi4-back-one.vercel.app";
 
 export const TOKEN_KEY = "token";
+export class SessaoExpiradaError extends Error {
+  sessaoExpirada = true;
+}
 
 // Encerra a sessão: apaga o token, limpa os dados em cache e volta ao login.
 export async function sair() {
@@ -35,10 +38,9 @@ export async function apiFetch<T>(
     headers,
   });
 
-  // Token ausente, inválido ou expirado (o back expira).
   if (response.status === 401) {
     await sair();
-    throw new Error("Sessão expirada. Faça login novamente.");
+    throw new SessaoExpiradaError("Sessão expirada. Faça login novamente.");
   }
 
   if (!response.ok) {
