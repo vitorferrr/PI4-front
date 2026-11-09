@@ -16,7 +16,14 @@ async function fazerLogin(email: string, senha: string) {
         throw new Error("E-mail ou senha inválidos");
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // O app é só do fiscalizador, admin e gestor usam o sistema web.
+    if (data.usuario?.role !== "fiscalizador") {
+        throw new Error("Este aplicativo é exclusivo para fiscalizadores.");
+    }
+
+    return data;
 }
 
 export default function LoginScreen() {
