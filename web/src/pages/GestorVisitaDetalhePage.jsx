@@ -3,21 +3,12 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isCancel } from 'axios';
 import SectionCard from '../components/SectionCard';
+import StatusVisita from '../components/VisitaStatus';
 import { api } from '../lib/api';
+import { formatarDataVisita as formatarData } from '../lib/visitas';
 import styles from './GestorVisitaDetalhePage.module.css';
 
-const STATUS_VISITA = {
-  agendada: { texto: 'Agendada', classe: styles.agendada },
-  em_andamento: { texto: 'Em andamento', classe: styles.emAndamento },
-  concluida: { texto: 'Concluída', classe: styles.concluida },
-  cancelada: { texto: 'Cancelada', classe: styles.cancelada },
-};
-
 const ERROS_VISITA = {
-  401: {
-    titulo: 'Autenticação necessária',
-    mensagem: 'Sua sessão não foi reconhecida. Entre novamente para consultar a visita.',
-  },
   403: {
     titulo: 'Acesso não permitido',
     mensagem: 'Você não tem permissão para visualizar esta visita.',
@@ -30,22 +21,10 @@ const ERROS_VISITA = {
 
 const ERROS_CONCLUSAO = {
   400: 'A visita não pôde ser concluída. Confira a mensagem do servidor e atualize os dados antes de tentar novamente.',
-  401: 'Sua sessão não foi reconhecida. Entre novamente para concluir a visita.',
   403: 'Você não tem permissão para concluir esta visita.',
   404: 'A visita não foi encontrada ou não está disponível para seu usuário.',
   500: 'O servidor não conseguiu confirmar a conclusão. Atualize os dados antes de tentar novamente.',
 };
-
-const formatadorData = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-
-function formatarData(valor) {
-  if (!valor) return 'Não informada';
-  const data = new Date(valor);
-  return Number.isNaN(data.getTime()) ? 'Data inválida' : formatadorData.format(data);
-}
 
 function textoOuAusente(valor) {
   return valor == null || String(valor).trim() === '' ? 'Não informado' : String(valor);
@@ -61,11 +40,6 @@ function obterUrlPdf(valor) {
   } catch {
     return null;
   }
-}
-
-function repetirConsulta(falhas, erro) {
-  const status = erro.response?.status;
-  return falhas < 1 && (!status || status >= 500);
 }
 
 async function buscarVisita(id, signal) {
@@ -87,15 +61,6 @@ async function buscarQuestionario(signal) {
     throw new Error('Não foi possível interpretar as perguntas do questionário.');
   }
   return data;
-}
-
-function StatusVisita({ status }) {
-  const apresentacao = STATUS_VISITA[status];
-  return (
-    <span className={`${styles.status} ${apresentacao?.classe ?? ''}`}>
-      {apresentacao?.texto ?? 'Status não informado'}
-    </span>
-  );
 }
 
 function Informacao({ rotulo, children }) {
@@ -130,6 +95,7 @@ function TentarNovamente({ onClick, carregando }) {
 
 function ConclusaoVisita({ id, status }) {
   const queryClient = useQueryClient();
+  // Trava síncrona: dois eventos podem chegar antes de isPending aparecer no render.
   const enviando = useRef(false);
   const concluirMutation = useMutation({
     mutationKey: ['concluirVisita', id],
@@ -140,8 +106,11 @@ function ConclusaoVisita({ id, status }) {
       queryClient.setQueryData(['visita', id], visitaAtualizada);
       void queryClient.invalidateQueries({ queryKey: ['visitas'] });
     },
-    onError: () => {
+    onError: (erro) => {
       enviando.current = false;
+      if (!isCancel(erro) && erro.response?.status !== 401) {
+        void queryClient.invalidateQueries({ queryKey: ['visita', id], exact: true });
+      }
     },
   });
 
@@ -187,7 +156,6 @@ function ConclusaoVisita({ id, status }) {
                 ))}
               </ul>
             )}
-            {statusErro === 401 && <Link to="/login" className={styles.textLink}>Entrar novamente</Link>}
           </div>
         )}
       </div>
@@ -200,7 +168,6 @@ function QuestionarioVisita({ respostas }) {
     queryKey: ['questionario'],
     queryFn: ({ signal }) => buscarQuestionario(signal),
     enabled: respostas.length > 0,
-    retry: repetirConsulta,
   });
 
   if (respostas.length === 0) {
@@ -232,9 +199,6 @@ function QuestionarioVisita({ respostas }) {
             Não foi possível carregar as perguntas do questionário.
             As respostas continuam disponíveis, identificadas pelo ID da pergunta.
           </p>
-          {perguntasQuery.error.response?.status === 401 && (
-            <Link to="/login" className={styles.textLink}>Entrar novamente</Link>
-          )}
           <TentarNovamente onClick={() => perguntasQuery.refetch()} carregando={perguntasQuery.isFetching} />
         </div>
       )}
@@ -355,9 +319,9 @@ export default function GestorVisitaDetalhePage() {
     queryKey: ['visita', id],
     queryFn: ({ signal }) => buscarVisita(id, signal),
     enabled: idValido,
-    retry: repetirConsulta,
   });
   const visita = visitaQuery.data;
+  const acessoIndisponivel = [403, 404].includes(visitaQuery.error?.response?.status);
   const erro = ERROS_VISITA[visitaQuery.error?.response?.status] ?? {
     titulo: 'Não foi possível carregar a visita',
     mensagem: 'Ocorreu um erro inesperado. Verifique sua conexão e tente novamente.',
@@ -371,7 +335,7 @@ export default function GestorVisitaDetalhePage() {
           <p className={styles.identifier}>Visita #{id}</p>
         </div>
         <div className={styles.headerActions}>
-          {idValido && visita && !visitaQuery.isError && <StatusVisita status={visita.status} />}
+          {idValido && visita && !acessoIndisponivel && <StatusVisita status={visita.status} />}
           <Link to="/" className={styles.button}>Voltar ao início</Link>
         </div>
       </header>
@@ -386,14 +350,11 @@ export default function GestorVisitaDetalhePage() {
             {visitaQuery.fetchStatus === 'paused' ? 'Aguardando conexão para carregar a visita…' : 'Carregando detalhes da visita…'}
           </p>
         </SectionCard>
-      ) : visitaQuery.isError ? (
+      ) : visitaQuery.isError && (!visita || acessoIndisponivel) ? (
         <SectionCard title={erro.titulo}>
           <div className={styles.error} role="alert">
             <p>{erro.mensagem}</p>
             <div className={styles.actions}>
-              {visitaQuery.error.response?.status === 401 && (
-                <Link to="/login" className={styles.textLink}>Entrar novamente</Link>
-              )}
               <TentarNovamente onClick={() => visitaQuery.refetch()} carregando={visitaQuery.isFetching} />
             </div>
           </div>
@@ -407,6 +368,12 @@ export default function GestorVisitaDetalhePage() {
         </SectionCard>
       ) : (
         <>
+          {visitaQuery.isError && (
+            <div className={styles.error} role="alert">
+              <p>Não foi possível atualizar os dados da visita. As informações exibidas são da última consulta disponível.</p>
+              <TentarNovamente onClick={() => visitaQuery.refetch()} carregando={visitaQuery.isFetching} />
+            </div>
+          )}
           <DadosVisita visita={visita} />
           <ConclusaoVisita key={id} id={id} status={visita.status} />
         </>

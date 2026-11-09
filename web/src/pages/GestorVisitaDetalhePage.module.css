@@ -214,36 +214,6 @@
   margin: 0;
 }
 
-.status {
-  display: inline-block;
-  padding: 0.3rem 0.65rem;
-  border-radius: 6px;
-  color: #46515b;
-  background: #edf1f5;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.agendada {
-  color: #175693;
-  background: #e8f1fc;
-}
-
-.emAndamento {
-  color: #795400;
-  background: #fff3ce;
-}
-
-.concluida {
-  color: #21623e;
-  background: #e5f4eb;
-}
-
-.cancelada {
-  color: #9b302b;
-  background: #fcebea;
-}
-
 @media (max-width: 900px) {
   .sections {
     grid-template-columns: minmax(0, 1fr);

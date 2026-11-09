@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import { endSession, useSession } from '../lib/session';
 
 export default function AppLayout() {
@@ -32,9 +32,12 @@ export default function AppLayout() {
               <div style={{ cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}>
                 Fiscalizadores
               </div>
-              <div style={{ cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}>
+              <Link to="/gestor/visitas/nova" style={{ color: 'inherit', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>
                 Nova Visita
-              </div>
+              </Link>
+              <Link to="/gestor/visitas" style={{ color: 'inherit', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>
+                Visitas
+              </Link>
             </>
           )}
         </nav>

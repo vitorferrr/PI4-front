@@ -1,23 +1,21 @@
-import { QueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
-import { useNovaVisitaStore } from '../store/novaVisitaStore.js';
-
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: (falhas, erro) => falhas < 1
-        && erro?.code !== 'ERR_CANCELED'
-        && ![401, 403].includes(erro?.response?.status),
-    },
-  },
-});
 
 export const useSession = create(() => ({ token: null, claims: null, version: 0 }));
 
 let sessionVersion = 0;
 let requestController = new AbortController();
 let expirationTimer;
+const sessionChangeListeners = new Set();
+
+export function onSessionChange(callback) {
+  sessionChangeListeners.add(callback);
+  return () => sessionChangeListeners.delete(callback);
+}
+
+// Consultar a versão não valida o JWT nem modifica a sessão ao receber uma resposta.
+export function getSessionVersion() {
+  return sessionVersion;
+}
 
 // A leitura das claims permite controlar a expiração, mas não verifica a assinatura.
 // A autenticidade do token e todas as permissões continuam sob responsabilidade da API.
@@ -60,9 +58,6 @@ function replaceSession(token, claims) {
   sessionVersion += 1;
   requestController.abort();
   requestController = new AbortController();
-  void queryClient.cancelQueries();
-  queryClient.clear();
-  useNovaVisitaStore.getState().limparSelecao();
   clearTimeout(expirationTimer);
 
   // O perfil legado não é uma fonte de sessão nem de autorização.
@@ -70,6 +65,8 @@ function replaceSession(token, claims) {
   if (token) window.localStorage.setItem('token', token);
   else window.localStorage.removeItem('token');
 
+  // Os consumidores limpam dados privados antes de a próxima sessão ficar visível.
+  sessionChangeListeners.forEach((callback) => callback());
   useSession.setState({ token, claims, version: sessionVersion });
   scheduleExpiration();
 }
