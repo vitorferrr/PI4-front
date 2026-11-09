@@ -73,6 +73,17 @@ export default function QuestionarioScreen() {
       </View>
     );
   }
+  if (perguntasOrdenadas.length === 0) {
+    return (
+      <View style={styles.centralizado}>
+        <Stack.Screen options={{ title: `Questionário - Visita #${id}` }} />
+        <Text style={styles.subtitulo}>Nenhuma pergunta cadastrada no questionário.</Text>
+        <Pressable style={styles.botao} onPress={() => refetch()}>
+          <Text style={styles.botaoTexto}>Tentar novamente</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const totalRespondidas = perguntasOrdenadas.filter(
     (p) => respostas[p.id] !== undefined && String(respostas[p.id]).trim() !== ""
@@ -88,10 +99,6 @@ export default function QuestionarioScreen() {
           Progresso: {totalRespondidas} de {perguntasOrdenadas.length} perguntas respondidas
         </Text>
       </View>
-
-      {perguntasOrdenadas.length === 0 && (
-        <Text style={styles.subtitulo}>Nenhuma pergunta cadastrada no questionário.</Text>
-      )}
 
       {perguntasOrdenadas.map((pergunta) => (
         <ItemPerguntaQuestionario
