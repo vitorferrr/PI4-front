@@ -1,14 +1,13 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { endSession, useSession } from '../lib/session';
 
 export default function AppLayout() {
-  const navigate = useNavigate();
-  
-  const userRole = localStorage.getItem('role') || 'GESTOR'; 
+  const userRole = useSession((state) => (
+    typeof state.claims?.role === 'string' ? state.claims.role.toUpperCase() : null
+  ));
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    navigate('/login');
+    endSession();
   };
 
   return (

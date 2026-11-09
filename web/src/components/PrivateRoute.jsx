@@ -1,11 +1,15 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { isTokenValid, useSession } from '../lib/session';
 
 export default function PrivateRoute() {
-  const token = localStorage.getItem('token');
+  const { token, version } = useSession();
+  const location = useLocation();
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  if (!isTokenValid(token)) {
+    const from = location.pathname + location.search + location.hash;
+    return <Navigate to="/login" state={{ from }} replace />;
   }
 
-  return <Outlet />;
+  // Reinicia também o estado local das páginas quando a conta muda em outra aba.
+  return <Outlet key={version} />;
 }
