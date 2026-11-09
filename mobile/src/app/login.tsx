@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useMutation } from "@tanstack/react-query";
-import * as SecureStore from "expo-secure-store";
-import { router } from "expo-router";
+import { useSessaoStore } from "@/store/sessaoStore";
 import { API_URL } from "../lib/api";
 
 async function fazerLogin(email: string, senha: string) {
@@ -29,12 +28,12 @@ async function fazerLogin(email: string, senha: string) {
 export default function LoginScreen() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
+    const entrar = useSessaoStore((state) => state.entrar);
 
     const loginMutation = useMutation ({
         mutationFn: () => fazerLogin(email, senha),
         onSuccess: async (data) => {
-            await SecureStore.setItemAsync("token", data.token);
-            router.replace("/");
+            await entrar(data.token);
         },
     });
     

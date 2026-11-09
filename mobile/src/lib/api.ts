@@ -1,20 +1,16 @@
-import * as SecureStore from "expo-secure-store";
-import { router } from "expo-router";
 import { queryClient } from "./queryClient";
+import { useSessaoStore } from "@/store/sessaoStore";
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "https://pi4-back-one.vercel.app";
 
-export const TOKEN_KEY = "token";
 export class SessaoExpiradaError extends Error {
   sessaoExpirada = true;
 }
 
-// Encerra a sessão: apaga o token, limpa os dados em cache e volta ao login.
 export async function sair() {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+  await useSessaoStore.getState().encerrar();
   queryClient.clear();
-  router.replace("/login");
 }
 
 export async function apiFetch<T>(
@@ -22,7 +18,7 @@ export async function apiFetch<T>(
   init: RequestInit = {},
   mensagemErroPadrao = "Erro na comunicação com o servidor."
 ): Promise<T> {
-  const token = await SecureStore.getItemAsync(TOKEN_KEY);
+  const token = useSessaoStore.getState().token;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

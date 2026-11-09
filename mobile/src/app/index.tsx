@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
 import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet } from "react-native";
-import { Redirect, Stack } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import { Stack } from "expo-router";
 import { useVisitas } from "@/hooks/use-visitas";
-import { sair, TOKEN_KEY } from "@/lib/api";
+import { sair } from "@/lib/api";
 import { VisitaCard } from "@/components/VisitaCard";
 
 function ListaVisitas() {
@@ -44,34 +42,18 @@ function ListaVisitas() {
 }
 
 export default function VisitasScreen() {
-  const [autenticado, setAutenticado] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    SecureStore.getItemAsync(TOKEN_KEY)
-      .then((token) => setAutenticado(Boolean(token)))
-      .catch(() => setAutenticado(false));
-  }, []);
-
-  if (autenticado === null) {
-    return (
-      <View style={styles.centro}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (!autenticado) {
-    return <Redirect href="/login" />;
-  }
-
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Minhas visitas" }} />
 
       <ListaVisitas />
 
-      {/* TEMPORÁRIO: só para testar o login enquanto não há tela de perfil */}
-      <Pressable style={styles.botao} accessibilityRole="button" onPress={() => sair().catch(() => {})}>
+      {/* só para testar o login enquanto não tem tela de perfil */}
+      <Pressable
+        style={styles.botao}
+        accessibilityRole="button"
+        onPress={() => sair().catch(() => {})}
+      >
         <Text>Sair (temporário)</Text>
       </Pressable>
     </View>
