@@ -7,11 +7,7 @@ interface ItemPerguntaProps {
   onResponder: (valor: string) => void;
 }
 
-export function ItemPerguntaQuestionario({
-  pergunta,
-  valorAtual,
-  onResponder,
-}: ItemPerguntaProps) {
+export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: ItemPerguntaProps) {
   return (
     <View style={styles.cardPergunta}>
       <View style={styles.cabecalhoPergunta}>
@@ -24,10 +20,7 @@ export function ItemPerguntaQuestionario({
       {pergunta.tipo_resposta === "sim_nao" && (
         <View style={styles.opcoesSimNao}>
           <Pressable
-            style={[
-              styles.botaoOpcao,
-              valorAtual === "Sim" && styles.botaoOpcaoSelecionado,
-            ]}
+            style={[styles.botaoOpcao, valorAtual === "Sim" && styles.botaoOpcaoSelecionado]}
             onPress={() => onResponder("Sim")}
           >
             <Text
@@ -41,10 +34,7 @@ export function ItemPerguntaQuestionario({
           </Pressable>
 
           <Pressable
-            style={[
-              styles.botaoOpcao,
-              valorAtual === "Não" && styles.botaoOpcaoSelecionado,
-            ]}
+            style={[styles.botaoOpcao, valorAtual === "Não" && styles.botaoOpcaoSelecionado]}
             onPress={() => onResponder("Não")}
           >
             <Text

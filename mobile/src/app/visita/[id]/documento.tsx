@@ -11,7 +11,8 @@ export default function DocumentoVisitaScreen() {
       <View style={styles.card}>
         <Text style={styles.titulo}>Documento da Visita #{id}</Text>
         <Text style={styles.descricao}>
-          A etapa de revisão do documento, observações livres e coleta de assinaturas será implementada nas próximas tasks.
+          A etapa de revisão do documento, observações livres e coleta de assinaturas será
+          implementada nas próximas tasks.
         </Text>
 
         <Pressable style={styles.botao} onPress={() => router.back()}>

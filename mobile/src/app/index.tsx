@@ -45,16 +45,12 @@ function ListaVisitas() {
       sections={separarVisitas(data)}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <VisitaCard visita={item} />}
-      renderSectionHeader={({ section }) => (
-        <Text style={styles.secao}>{section.titulo}</Text>
-      )}
+      renderSectionHeader={({ section }) => <Text style={styles.secao}>{section.titulo}</Text>}
       stickySectionHeadersEnabled={false}
       contentContainerStyle={styles.lista}
       refreshing={isRefetching}
       onRefresh={refetch}
-      ListEmptyComponent={
-        <Text style={styles.vazio}>Nenhuma visita atribuída a você.</Text>
-      }
+      ListEmptyComponent={<Text style={styles.vazio}>Nenhuma visita atribuída a você.</Text>}
     />
   );
 }

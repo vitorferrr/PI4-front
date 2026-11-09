@@ -54,8 +54,7 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
           },
         })),
 
-      definirObservacoesLivres: (texto) =>
-        set({ observacoesLivres: texto }),
+      definirObservacoesLivres: (texto) => set({ observacoesLivres: texto }),
 
       adicionarAssinatura: (assinatura) =>
         set((state) => ({

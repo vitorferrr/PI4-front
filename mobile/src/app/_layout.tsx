@@ -9,7 +9,9 @@ export default function RootLayout() {
   const carregada = useSessaoStore((state) => state.carregada);
   const carregar = useSessaoStore((state) => state.carregar);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   if (!carregada) return null;
 

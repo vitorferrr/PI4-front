@@ -213,11 +213,7 @@ export default function VisitaDetalheScreen() {
       )}
 
       {podeIniciar && (
-        <Pressable
-          style={styles.botao}
-          onPress={handleIniciarComGps}
-          disabled={processandoInicio}
-        >
+        <Pressable style={styles.botao} onPress={handleIniciarComGps} disabled={processandoInicio}>
           {processandoInicio ? (
             <ActivityIndicator color="#fff" />
           ) : (

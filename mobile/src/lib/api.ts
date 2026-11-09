@@ -1,8 +1,7 @@
 import { queryClient } from "./queryClient";
 import { useSessaoStore } from "@/store/sessaoStore";
 
-export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "https://pi4-back-one.vercel.app";
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://pi4-back-one.vercel.app";
 
 export class SessaoExpiradaError extends Error {
   sessaoExpirada = true;
