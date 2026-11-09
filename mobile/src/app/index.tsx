@@ -71,7 +71,7 @@ export default function VisitasScreen() {
       <ListaVisitas />
 
       {/* TEMPORÁRIO: só para testar o login enquanto não há tela de perfil */}
-      <Pressable style={styles.botao} accessibilityRole="button" onPress={sair}>
+      <Pressable style={styles.botao} accessibilityRole="button" onPress={() => sair().catch(() => {})}>
         <Text>Sair (temporário)</Text>
       </Pressable>
     </View>
