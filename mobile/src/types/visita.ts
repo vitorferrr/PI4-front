@@ -31,5 +31,4 @@ export interface PerguntaQuestionario {
   texto: string;
   tipo_resposta: TipoResposta;
   ordem: number;
-  obrigatoria?: boolean;
 }
