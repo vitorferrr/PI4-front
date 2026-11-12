@@ -1,0 +1,245 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  min-width: 0;
+  color: #333;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.header,
+.headerActions,
+.actions,
+.itemHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header,
+.itemHeader {
+  justify-content: space-between;
+}
+
+.heading {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: normal;
+}
+
+.identifier {
+  margin: 0.4rem 0 0;
+  color: #555;
+}
+
+.button {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.6rem 1rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 4px;
+  background: #fff;
+  color: #2c3e50;
+  font: inherit;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: #edf1f5;
+}
+
+.button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.primaryButton {
+  border-color: #2c3e50;
+  background: #2c3e50;
+  color: #fff;
+}
+
+.primaryButton:hover:not(:disabled) {
+  border-color: #1f3041;
+  background: #1f3041;
+}
+
+.conclusionActions {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+
+.success {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid #c6e3d1;
+  border-radius: 6px;
+  color: #21623e;
+  background: #e5f4eb;
+}
+
+.validationErrors {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}
+
+.button:focus-visible,
+.textLink:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 3px;
+}
+
+.sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.informacao {
+  min-width: 0;
+}
+
+.informacao dt {
+  margin: 0 0 0.25rem;
+  color: #606b75;
+  font-size: 0.8rem;
+}
+
+.informacao dd {
+  margin: 0;
+  color: #333;
+}
+
+.itemTitle {
+  margin: 0 0 0.75rem;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.itemHeader {
+  margin-bottom: 0.75rem;
+}
+
+.itemHeader .itemTitle {
+  margin: 0;
+}
+
+.list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listItem {
+  min-width: 0;
+}
+
+.listItem + .listItem {
+  padding-top: 1rem;
+  border-top: 1px solid #e1e4e8;
+}
+
+.muted {
+  margin: 0;
+  color: #606b75;
+}
+
+.dateNote {
+  margin: 1rem 0 0;
+  color: #606b75;
+  font-size: 0.75rem;
+}
+
+.preserveLines {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.textLink {
+  color: #075aab;
+  text-underline-offset: 3px;
+}
+
+.feedback,
+.error {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.feedback:last-child,
+.error:last-child {
+  margin-bottom: 0;
+}
+
+.error {
+  color: #a32e24;
+}
+
+.error p {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    gap: 1rem;
+  }
+
+  .header,
+  .itemHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .infoGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .conclusionActions .button {
+    width: 100%;
+  }
+}

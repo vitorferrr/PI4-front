@@ -1,34 +1,43 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { isCancel } from 'axios';
 import { api } from '../lib/api';
+import { isTokenValid, startSession, useSession } from '../lib/session';
 
 async function fazerLogin(email, senha) {
-  const response = await api.post('/auth/login', { email, senha });
-  return response.data;
+  const response = await api.post('/auth/login', { email, senha }, { skipAuth: true });
+  startSession(response.data?.token);
 }
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
+  const token = useSession((state) => state.token);
+  const location = useLocation();
+  const from = location.state?.from;
+  const returnPath = typeof from === 'string' && from.startsWith('/')
+    && !from.startsWith('//') && !from.includes('\\') && !/^\/login(?:[/?#]|$)/.test(from)
+    ? from : '/';
 
   const loginMutation = useMutation({
     mutationFn: () => fazerLogin(email, password),
-    onSuccess: (data) => {
-      localStorage.setItem('token', data.token);
-      navigate('/', { replace: true });
-    },
     onError: (error) => {
-      console.error(error);
-      alert('E-mail ou senha inválidos');
+      if (isCancel(error)) return;
+      alert(error.response?.status === 401
+        ? 'E-mail ou senha inválidos'
+        : 'Não foi possível entrar. Tente novamente.');
     }
   });
 
   const handleSubmit = (e) => {
     e.preventDefault(); 
-    loginMutation.mutate(); 
+    if (!loginMutation.isPending) loginMutation.mutate();
   };
+
+  if (isTokenValid(token)) {
+    return <Navigate to={returnPath} replace />;
+  }
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f4f6f8' }}>
