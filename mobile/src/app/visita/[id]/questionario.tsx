@@ -40,6 +40,7 @@ export default function QuestionarioScreen() {
   } = useQuery({
     queryKey: ["perguntas-questionario"],
     queryFn: buscarPerguntasQuestionario,
+    staleTime: Infinity,
   });
 
   if (isLoading || (visitaIdNumero && visitaIdStore !== visitaIdNumero)) {
