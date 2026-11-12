@@ -21,6 +21,11 @@ interface VisitaEmAndamentoState {
   limparVisitaStore: () => void;
 }
 
+type EstadoSalvo = Pick<
+  VisitaEmAndamentoState,
+  "visitaId" | "localizacao" | "respostas" | "observacoesLivres" | "assinaturasColetadas"
+>;
+
 export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
   persist(
     (set) => ({
@@ -73,6 +78,11 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
     {
       name: "visita-em-andamento-storage",
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (estadoSalvo) => ({
+        ...(estadoSalvo as EstadoSalvo),
+        respostas: {},
+      }),
       partialize: (state) => ({
         visitaId: state.visitaId,
         localizacao: state.localizacao,
