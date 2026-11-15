@@ -1,6 +1,13 @@
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useFonts, BarlowCondensed_800ExtraBold } from "@expo-google-fonts/barlow-condensed";
+import {
+  Inter_400Regular,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from "@expo-google-fonts/inter";
 import { queryClient } from "@/lib/queryClient";
 import { useSessaoStore } from "@/store/sessaoStore";
 
@@ -9,11 +16,19 @@ export default function RootLayout() {
   const carregada = useSessaoStore((state) => state.carregada);
   const carregar = useSessaoStore((state) => state.carregar);
 
+  const [fontesCarregadas] = useFonts({
+    BarlowCondensed_800ExtraBold,
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
   useEffect(() => {
     carregar();
   }, [carregar]);
 
-  if (!carregada) return null;
+  if (!carregada || !fontesCarregadas) return null;
 
   // toda tela nova precisa ser listada aqui, pq as rotas fora do Stack.Protected ficam liberadas
   return (
