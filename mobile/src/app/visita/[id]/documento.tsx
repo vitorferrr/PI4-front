@@ -1,66 +1,45 @@
+import { useEffect, useState } from "react";
 import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { apiFetch } from "@/lib/api";
 import { formatarData } from "@/lib/formatadores";
+import { useVisita } from "@/hooks/use-visita";
+import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
-import type { VisitaDetalhe } from "@/types/visita";
+import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 
-async function buscarVisitaPorId(id: string): Promise<VisitaDetalhe> {
-  return apiFetch<VisitaDetalhe>(
-    `/visitas/${id}`,
-    { method: "GET" },
-    "Não foi possível carregar os dados da visita."
-  );
-}
+function useStoreHidratada() {
+  const [hidratada, setHidratada] = useState(() => useVisitaEmAndamentoStore.persist.hasHydrated());
 
-function Cabecalho({ subtitulo }: { subtitulo?: string }) {
-  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    if (useVisitaEmAndamentoStore.persist.hasHydrated()) setHidratada(true);
+    return useVisitaEmAndamentoStore.persist.onFinishHydration(() => setHidratada(true));
+  }, []);
 
-  return (
-    <View style={[styles.cabecalho, { paddingTop: insets.top + 8 }]}>
-      <Pressable
-        style={styles.botaoVoltar}
-        accessibilityRole="button"
-        accessibilityLabel="Voltar ao questionário"
-        onPress={() => router.back()}
-      >
-        <Text style={styles.botaoVoltarTexto}>‹</Text>
-      </Pressable>
-
-      <View style={styles.cabecalhoTextos}>
-        <Text style={styles.cabecalhoTitulo}>Revisar e assinar</Text>
-        {subtitulo ? <Text style={styles.cabecalhoSubtitulo}>{subtitulo}</Text> : null}
-      </View>
-    </View>
-  );
+  return hidratada;
 }
 
 export default function DocumentoVisitaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const storeHidratada = useStoreHidratada();
 
+  const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
   const respostas = useVisitaEmAndamentoStore((state) => state.respostas);
   const observacoesLivres = useVisitaEmAndamentoStore((state) => state.observacoesLivres);
 
-  const {
-    data: visita,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ["visita", id],
-    queryFn: () => buscarVisitaPorId(id!),
-    enabled: Boolean(id),
-  });
+  const visitaQuery = useVisita(id);
+  const perguntasQuery = usePerguntasQuestionario();
+  const visita = visitaQuery.data;
+  const perguntas = perguntasQuery.data ?? [];
 
-  if (isLoading) {
+  const titulo = "Revisar e assinar";
+
+  if (!storeHidratada || visitaQuery.isLoading || perguntasQuery.isLoading) {
     return (
       <View style={styles.tela}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Cabecalho />
+        <CabecalhoVisita titulo={titulo} rotuloVoltar="Voltar ao questionário" />
         <View style={styles.centralizado}>
           <ActivityIndicator size="large" color="#1D3F94" />
         </View>
@@ -68,16 +47,21 @@ export default function DocumentoVisitaScreen() {
     );
   }
 
-  if (isError || !visita) {
+  if (visitaQuery.isError || perguntasQuery.isError || !visita) {
+    const erro = visitaQuery.error ?? perguntasQuery.error;
     return (
       <View style={styles.tela}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Cabecalho />
+        <CabecalhoVisita titulo={titulo} rotuloVoltar="Voltar ao questionário" />
         <View style={styles.centralizado}>
-          <Text style={styles.erro}>
-            {error instanceof Error ? error.message : "Erro ao carregar visita."}
-          </Text>
-          <Pressable style={styles.botaoSecundario} onPress={() => refetch()}>
+          <Text style={styles.erro}>{erro?.message ?? "Erro ao carregar visita."}</Text>
+          <Pressable
+            style={styles.botaoSecundario}
+            onPress={() => {
+              visitaQuery.refetch();
+              perguntasQuery.refetch();
+            }}
+          >
             <Text style={styles.botaoSecundarioTexto}>Tentar novamente</Text>
           </Pressable>
         </View>
@@ -85,13 +69,42 @@ export default function DocumentoVisitaScreen() {
     );
   }
 
-  const totalRespostas = Object.values(respostas).filter((valor) => valor.trim() !== "").length;
+  if (visitaIdStore !== Number(id)) {
+    return (
+      <View style={styles.tela}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <CabecalhoVisita
+          titulo={titulo}
+          subtitulo={visita.denunciado}
+          rotuloVoltar="Voltar ao questionário"
+        />
+        <View style={styles.centralizado}>
+          <Text style={styles.mensagem}>
+            As respostas desta visita não estão neste aparelho. Preencha o questionário antes de
+            revisar o documento.
+          </Text>
+          <Pressable
+            style={styles.botaoPrimario}
+            onPress={() => router.replace(`/visita/${id}/questionario`)}
+          >
+            <Text style={styles.botaoPrimarioTexto}>Ir para o questionário</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  const totalRespondidas = perguntas.filter((p) => estaRespondida(respostas[p.id])).length;
   const nomesFiscais = visita.fiscalizadores?.map((f) => f.nome).join(", ") || "Não informado";
 
   return (
     <View style={styles.tela}>
       <Stack.Screen options={{ headerShown: false }} />
-      <Cabecalho subtitulo={visita.denunciado} />
+      <CabecalhoVisita
+        titulo={titulo}
+        subtitulo={visita.denunciado}
+        rotuloVoltar="Voltar ao questionário"
+      />
 
       <ScrollView contentContainerStyle={styles.conteudo}>
         <View style={styles.previa} accessibilityLabel="Prévia do documento">
@@ -121,8 +134,27 @@ export default function DocumentoVisitaScreen() {
             </Text>
           )}
 
+          <View style={styles.respostas}>
+            <Text style={styles.respostasTitulo}>Questionário</Text>
+            {perguntas.map((pergunta, indice) => {
+              const valor = respostas[pergunta.id];
+              return (
+                <View key={pergunta.id} style={styles.itemResposta}>
+                  <Text style={[styles.previaTexto, styles.negrito]}>
+                    {indice + 1}. {pergunta.texto}
+                  </Text>
+                  {estaRespondida(valor) ? (
+                    <Text style={styles.previaTexto}>{valor}</Text>
+                  ) : (
+                    <Text style={[styles.previaTexto, styles.semResposta]}>Sem resposta</Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+
           <Text style={[styles.previaTexto, styles.previaRodape]}>
-            + {totalRespostas} {totalRespostas === 1 ? "resposta" : "respostas"}
+            {totalRespondidas} de {perguntas.length} perguntas respondidas
           </Text>
         </View>
       </ScrollView>
@@ -148,41 +180,23 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 12,
   },
-
-  cabecalho: {
-    backgroundColor: "#1D3F94",
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  botaoVoltar: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  botaoVoltarTexto: {
-    color: "#FFFFFF",
-    fontSize: 36,
-    lineHeight: 38,
-  },
-  cabecalhoTextos: {
-    flex: 1,
-  },
-  cabecalhoTitulo: {
-    fontFamily: "BarlowCondensed_800ExtraBold",
-    fontSize: 23,
-    lineHeight: 25,
-    textTransform: "uppercase",
-    color: "#FFFFFF",
-  },
-  cabecalhoSubtitulo: {
+  mensagem: {
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: "#D6E6F8",
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#33435A",
+    textAlign: "center",
+  },
+  botaoPrimario: {
+    backgroundColor: "#1D3F94",
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  botaoPrimarioTexto: {
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    fontSize: 16,
   },
 
   conteudo: {
@@ -246,6 +260,25 @@ const styles = StyleSheet.create({
   },
   negrito: {
     fontFamily: "Inter_700Bold",
+  },
+  respostas: {
+    gap: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#DCE5EF",
+  },
+  respostasTitulo: {
+    fontFamily: "BarlowCondensed_800ExtraBold",
+    fontSize: 13,
+    textTransform: "uppercase",
+    color: "#172F6E",
+  },
+  itemResposta: {
+    gap: 2,
+  },
+  semResposta: {
+    fontFamily: "Inter_600SemiBold",
+    color: "#A12A20",
   },
 
   rodape: {

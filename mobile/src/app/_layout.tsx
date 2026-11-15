@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts, BarlowCondensed_800ExtraBold } from "@expo-google-fonts/barlow-condensed";
 import {
@@ -11,12 +12,14 @@ import {
 import { queryClient } from "@/lib/queryClient";
 import { useSessaoStore } from "@/store/sessaoStore";
 
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   const autenticado = useSessaoStore((state) => state.token !== null);
   const carregada = useSessaoStore((state) => state.carregada);
   const carregar = useSessaoStore((state) => state.carregar);
 
-  const [fontesCarregadas] = useFonts({
+  const [fontesCarregadas, erroFontes] = useFonts({
     BarlowCondensed_800ExtraBold,
     Inter_400Regular,
     Inter_600SemiBold,
@@ -24,13 +27,19 @@ export default function RootLayout() {
     Inter_800ExtraBold,
   });
 
+  const fontesProntas = fontesCarregadas || erroFontes !== null;
+  const pronto = carregada && fontesProntas;
+
   useEffect(() => {
     carregar();
   }, [carregar]);
 
-  if (!carregada || !fontesCarregadas) return null;
+  useEffect(() => {
+    if (pronto) SplashScreen.hideAsync();
+  }, [pronto]);
 
-  // toda tela nova precisa ser listada aqui, pq as rotas fora do Stack.Protected ficam liberadas
+  if (!pronto) return null;
+
   return (
     <QueryClientProvider client={queryClient}>
       <Stack>

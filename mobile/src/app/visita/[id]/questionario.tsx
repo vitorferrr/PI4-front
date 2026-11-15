@@ -8,83 +8,16 @@ import {
   ScrollView,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { apiFetch } from "@/lib/api";
 import { formatarHora } from "@/lib/formatadores";
 import { useVisita } from "@/hooks/use-visita";
+import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
+import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { ItemPerguntaQuestionario } from "@/components/ItemPerguntaQuestionario";
-import { PerguntaQuestionario } from "@/types/visita";
-
-async function buscarPerguntasQuestionario(): Promise<PerguntaQuestionario[]> {
-  const perguntas = await apiFetch<PerguntaQuestionario[]>(
-    "/questionario",
-    { method: "GET" },
-    "Não foi possível carregar o questionário."
-  );
-  return [...perguntas].sort((a, b) => a.ordem - b.ordem);
-}
-
-interface CabecalhoProps {
-  titulo: string;
-  horaCheckIn?: string | null;
-  progresso?: { atual: number; total: number };
-}
-
-function Cabecalho({ titulo, horaCheckIn, progresso }: CabecalhoProps) {
-  const insets = useSafeAreaInsets();
-  const porcentagem = progresso ? Math.round((progresso.atual / progresso.total) * 100) : 0;
-
-  return (
-    <View style={[styles.cabecalho, { paddingTop: insets.top + 8 }]}>
-      <View style={styles.cabecalhoLinha}>
-        <Pressable
-          style={styles.botaoVoltar}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          onPress={() => router.back()}
-        >
-          <Text style={styles.botaoVoltarTexto}>‹</Text>
-        </Pressable>
-
-        <View style={styles.cabecalhoTextos}>
-          <Text style={styles.cabecalhoTitulo} numberOfLines={2}>
-            {titulo}
-          </Text>
-          <Text style={styles.cabecalhoSubtitulo}>Auto de Constatação</Text>
-        </View>
-
-        <View style={styles.badgeSalvo}>
-          <Text style={styles.badgeSalvoIcone}>✓</Text>
-          <Text style={styles.badgeSalvoTexto}>Salvo</Text>
-        </View>
-      </View>
-
-      {horaCheckIn ? (
-        <View style={styles.checkIn}>
-          <Text style={styles.checkInTexto}>Check-in às {horaCheckIn}</Text>
-        </View>
-      ) : null}
-
-      {progresso ? (
-        <View style={styles.progresso}>
-          <View style={styles.progressoLinha}>
-            <Text style={styles.progressoTexto}>
-              Pergunta {progresso.atual} de {progresso.total}
-            </Text>
-            <Text style={styles.progressoTexto}>{porcentagem}%</Text>
-          </View>
-          <View style={styles.barraFundo}>
-            <View style={[styles.barraPreenchida, { width: `${porcentagem}%` }]} />
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-}
 
 export default function QuestionarioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -109,18 +42,13 @@ export default function QuestionarioScreen() {
   }, [visitaIdNumero, visitaIdStore, iniciarVisitaStore]);
 
   const { data: visita } = useVisita(id);
-
   const {
     data: perguntasOrdenadas = [],
     isLoading,
     isError,
     error,
     refetch,
-  } = useQuery({
-    queryKey: ["perguntas-questionario"],
-    queryFn: buscarPerguntasQuestionario,
-    staleTime: Infinity,
-  });
+  } = usePerguntasQuestionario();
 
   const tituloCabecalho = visita?.denunciado ?? `Visita #${id}`;
 
@@ -128,7 +56,7 @@ export default function QuestionarioScreen() {
     return (
       <View style={styles.tela}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Cabecalho titulo={tituloCabecalho} />
+        <CabecalhoVisita titulo={tituloCabecalho} subtitulo="Auto de Constatação" />
         <View style={styles.centralizado}>
           <ActivityIndicator size="large" color="#1D3F94" />
         </View>
@@ -140,7 +68,7 @@ export default function QuestionarioScreen() {
     return (
       <View style={styles.tela}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Cabecalho titulo={tituloCabecalho} />
+        <CabecalhoVisita titulo={tituloCabecalho} subtitulo="Auto de Constatação" />
         <View style={styles.centralizado}>
           <Text style={styles.mensagem}>
             {isError ? error.message : "Nenhuma pergunta cadastrada no questionário."}
@@ -159,6 +87,11 @@ export default function QuestionarioScreen() {
   const ehPrimeira = indice === 0;
   const ehUltima = indice === totalPerguntas - 1;
 
+  const indicesEmBranco = perguntasOrdenadas
+    .map((p, i) => (estaRespondida(respostas[p.id]) ? -1 : i))
+    .filter((i) => i !== -1);
+  const totalRespondidas = totalPerguntas - indicesEmBranco.length;
+
   function irParaAnterior() {
     if (ehPrimeira) {
       router.back();
@@ -167,22 +100,43 @@ export default function QuestionarioScreen() {
     }
   }
 
+  function irParaDocumento() {
+    router.push(`/visita/${id}/documento`);
+  }
+
   function irParaProxima() {
-    if (ehUltima) {
-      router.push(`/visita/${id}/documento`);
-    } else {
+    if (!ehUltima) {
       setIndiceAtual(indice + 1);
+      return;
     }
+
+    if (indicesEmBranco.length === 0) {
+      irParaDocumento();
+      return;
+    }
+
+    const numeros = indicesEmBranco.map((i) => i + 1).join(", ");
+    const mensagem =
+      indicesEmBranco.length === 1
+        ? `A pergunta ${numeros} está sem resposta.`
+        : `As perguntas ${numeros} estão sem resposta.`;
+
+    Alert.alert("Perguntas sem resposta", `${mensagem} Quer revisar antes de assinar?`, [
+      { text: "Continuar assim", style: "cancel", onPress: irParaDocumento },
+      { text: "Revisar", onPress: () => setIndiceAtual(indicesEmBranco[0]) },
+    ]);
   }
 
   return (
     <KeyboardAvoidingView style={styles.tela} behavior="padding">
       <Stack.Screen options={{ headerShown: false }} />
 
-      <Cabecalho
+      <CabecalhoVisita
         titulo={tituloCabecalho}
+        subtitulo="Auto de Constatação"
+        mostrarSelo
         horaCheckIn={formatarHora(visita?.data_realizacao)}
-        progresso={{ atual: indice + 1, total: totalPerguntas }}
+        progresso={{ atual: indice + 1, total: totalPerguntas, respondidas: totalRespondidas }}
       />
 
       <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
@@ -259,98 +213,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
     fontSize: 16,
-  },
-
-  cabecalho: {
-    backgroundColor: "#1D3F94",
-    paddingHorizontal: 16,
-    paddingBottom: 18,
-    gap: 14,
-  },
-  cabecalhoLinha: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  botaoVoltar: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  botaoVoltarTexto: {
-    color: "#FFFFFF",
-    fontSize: 36,
-    lineHeight: 38,
-  },
-  cabecalhoTextos: {
-    flex: 1,
-  },
-  cabecalhoTitulo: {
-    fontFamily: "BarlowCondensed_800ExtraBold",
-    fontSize: 23,
-    lineHeight: 25,
-    textTransform: "uppercase",
-    color: "#FFFFFF",
-  },
-  cabecalhoSubtitulo: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: "#D6E6F8",
-  },
-  badgeSalvo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#172F6E",
-  },
-  badgeSalvoIcone: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 13,
-    color: "#FFCC00",
-  },
-  badgeSalvoTexto: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
-    color: "#FFFFFF",
-  },
-  checkIn: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "#E2F5EA",
-  },
-  checkInTexto: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    color: "#0E4F27",
-  },
-  progresso: {
-    gap: 6,
-  },
-  progressoLinha: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  progressoTexto: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    color: "#FFFFFF",
-  },
-  barraFundo: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#172F6E",
-    overflow: "hidden",
-  },
-  barraPreenchida: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FFCC00",
   },
 
   conteudo: {
