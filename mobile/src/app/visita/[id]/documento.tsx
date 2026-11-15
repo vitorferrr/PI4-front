@@ -1,12 +1,26 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { formatarData } from "@/lib/formatadores";
+import { formatarData, formatarHora } from "@/lib/formatadores";
 import { useVisita } from "@/hooks/use-visita";
 import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
+import { SignaturePad } from "@/components/SignaturePad";
+
+interface AssinaturaLocal {
+  imagem: string;
+  hora: string | null;
+}
 
 function useStoreHidratada() {
   const [hidratada, setHidratada] = useState(() => useVisitaEmAndamentoStore.persist.hasHydrated());
@@ -23,6 +37,9 @@ export default function DocumentoVisitaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const storeHidratada = useStoreHidratada();
+
+  const [rolagemAtiva, setRolagemAtiva] = useState(true);
+  const [assinaturaFiscal, setAssinaturaFiscal] = useState<AssinaturaLocal | null>(null);
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
   const respostas = useVisitaEmAndamentoStore((state) => state.respostas);
@@ -106,7 +123,7 @@ export default function DocumentoVisitaScreen() {
         rotuloVoltar="Voltar ao questionário"
       />
 
-      <ScrollView contentContainerStyle={styles.conteudo}>
+      <ScrollView contentContainerStyle={styles.conteudo} scrollEnabled={rolagemAtiva}>
         <View style={styles.previa} accessibilityLabel="Prévia do documento">
           <View style={styles.previaTopo}>
             <View style={styles.previaIcone}>
@@ -156,6 +173,44 @@ export default function DocumentoVisitaScreen() {
           <Text style={[styles.previaTexto, styles.previaRodape]}>
             {totalRespondidas} de {perguntas.length} perguntas respondidas
           </Text>
+        </View>
+
+        <View style={styles.assinaturas}>
+          <Text style={styles.assinaturasTitulo}>Assinaturas</Text>
+
+          {assinaturaFiscal ? (
+            <View style={styles.cartaoAssinado}>
+              <View style={styles.cartaoAssinadoLinha}>
+                <View style={styles.checkVerde}>
+                  <Text style={styles.checkVerdeTexto}>✓</Text>
+                </View>
+                <View style={styles.cartaoAssinadoTextos}>
+                  <Text style={styles.cartaoNome}>Fiscal · {nomesFiscais}</Text>
+                  <Text style={styles.cartaoHora}>Assinado às {assinaturaFiscal.hora}</Text>
+                </View>
+                <Pressable accessibilityRole="button" onPress={() => setAssinaturaFiscal(null)}>
+                  <Text style={styles.linkRefazer}>Refazer</Text>
+                </Pressable>
+              </View>
+              <Image
+                source={{ uri: assinaturaFiscal.imagem }}
+                style={styles.imagemAssinatura}
+                resizeMode="contain"
+                accessibilityLabel={`Assinatura de ${nomesFiscais}`}
+              />
+            </View>
+          ) : (
+            <View style={styles.cartaoAtivo}>
+              <Text style={styles.cartaoRotulo}>Fiscal · {nomesFiscais}</Text>
+              <SignaturePad
+                onInicioDesenho={() => setRolagemAtiva(false)}
+                onFimDesenho={() => setRolagemAtiva(true)}
+                onConfirmar={(imagem) =>
+                  setAssinaturaFiscal({ imagem, hora: formatarHora(new Date().toISOString()) })
+                }
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -279,6 +334,78 @@ const styles = StyleSheet.create({
   semResposta: {
     fontFamily: "Inter_600SemiBold",
     color: "#A12A20",
+  },
+
+  assinaturas: {
+    gap: 10,
+  },
+  assinaturasTitulo: {
+    fontFamily: "BarlowCondensed_800ExtraBold",
+    fontSize: 23,
+    textTransform: "uppercase",
+    color: "#172F6E",
+  },
+  cartaoAtivo: {
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#1D3F94",
+  },
+  cartaoRotulo: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: "#0F1E33",
+  },
+  cartaoAssinado: {
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DCE5EF",
+  },
+  cartaoAssinadoLinha: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  checkVerde: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#E2F5EA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkVerdeTexto: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 16,
+    color: "#17803F",
+  },
+  cartaoAssinadoTextos: {
+    flex: 1,
+  },
+  cartaoNome: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 15,
+    color: "#0F1E33",
+  },
+  cartaoHora: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: "#4A5B73",
+  },
+  linkRefazer: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    color: "#1D3F94",
+    padding: 8,
+  },
+  imagemAssinatura: {
+    height: 60,
+    width: "100%",
   },
 
   rodape: {
