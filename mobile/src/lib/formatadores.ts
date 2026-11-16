@@ -23,3 +23,10 @@ export function formatarData(dataIso?: string | null) {
     minute: "2-digit",
   });
 }
+
+export function formatarHora(dataIso?: string | null) {
+  if (!dataIso) return null;
+  const data = new Date(dataIso);
+  if (Number.isNaN(data.getTime())) return null;
+  return data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}

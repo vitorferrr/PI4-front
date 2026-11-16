@@ -1,58 +1,54 @@
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { PerguntaQuestionario } from "@/types/visita";
 
+const OPCOES_SIM_NAO = ["Sim", "Não", "Não se aplica"];
+
 interface ItemPerguntaProps {
   pergunta: PerguntaQuestionario;
   valorAtual: string;
   onResponder: (valor: string) => void;
 }
 
+interface BotaoOpcaoProps {
+  rotulo: string;
+  selecionado: boolean;
+  onPress: () => void;
+}
+
+function BotaoOpcao({ rotulo, selecionado, onPress }: BotaoOpcaoProps) {
+  return (
+    <Pressable
+      style={[styles.opcao, selecionado && styles.opcaoSelecionada]}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selecionado }}
+      onPress={onPress}
+    >
+      <View style={[styles.bolinha, selecionado && styles.bolinhaSelecionada]} />
+      <Text style={[styles.opcaoTexto, selecionado && styles.opcaoTextoSelecionado]}>{rotulo}</Text>
+    </Pressable>
+  );
+}
+
 export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: ItemPerguntaProps) {
   return (
-    <View style={styles.cardPergunta}>
-      <View style={styles.cabecalhoPergunta}>
-        <View style={styles.badgeOrdem}>
-          <Text style={styles.badgeOrdemTexto}>#{pergunta.ordem}</Text>
-        </View>
-        <Text style={styles.textoPergunta}>{pergunta.texto}</Text>
-      </View>
+    <View style={styles.container}>
+      <Text style={styles.pergunta}>{pergunta.texto}</Text>
 
-      {pergunta.tipo_resposta === "sim_nao" && (
-        <View style={styles.opcoesSimNao}>
-          <Pressable
-            style={[styles.botaoOpcao, valorAtual === "Sim" && styles.botaoOpcaoSelecionado]}
-            onPress={() => onResponder("Sim")}
-          >
-            <Text
-              style={[
-                styles.botaoOpcaoTexto,
-                valorAtual === "Sim" && styles.botaoOpcaoTextoSelecionado,
-              ]}
-            >
-              Sim
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.botaoOpcao, valorAtual === "Não" && styles.botaoOpcaoSelecionado]}
-            onPress={() => onResponder("Não")}
-          >
-            <Text
-              style={[
-                styles.botaoOpcaoTexto,
-                valorAtual === "Não" && styles.botaoOpcaoTextoSelecionado,
-              ]}
-            >
-              Não
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      {pergunta.tipo_resposta === "sim_nao" &&
+        OPCOES_SIM_NAO.map((opcao) => (
+          <BotaoOpcao
+            key={opcao}
+            rotulo={opcao}
+            selecionado={valorAtual === opcao}
+            onPress={() => onResponder(opcao)}
+          />
+        ))}
 
       {pergunta.tipo_resposta === "numero" && (
         <TextInput
           style={styles.input}
-          placeholder="Digite um valor numérico"
+          placeholder="Digite um número"
+          placeholderTextColor="#8A9AB0"
           keyboardType="numeric"
           value={valorAtual}
           onChangeText={onResponder}
@@ -63,6 +59,8 @@ export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: 
         <TextInput
           style={styles.input}
           placeholder="DD/MM/AAAA"
+          placeholderTextColor="#8A9AB0"
+          keyboardType="numbers-and-punctuation"
           value={valorAtual}
           onChangeText={onResponder}
         />
@@ -72,8 +70,8 @@ export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: 
         <TextInput
           style={[styles.input, styles.inputMultilinha]}
           placeholder="Digite a resposta"
+          placeholderTextColor="#8A9AB0"
           multiline
-          numberOfLines={3}
           textAlignVertical="top"
           value={valorAtual}
           onChangeText={onResponder}
@@ -84,72 +82,68 @@ export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: 
 }
 
 const styles = StyleSheet.create({
-  cardPergunta: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#e1e4e8",
-    gap: 12,
-  },
-  cabecalhoPergunta: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+  container: {
     gap: 10,
   },
-  badgeOrdem: {
-    backgroundColor: "#e8eef7",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  pergunta: {
+    fontFamily: "BarlowCondensed_800ExtraBold",
+    fontSize: 27,
+    lineHeight: 34,
+    color: "#172F6E",
+    marginBottom: 4,
   },
-  badgeOrdemTexto: {
-    color: "#1F3864",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  textoPergunta: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#212529",
-    lineHeight: 21,
-  },
-  opcoesSimNao: {
+
+  opcao: {
+    height: 58,
+    borderRadius: 14,
+    paddingHorizontal: 18,
     flexDirection: "row",
-    gap: 10,
-  },
-  botaoOpcao: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#cbd3da",
-    borderRadius: 8,
-    paddingVertical: 11,
     alignItems: "center",
-    backgroundColor: "#fff",
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: "#C5D3E3",
+    backgroundColor: "#FFFFFF",
   },
-  botaoOpcaoSelecionado: {
-    backgroundColor: "#1F3864",
-    borderColor: "#1F3864",
+  opcaoSelecionada: {
+    borderWidth: 2,
+    borderColor: "#1D3F94",
+    backgroundColor: "#1D3F94",
   },
-  botaoOpcaoTexto: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1F3864",
+  bolinha: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "#8A9AB0",
   },
-  botaoOpcaoTextoSelecionado: {
-    color: "#fff",
+  bolinhaSelecionada: {
+    borderWidth: 6,
+    borderColor: "#FFCC00",
+    backgroundColor: "#FFFFFF",
   },
+  opcaoTexto: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
+    color: "#0F1E33",
+  },
+  opcaoTextoSelecionado: {
+    color: "#FFFFFF",
+  },
+
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 15,
-    backgroundColor: "#fff",
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: "#C5D3E3",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontFamily: "Inter_400Regular",
+    fontSize: 17,
+    color: "#0F1E33",
+    backgroundColor: "#FFFFFF",
   },
   inputMultilinha: {
-    minHeight: 84,
+    height: undefined,
+    minHeight: 120,
+    paddingVertical: 12,
   },
 });
