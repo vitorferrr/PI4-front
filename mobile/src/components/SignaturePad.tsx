@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import SignatureCanvas, { type SignatureViewRef } from "react-native-signature-canvas";
 
@@ -26,13 +26,24 @@ export function SignaturePad({
   const [comecouAssinar, setComecouAssinar] = useState(false);
   const [avisoVazio, setAvisoVazio] = useState(false);
 
+  const onFimDesenhoRef = useRef(onFimDesenho);
+  useEffect(() => {
+    onFimDesenhoRef.current = onFimDesenho;
+  });
+
+  useEffect(() => {
+    return () => onFimDesenhoRef.current?.();
+  }, []);
+
   function limpar() {
     canvasRef.current?.clearSignature();
     setComecouAssinar(false);
     setAvisoVazio(false);
+    onFimDesenho?.();
   }
 
   function confirmar() {
+    onFimDesenho?.();
     canvasRef.current?.readSignature();
   }
 

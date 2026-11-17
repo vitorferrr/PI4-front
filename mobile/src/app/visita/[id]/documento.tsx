@@ -16,10 +16,12 @@ import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { SignaturePad } from "@/components/SignaturePad";
+import { useSessaoStore } from "@/store/sessaoStore";
+import { lerUsuarioIdDoToken } from "@/lib/token";
 
 interface AssinaturaLocal {
   imagem: string;
-  hora: string | null;
+  assinadoEm: string;
 }
 
 function useStoreHidratada() {
@@ -41,6 +43,7 @@ export default function DocumentoVisitaScreen() {
   const [rolagemAtiva, setRolagemAtiva] = useState(true);
   const [assinaturaFiscal, setAssinaturaFiscal] = useState<AssinaturaLocal | null>(null);
 
+  const token = useSessaoStore((state) => state.token);
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
   const respostas = useVisitaEmAndamentoStore((state) => state.respostas);
   const observacoesLivres = useVisitaEmAndamentoStore((state) => state.observacoesLivres);
@@ -114,6 +117,9 @@ export default function DocumentoVisitaScreen() {
   const totalRespondidas = perguntas.filter((p) => estaRespondida(respostas[p.id])).length;
   const nomesFiscais = visita.fiscalizadores?.map((f) => f.nome).join(", ") || "Não informado";
 
+  const usuarioId = lerUsuarioIdDoToken(token);
+  const fiscalLogado = visita.fiscalizadores?.find((f) => f.id === usuarioId);
+
   return (
     <View style={styles.tela}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -178,15 +184,23 @@ export default function DocumentoVisitaScreen() {
         <View style={styles.assinaturas}>
           <Text style={styles.assinaturasTitulo}>Assinaturas</Text>
 
-          {assinaturaFiscal ? (
+          {!fiscalLogado ? (
+            <View style={styles.cartaoAssinado}>
+              <Text style={styles.cartaoHora}>
+                Só um fiscal atribuído a esta visita pode assinar como fiscal.
+              </Text>
+            </View>
+          ) : assinaturaFiscal ? (
             <View style={styles.cartaoAssinado}>
               <View style={styles.cartaoAssinadoLinha}>
                 <View style={styles.checkVerde}>
                   <Text style={styles.checkVerdeTexto}>✓</Text>
                 </View>
                 <View style={styles.cartaoAssinadoTextos}>
-                  <Text style={styles.cartaoNome}>Fiscal · {nomesFiscais}</Text>
-                  <Text style={styles.cartaoHora}>Assinado às {assinaturaFiscal.hora}</Text>
+                  <Text style={styles.cartaoNome}>Fiscal · {fiscalLogado.nome}</Text>
+                  <Text style={styles.cartaoHora}>
+                    Assinado às {formatarHora(assinaturaFiscal.assinadoEm)}
+                  </Text>
                 </View>
                 <Pressable accessibilityRole="button" onPress={() => setAssinaturaFiscal(null)}>
                   <Text style={styles.linkRefazer}>Refazer</Text>
@@ -196,17 +210,17 @@ export default function DocumentoVisitaScreen() {
                 source={{ uri: assinaturaFiscal.imagem }}
                 style={styles.imagemAssinatura}
                 resizeMode="contain"
-                accessibilityLabel={`Assinatura de ${nomesFiscais}`}
+                accessibilityLabel={`Assinatura de ${fiscalLogado.nome}`}
               />
             </View>
           ) : (
             <View style={styles.cartaoAtivo}>
-              <Text style={styles.cartaoRotulo}>Fiscal · {nomesFiscais}</Text>
+              <Text style={styles.cartaoRotulo}>Fiscal · {fiscalLogado.nome}</Text>
               <SignaturePad
                 onInicioDesenho={() => setRolagemAtiva(false)}
                 onFimDesenho={() => setRolagemAtiva(true)}
                 onConfirmar={(imagem) =>
-                  setAssinaturaFiscal({ imagem, hora: formatarHora(new Date().toISOString()) })
+                  setAssinaturaFiscal({ imagem, assinadoEm: new Date().toISOString() })
                 }
               />
             </View>
