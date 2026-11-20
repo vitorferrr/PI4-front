@@ -3,9 +3,14 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Coordenadas } from "../types/visita";
 
+export type TipoAssinante = "fiscalizador" | "denunciado";
+
 export interface AssinaturaColetada {
-  nome?: string;
-  uri: string;
+  tipo: TipoAssinante;
+  nome: string;
+  imagem: string | null;
+  recusou: boolean;
+  assinadoEm: string;
 }
 
 interface VisitaEmAndamentoState {
@@ -17,7 +22,8 @@ interface VisitaEmAndamentoState {
   iniciarVisitaStore: (visitaId: number, localizacao?: Coordenadas | null) => void;
   definirResposta: (perguntaId: number, valor: string) => void;
   definirObservacoesLivres: (texto: string) => void;
-  adicionarAssinatura: (assinatura: AssinaturaColetada) => void;
+  registrarAssinatura: (assinatura: AssinaturaColetada) => void;
+  removerAssinatura: (tipo: TipoAssinante) => void;
   limparVisitaStore: () => void;
 }
 
@@ -61,9 +67,17 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
 
       definirObservacoesLivres: (texto) => set({ observacoesLivres: texto }),
 
-      adicionarAssinatura: (assinatura) =>
+      registrarAssinatura: (assinatura) =>
         set((state) => ({
-          assinaturasColetadas: [...state.assinaturasColetadas, assinatura],
+          assinaturasColetadas: [
+            ...state.assinaturasColetadas.filter((a) => a.tipo !== assinatura.tipo),
+            assinatura,
+          ],
+        })),
+
+      removerAssinatura: (tipo) =>
+        set((state) => ({
+          assinaturasColetadas: state.assinaturasColetadas.filter((a) => a.tipo !== tipo),
         })),
 
       limparVisitaStore: () =>
@@ -78,11 +92,13 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
     {
       name: "visita-em-andamento-storage",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
-      migrate: (estadoSalvo) => ({
-        ...(estadoSalvo as EstadoSalvo),
-        respostas: {},
-      }),
+      version: 2,
+      migrate: (estadoSalvo, versaoSalva) => {
+        const estado = { ...(estadoSalvo as EstadoSalvo) };
+        if (versaoSalva < 1) estado.respostas = {};
+        if (versaoSalva < 2) estado.assinaturasColetadas = [];
+        return estado;
+      },
       partialize: (state) => ({
         visitaId: state.visitaId,
         localizacao: state.localizacao,

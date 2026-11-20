@@ -1,28 +1,17 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-  StyleSheet,
-} from "react-native";
+import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { formatarData, formatarHora } from "@/lib/formatadores";
+import { formatarData } from "@/lib/formatadores";
 import { useVisita } from "@/hooks/use-visita";
 import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
-import { SignaturePad } from "@/components/SignaturePad";
+import { CartaoAssinante } from "@/components/CartaoAssinante";
 import { useSessaoStore } from "@/store/sessaoStore";
 import { lerUsuarioIdDoToken } from "@/lib/token";
 
-interface AssinaturaLocal {
-  imagem: string;
-  assinadoEm: string;
-}
+const TOTAL_ASSINANTES = 2;
 
 function useStoreHidratada() {
   const [hidratada, setHidratada] = useState(() => useVisitaEmAndamentoStore.persist.hasHydrated());
@@ -41,12 +30,14 @@ export default function DocumentoVisitaScreen() {
   const storeHidratada = useStoreHidratada();
 
   const [rolagemAtiva, setRolagemAtiva] = useState(true);
-  const [assinaturaFiscal, setAssinaturaFiscal] = useState<AssinaturaLocal | null>(null);
 
   const token = useSessaoStore((state) => state.token);
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
   const respostas = useVisitaEmAndamentoStore((state) => state.respostas);
   const observacoesLivres = useVisitaEmAndamentoStore((state) => state.observacoesLivres);
+  const assinaturas = useVisitaEmAndamentoStore((state) => state.assinaturasColetadas);
+  const registrarAssinatura = useVisitaEmAndamentoStore((state) => state.registrarAssinatura);
+  const removerAssinatura = useVisitaEmAndamentoStore((state) => state.removerAssinatura);
 
   const visitaQuery = useVisita(id);
   const perguntasQuery = usePerguntasQuestionario();
@@ -120,6 +111,12 @@ export default function DocumentoVisitaScreen() {
   const usuarioId = lerUsuarioIdDoToken(token);
   const fiscalLogado = visita.fiscalizadores?.find((f) => f.id === usuarioId);
 
+  const assinaturaFiscal = assinaturas.find((a) => a.tipo === "fiscalizador");
+  const assinaturaResponsavel = assinaturas.find((a) => a.tipo === "denunciado");
+
+  const travarRolagem = () => setRolagemAtiva(false);
+  const liberarRolagem = () => setRolagemAtiva(true);
+
   return (
     <View style={styles.tela}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -184,51 +181,69 @@ export default function DocumentoVisitaScreen() {
         <View style={styles.assinaturas}>
           <Text style={styles.assinaturasTitulo}>Assinaturas</Text>
 
-          {!fiscalLogado ? (
-            <View style={styles.cartaoAssinado}>
-              <Text style={styles.cartaoHora}>
+          {/* 1º assinante: o fiscal logado */}
+          {fiscalLogado ? (
+            <CartaoAssinante
+              rotulo="Fiscal"
+              situacao="ativo"
+              nomeFixo={fiscalLogado.nome}
+              assinatura={assinaturaFiscal}
+              onConfirmar={({ nome, imagem }) =>
+                registrarAssinatura({
+                  tipo: "fiscalizador",
+                  nome,
+                  imagem,
+                  recusou: false,
+                  assinadoEm: new Date().toISOString(),
+                })
+              }
+              onRefazer={() => removerAssinatura("fiscalizador")}
+              onInicioDesenho={travarRolagem}
+              onFimDesenho={liberarRolagem}
+            />
+          ) : (
+            <View style={styles.cartaoAviso}>
+              <Text style={styles.cartaoAvisoTexto}>
                 Só um fiscal atribuído a esta visita pode assinar como fiscal.
               </Text>
             </View>
-          ) : assinaturaFiscal ? (
-            <View style={styles.cartaoAssinado}>
-              <View style={styles.cartaoAssinadoLinha}>
-                <View style={styles.checkVerde}>
-                  <Text style={styles.checkVerdeTexto}>✓</Text>
-                </View>
-                <View style={styles.cartaoAssinadoTextos}>
-                  <Text style={styles.cartaoNome}>Fiscal · {fiscalLogado.nome}</Text>
-                  <Text style={styles.cartaoHora}>
-                    Assinado às {formatarHora(assinaturaFiscal.assinadoEm)}
-                  </Text>
-                </View>
-                <Pressable accessibilityRole="button" onPress={() => setAssinaturaFiscal(null)}>
-                  <Text style={styles.linkRefazer}>Refazer</Text>
-                </Pressable>
-              </View>
-              <Image
-                source={{ uri: assinaturaFiscal.imagem }}
-                style={styles.imagemAssinatura}
-                resizeMode="contain"
-                accessibilityLabel={`Assinatura de ${fiscalLogado.nome}`}
-              />
-            </View>
-          ) : (
-            <View style={styles.cartaoAtivo}>
-              <Text style={styles.cartaoRotulo}>Fiscal · {fiscalLogado.nome}</Text>
-              <SignaturePad
-                onInicioDesenho={() => setRolagemAtiva(false)}
-                onFimDesenho={() => setRolagemAtiva(true)}
-                onConfirmar={(imagem) =>
-                  setAssinaturaFiscal({ imagem, assinadoEm: new Date().toISOString() })
-                }
-              />
-            </View>
           )}
+
+          <CartaoAssinante
+            rotulo="Responsável"
+            rotuloCampoNome="Responsável pelo estabelecimento"
+            situacao={assinaturaFiscal ? "ativo" : "aguardando"}
+            assinatura={assinaturaResponsavel}
+            permitirRecusa
+            onConfirmar={({ nome, imagem }) =>
+              registrarAssinatura({
+                tipo: "denunciado",
+                nome,
+                imagem,
+                recusou: false,
+                assinadoEm: new Date().toISOString(),
+              })
+            }
+            onRecusar={(nome) =>
+              registrarAssinatura({
+                tipo: "denunciado",
+                nome,
+                imagem: null,
+                recusou: true,
+                assinadoEm: new Date().toISOString(),
+              })
+            }
+            onRefazer={() => removerAssinatura("denunciado")}
+            onInicioDesenho={travarRolagem}
+            onFimDesenho={liberarRolagem}
+          />
         </View>
       </ScrollView>
 
       <View style={[styles.rodape, { paddingBottom: insets.bottom + 16 }]}>
+        <Text style={styles.rodapeTexto}>
+          {assinaturas.length} de {TOTAL_ASSINANTES} assinaturas coletadas
+        </Text>
         <Pressable style={[styles.botaoEnviar, styles.botaoDesabilitado]} disabled>
           <Text style={styles.botaoEnviarTexto}>Encerrar e enviar</Text>
         </Pressable>
@@ -359,69 +374,25 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: "#172F6E",
   },
-  cartaoAtivo: {
-    gap: 10,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 2,
-    borderColor: "#1D3F94",
-  },
-  cartaoRotulo: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-    color: "#0F1E33",
-  },
-  cartaoAssinado: {
-    gap: 10,
+  cartaoAviso: {
     padding: 14,
     borderRadius: 14,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#DCE5EF",
   },
-  cartaoAssinadoLinha: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  checkVerde: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#E2F5EA",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkVerdeTexto: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 16,
-    color: "#17803F",
-  },
-  cartaoAssinadoTextos: {
-    flex: 1,
-  },
-  cartaoNome: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 15,
-    color: "#0F1E33",
-  },
-  cartaoHora: {
+  cartaoAvisoTexto: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     color: "#4A5B73",
   },
-  linkRefazer: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: "#1D3F94",
-    padding: 8,
-  },
-  imagemAssinatura: {
-    height: 60,
-    width: "100%",
-  },
 
+  rodapeTexto: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: "#33435A",
+    textAlign: "center",
+  },
   rodape: {
     paddingTop: 14,
     paddingHorizontal: 20,
