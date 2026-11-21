@@ -1,10 +1,15 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useMutation } from "@tanstack/react-query";
-import { useSessaoStore } from "@/store/sessaoStore";
+import { useSessaoStore, type UsuarioLogado } from "@/store/sessaoStore";
 import { API_URL } from "../lib/api";
 
-async function fazerLogin(email: string, senha: string) {
+interface RespostaLogin {
+  token: string;
+  usuario: UsuarioLogado;
+}
+
+async function fazerLogin(email: string, senha: string): Promise<RespostaLogin> {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -17,7 +22,6 @@ async function fazerLogin(email: string, senha: string) {
 
   const data = await response.json();
 
-  // O app é só do fiscalizador, admin e gestor usam o sistema web.
   if (data.usuario?.role !== "fiscalizador") {
     throw new Error("Este aplicativo é exclusivo para fiscalizadores.");
   }
@@ -33,7 +37,7 @@ export default function LoginScreen() {
   const loginMutation = useMutation({
     mutationFn: () => fazerLogin(email, senha),
     onSuccess: async (data) => {
-      await entrar(data.token);
+      await entrar(data.token, data.usuario);
     },
   });
 

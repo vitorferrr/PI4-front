@@ -63,9 +63,9 @@ export function CartaoAssinante({
             <Text style={styles.link}>Refazer</Text>
           </Pressable>
         </View>
-        {assinatura.imagem && (
+        {assinatura.imagemUri && (
           <Image
-            source={{ uri: assinatura.imagem }}
+            source={{ uri: assinatura.imagemUri }}
             style={styles.imagem}
             resizeMode="contain"
             accessibilityLabel={`Assinatura de ${assinatura.nome}`}
