@@ -2,10 +2,17 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Coordenadas } from "../types/visita";
+import { apagarImagemAssinatura } from "../lib/arquivosAssinatura";
+
+export type TipoAssinante = "fiscalizador" | "denunciado";
 
 export interface AssinaturaColetada {
-  nome?: string;
-  uri: string;
+  tipo: TipoAssinante;
+  nome: string;
+  usuarioId: number | null;
+  imagemUri: string | null;
+  recusou: boolean;
+  assinadoEm: string;
 }
 
 interface VisitaEmAndamentoState {
@@ -17,7 +24,9 @@ interface VisitaEmAndamentoState {
   iniciarVisitaStore: (visitaId: number, localizacao?: Coordenadas | null) => void;
   definirResposta: (perguntaId: number, valor: string) => void;
   definirObservacoesLivres: (texto: string) => void;
-  adicionarAssinatura: (assinatura: AssinaturaColetada) => void;
+  registrarAssinatura: (assinatura: AssinaturaColetada) => void;
+  removerAssinatura: (tipo: TipoAssinante) => void;
+  descartarAssinaturas: () => void;
   limparVisitaStore: () => void;
 }
 
@@ -26,63 +35,94 @@ type EstadoSalvo = Pick<
   "visitaId" | "localizacao" | "respostas" | "observacoesLivres" | "assinaturasColetadas"
 >;
 
+function apagarArquivos(assinaturas: AssinaturaColetada[]) {
+  assinaturas.forEach((a) => apagarImagemAssinatura(a.imagemUri));
+}
+
 export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       visitaId: null,
       localizacao: null,
       respostas: {},
       observacoesLivres: "",
       assinaturasColetadas: [],
 
-      iniciarVisitaStore: (visitaId, localizacao = null) =>
-        set((state) => {
-          if (state.visitaId === visitaId) {
-            return {
-              localizacao: localizacao ?? state.localizacao,
-            };
-          }
-          return {
-            visitaId,
-            localizacao,
-            respostas: {},
-            observacoesLivres: "",
-            assinaturasColetadas: [],
-          };
-        }),
+      iniciarVisitaStore: (visitaId, localizacao = null) => {
+        const state = get();
+        if (state.visitaId === visitaId) {
+          set({ localizacao: localizacao ?? state.localizacao });
+          return;
+        }
+        apagarArquivos(state.assinaturasColetadas);
+        set({
+          visitaId,
+          localizacao,
+          respostas: {},
+          observacoesLivres: "",
+          assinaturasColetadas: [],
+        });
+      },
 
-      definirResposta: (perguntaId, valor) =>
-        set((state) => ({
-          respostas: {
-            ...state.respostas,
-            [perguntaId]: valor,
-          },
-        })),
+      definirResposta: (perguntaId, valor) => {
+        const state = get();
+        if (state.respostas[perguntaId] === valor) return;
+        if (state.assinaturasColetadas.length > 0) get().descartarAssinaturas();
+        set({ respostas: { ...state.respostas, [perguntaId]: valor } });
+      },
 
-      definirObservacoesLivres: (texto) => set({ observacoesLivres: texto }),
+      definirObservacoesLivres: (texto) => {
+        const state = get();
+        if (state.observacoesLivres === texto) return;
+        if (state.assinaturasColetadas.length > 0) get().descartarAssinaturas();
+        set({ observacoesLivres: texto });
+      },
 
-      adicionarAssinatura: (assinatura) =>
-        set((state) => ({
-          assinaturasColetadas: [...state.assinaturasColetadas, assinatura],
-        })),
+      registrarAssinatura: (assinatura) => {
+        const state = get();
+        apagarArquivos(state.assinaturasColetadas.filter((a) => a.tipo === assinatura.tipo));
+        set({
+          assinaturasColetadas: [
+            ...state.assinaturasColetadas.filter((a) => a.tipo !== assinatura.tipo),
+            assinatura,
+          ],
+        });
+      },
 
-      limparVisitaStore: () =>
+      removerAssinatura: (tipo) => {
+        const state = get();
+        apagarArquivos(state.assinaturasColetadas.filter((a) => a.tipo === tipo));
+        set({
+          assinaturasColetadas: state.assinaturasColetadas.filter((a) => a.tipo !== tipo),
+        });
+      },
+
+      descartarAssinaturas: () => {
+        apagarArquivos(get().assinaturasColetadas);
+        set({ assinaturasColetadas: [] });
+      },
+
+      limparVisitaStore: () => {
+        apagarArquivos(get().assinaturasColetadas);
         set({
           visitaId: null,
           localizacao: null,
           respostas: {},
           observacoesLivres: "",
           assinaturasColetadas: [],
-        }),
+        });
+      },
     }),
     {
       name: "visita-em-andamento-storage",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
-      migrate: (estadoSalvo) => ({
-        ...(estadoSalvo as EstadoSalvo),
-        respostas: {},
-      }),
+      version: 3,
+      migrate: (estadoSalvo, versaoSalva) => {
+        const estado = { ...(estadoSalvo as EstadoSalvo) };
+        if (versaoSalva < 1) estado.respostas = {};
+        if (versaoSalva < 3) estado.assinaturasColetadas = [];
+        return estado;
+      },
       partialize: (state) => ({
         visitaId: state.visitaId,
         localizacao: state.localizacao,
