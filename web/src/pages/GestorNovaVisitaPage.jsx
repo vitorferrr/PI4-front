@@ -70,10 +70,11 @@ export default function GestorNovaVisitaPage() {
       data_agendada: dataAgendada ? new Date(dataAgendada).toISOString() : undefined,
       fiscalizadores_ids: fiscalizadoresSelecionados,
     }),
-    onSuccess: () => {
+    onSuccess: (visitaCriada) => {
       queryClient.invalidateQueries({ queryKey: ['visitas'] });
       limparSelecao();
-      navigate('/');
+      const id = visitaCriada?.id;
+      navigate(Number.isSafeInteger(id) && id > 0 ? `/gestor/visitas/${id}` : '/');
     },
   });
 

@@ -9,19 +9,13 @@ import {
   Alert,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { apiFetch } from "@/lib/api";
+import { useVisita } from "@/hooks/use-visita";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { VisitaDetalhe, Coordenadas } from "@/types/visita";
-
-async function buscarVisitaPorId(id: string): Promise<VisitaDetalhe> {
-  return apiFetch<VisitaDetalhe>(
-    `/visitas/${id}`,
-    { method: "GET" },
-    "Não foi possível carregar os detalhes da visita."
-  );
-}
+import { formatarData, formatarStatus } from "@/lib/formatadores";
 
 async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<VisitaDetalhe> {
   return apiFetch<VisitaDetalhe>(
@@ -34,46 +28,13 @@ async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<Vi
   );
 }
 
-function formatarData(dataIso?: string | null) {
-  if (!dataIso) return "Não informada";
-  const data = new Date(dataIso);
-  if (Number.isNaN(data.getTime())) return dataIso;
-  return data.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatarStatus(status: VisitaDetalhe["status"]) {
-  const mapa: Record<VisitaDetalhe["status"], string> = {
-    agendada: "Agendada",
-    em_andamento: "Em andamento",
-    concluida: "Concluída",
-    cancelada: "Cancelada",
-  };
-  return mapa[status] || status;
-}
-
 export default function VisitaDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [carregandoGps, setCarregandoGps] = useState(false);
   const iniciarVisitaStore = useVisitaEmAndamentoStore((state) => state.iniciarVisitaStore);
 
-  const {
-    data: visita,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ["visita", id],
-    queryFn: () => buscarVisitaPorId(id!),
-    enabled: Boolean(id),
-  });
+  const { data: visita, isLoading, isError, error, refetch } = useVisita(id);
 
   const iniciarMutation = useMutation({
     mutationFn: (coords: Coordenadas) => iniciarVisitaRequest(id!, coords),
@@ -235,11 +196,7 @@ export default function VisitaDetalheScreen() {
       )}
 
       {podeIniciar && (
-        <Pressable
-          style={styles.botao}
-          onPress={handleIniciarComGps}
-          disabled={processandoInicio}
-        >
+        <Pressable style={styles.botao} onPress={handleIniciarComGps} disabled={processandoInicio}>
           {processandoInicio ? (
             <ActivityIndicator color="#fff" />
           ) : (
