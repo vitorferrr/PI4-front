@@ -12,12 +12,30 @@ import {
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMutation } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 import { formatarHora } from "@/lib/formatadores";
 import { useVisita } from "@/hooks/use-visita";
 import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { ItemPerguntaQuestionario } from "@/components/ItemPerguntaQuestionario";
+
+interface RespostaEnviada {
+  pergunta_id: number;
+  resposta: string;
+}
+
+async function enviarRespostas(visitaId: string, respostas: RespostaEnviada[]) {
+  return apiFetch<unknown>(
+    `/visitas/${visitaId}/respostas`,
+    {
+      method: "POST",
+      body: JSON.stringify({ respostas }),
+    },
+    "Não foi possível enviar as respostas do questionário."
+  );
+}
 
 export default function QuestionarioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -49,6 +67,12 @@ export default function QuestionarioScreen() {
     error,
     refetch,
   } = usePerguntasQuestionario();
+
+  const enviarRespostasMutation = useMutation({
+    mutationFn: (lista: RespostaEnviada[]) => enviarRespostas(id, lista),
+    onSuccess: () => router.push(`/visita/${id}/documento`),
+    onError: (erro) => Alert.alert("Erro ao enviar respostas", erro.message),
+  });
 
   const tituloCabecalho = visita?.denunciado ?? `Visita #${id}`;
 
@@ -100,8 +124,18 @@ export default function QuestionarioScreen() {
     }
   }
 
-  function irParaDocumento() {
-    router.push(`/visita/${id}/documento`);
+  function concluirQuestionario() {
+    // só as respondidas: o back não aceita resposta vazia
+    const lista = perguntasOrdenadas
+      .filter((p) => estaRespondida(respostas[p.id]))
+      .map((p) => ({ pergunta_id: p.id, resposta: respostas[p.id].trim() }));
+
+    if (lista.length === 0) {
+      router.push(`/visita/${id}/documento`);
+      return;
+    }
+
+    enviarRespostasMutation.mutate(lista);
   }
 
   function irParaProxima() {
@@ -111,7 +145,7 @@ export default function QuestionarioScreen() {
     }
 
     if (indicesEmBranco.length === 0) {
-      irParaDocumento();
+      concluirQuestionario();
       return;
     }
 
@@ -122,7 +156,7 @@ export default function QuestionarioScreen() {
         : `As perguntas ${numeros} estão sem resposta.`;
 
     Alert.alert("Perguntas sem resposta", `${mensagem} Quer revisar antes de assinar?`, [
-      { text: "Continuar assim", style: "cancel", onPress: irParaDocumento },
+      { text: "Continuar assim", style: "cancel", onPress: concluirQuestionario },
       { text: "Revisar", onPress: () => setIndiceAtual(indicesEmBranco[0]) },
     ]);
   }
@@ -174,11 +208,22 @@ export default function QuestionarioScreen() {
           <Text style={styles.botaoAnteriorTexto}>Anterior</Text>
         </Pressable>
         <Pressable
-          style={[styles.botaoRodape, styles.botaoProxima]}
+          style={[
+            styles.botaoRodape,
+            styles.botaoProxima,
+            enviarRespostasMutation.isPending && styles.botaoDesativado,
+          ]}
           accessibilityRole="button"
+          disabled={enviarRespostasMutation.isPending}
           onPress={irParaProxima}
         >
-          <Text style={styles.botaoProximaTexto}>Próxima</Text>
+          {enviarRespostasMutation.isPending ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.botaoProximaTexto}>
+              {ehUltima ? "Concluir questionário" : "Próxima"}
+            </Text>
+          )}
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -271,6 +316,9 @@ const styles = StyleSheet.create({
   },
   botaoProxima: {
     backgroundColor: "#1D3F94",
+  },
+  botaoDesativado: {
+    opacity: 0.6,
   },
   botaoProximaTexto: {
     fontFamily: "Inter_800ExtraBold",
