@@ -7,20 +7,23 @@ interface ItemPerguntaProps {
   pergunta: PerguntaQuestionario;
   valorAtual: string;
   onResponder: (valor: string) => void;
+  desabilitado?: boolean;
 }
 
 interface BotaoOpcaoProps {
   rotulo: string;
   selecionado: boolean;
+  desabilitado: boolean;
   onPress: () => void;
 }
 
-function BotaoOpcao({ rotulo, selecionado, onPress }: BotaoOpcaoProps) {
+function BotaoOpcao({ rotulo, selecionado, desabilitado, onPress }: BotaoOpcaoProps) {
   return (
     <Pressable
       style={[styles.opcao, selecionado && styles.opcaoSelecionada]}
       accessibilityRole="radio"
-      accessibilityState={{ checked: selecionado }}
+      accessibilityState={{ checked: selecionado, disabled: desabilitado }}
+      disabled={desabilitado}
       onPress={onPress}
     >
       <View style={[styles.bolinha, selecionado && styles.bolinhaSelecionada]} />
@@ -29,7 +32,12 @@ function BotaoOpcao({ rotulo, selecionado, onPress }: BotaoOpcaoProps) {
   );
 }
 
-export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: ItemPerguntaProps) {
+export function ItemPerguntaQuestionario({
+  pergunta,
+  valorAtual,
+  onResponder,
+  desabilitado = false,
+}: ItemPerguntaProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.pergunta}>{pergunta.texto}</Text>
@@ -40,6 +48,7 @@ export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: 
             key={opcao}
             rotulo={opcao}
             selecionado={valorAtual === opcao}
+            desabilitado={desabilitado}
             onPress={() => onResponder(opcao)}
           />
         ))}
@@ -51,6 +60,7 @@ export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: 
           placeholderTextColor="#8A9AB0"
           keyboardType="numeric"
           value={valorAtual}
+          editable={!desabilitado}
           onChangeText={onResponder}
         />
       )}
@@ -62,6 +72,7 @@ export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: 
           placeholderTextColor="#8A9AB0"
           keyboardType="numbers-and-punctuation"
           value={valorAtual}
+          editable={!desabilitado}
           onChangeText={onResponder}
         />
       )}
@@ -74,6 +85,7 @@ export function ItemPerguntaQuestionario({ pergunta, valorAtual, onResponder }: 
           multiline
           textAlignVertical="top"
           value={valorAtual}
+          editable={!desabilitado}
           onChangeText={onResponder}
         />
       )}

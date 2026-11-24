@@ -17,6 +17,7 @@ export interface VisitaDetalhe {
   observacoes_livres: string | null;
   gestor?: UsuarioResumo;
   fiscalizadores?: UsuarioResumo[];
+  documentos?: { id: number }[];
 }
 
 export interface Coordenadas {
