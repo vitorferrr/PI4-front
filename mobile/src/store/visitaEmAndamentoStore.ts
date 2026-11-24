@@ -21,9 +21,12 @@ interface VisitaEmAndamentoState {
   respostas: Record<number, string>;
   observacoesLivres: string;
   assinaturasColetadas: AssinaturaColetada[];
+  // respostas do último POST /visitas/:id/respostas que deu certo, para não reenviar sem mudança
+  respostasEnviadas: string | null;
   iniciarVisitaStore: (visitaId: number, localizacao?: Coordenadas | null) => void;
   definirResposta: (perguntaId: number, valor: string) => void;
   definirObservacoesLivres: (texto: string) => void;
+  definirRespostasEnviadas: (conteudo: string) => void;
   registrarAssinatura: (assinatura: AssinaturaColetada) => void;
   removerAssinatura: (tipo: TipoAssinante) => void;
   descartarAssinaturas: () => void;
@@ -32,7 +35,12 @@ interface VisitaEmAndamentoState {
 
 type EstadoSalvo = Pick<
   VisitaEmAndamentoState,
-  "visitaId" | "localizacao" | "respostas" | "observacoesLivres" | "assinaturasColetadas"
+  | "visitaId"
+  | "localizacao"
+  | "respostas"
+  | "observacoesLivres"
+  | "assinaturasColetadas"
+  | "respostasEnviadas"
 >;
 
 function apagarArquivos(assinaturas: AssinaturaColetada[]) {
@@ -47,6 +55,7 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
       respostas: {},
       observacoesLivres: "",
       assinaturasColetadas: [],
+      respostasEnviadas: null,
 
       iniciarVisitaStore: (visitaId, localizacao = null) => {
         const state = get();
@@ -61,6 +70,7 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
           respostas: {},
           observacoesLivres: "",
           assinaturasColetadas: [],
+          respostasEnviadas: null,
         });
       },
 
@@ -77,6 +87,8 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
         if (state.assinaturasColetadas.length > 0) get().descartarAssinaturas();
         set({ observacoesLivres: texto });
       },
+
+      definirRespostasEnviadas: (conteudo) => set({ respostasEnviadas: conteudo }),
 
       registrarAssinatura: (assinatura) => {
         const state = get();
@@ -110,17 +122,19 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
           respostas: {},
           observacoesLivres: "",
           assinaturasColetadas: [],
+          respostasEnviadas: null,
         });
       },
     }),
     {
       name: "visita-em-andamento-storage",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       migrate: (estadoSalvo, versaoSalva) => {
         const estado = { ...(estadoSalvo as EstadoSalvo) };
         if (versaoSalva < 1) estado.respostas = {};
         if (versaoSalva < 3) estado.assinaturasColetadas = [];
+        if (versaoSalva < 4) estado.respostasEnviadas = null;
         return estado;
       },
       partialize: (state) => ({
@@ -129,6 +143,7 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
         respostas: state.respostas,
         observacoesLivres: state.observacoesLivres,
         assinaturasColetadas: state.assinaturasColetadas,
+        respostasEnviadas: state.respostasEnviadas,
       }),
     }
   )

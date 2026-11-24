@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,14 +10,36 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from "react-native";
-import { useLocalSearchParams, router, Stack } from "expo-router";
+import { useLocalSearchParams, router, Stack, useFocusEffect, usePreventRemove } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMutation } from "@tanstack/react-query";
+import { apiFetch, ApiError, SessaoExpiradaError } from "@/lib/api";
 import { formatarHora } from "@/lib/formatadores";
 import { useVisita } from "@/hooks/use-visita";
-import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
+import {
+  usePerguntasQuestionario,
+  estaRespondida,
+  erroFormatoResposta,
+} from "@/hooks/use-perguntas-questionario";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { ItemPerguntaQuestionario } from "@/components/ItemPerguntaQuestionario";
+
+interface RespostaEnviada {
+  pergunta_id: number;
+  resposta: string;
+}
+
+async function enviarRespostas(visitaId: string, respostas: RespostaEnviada[]) {
+  return apiFetch<unknown>(
+    `/visitas/${visitaId}/respostas`,
+    {
+      method: "POST",
+      body: JSON.stringify({ respostas }),
+    },
+    "Não foi possível enviar as respostas do questionário."
+  );
+}
 
 export default function QuestionarioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,6 +47,9 @@ export default function QuestionarioScreen() {
   const insets = useSafeAreaInsets();
 
   const [indiceAtual, setIndiceAtual] = useState(0);
+  // trava síncrona: o isPending só muda no próximo render, então um toque duplo enviaria duas vezes
+  // ou abriria o documento duas vezes. É liberada em erro ou quando o fiscal volta para esta tela.
+  const concluindoRef = useRef(false);
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
   const respostas = useVisitaEmAndamentoStore((state) => state.respostas);
@@ -33,6 +58,10 @@ export default function QuestionarioScreen() {
   const observacoesLivres = useVisitaEmAndamentoStore((state) => state.observacoesLivres);
   const definirObservacoesLivres = useVisitaEmAndamentoStore(
     (state) => state.definirObservacoesLivres
+  );
+  const respostasEnviadas = useVisitaEmAndamentoStore((state) => state.respostasEnviadas);
+  const definirRespostasEnviadas = useVisitaEmAndamentoStore(
+    (state) => state.definirRespostasEnviadas
   );
 
   useEffect(() => {
@@ -49,6 +78,36 @@ export default function QuestionarioScreen() {
     error,
     refetch,
   } = usePerguntasQuestionario();
+
+  const enviarRespostasMutation = useMutation({
+    mutationFn: (lista: RespostaEnviada[]) => enviarRespostas(id, lista),
+    onSuccess: (_resultado, lista) => {
+      definirRespostasEnviadas(JSON.stringify(lista));
+      router.push(`/visita/${id}/documento`);
+    },
+    onError: (erro) => {
+      concluindoRef.current = false;
+      // o apiFetch já levou o fiscal para o login
+      if (erro instanceof SessaoExpiradaError) return;
+      const detalhes =
+        erro instanceof ApiError && erro.erros.length > 0 ? `\n\n${erro.erros.join("\n")}` : "";
+      Alert.alert("Erro ao enviar respostas", `${erro.message}${detalhes}`);
+    },
+  });
+
+  const enviando = enviarRespostasMutation.isPending;
+  // depois do POST /visitas/:id/documento o back não aceita mais alterar as respostas
+  const documentoGerado = (visita?.documentos?.length ?? 0) > 0;
+  const bloqueado = enviando || documentoGerado;
+
+  // durante o envio, impede sair da tela (voltar do cabeçalho, botão do Android e gesto do iOS)
+  usePreventRemove(enviando, () => {});
+
+  useFocusEffect(
+    useCallback(() => {
+      concluindoRef.current = false;
+    }, [])
+  );
 
   const tituloCabecalho = visita?.denunciado ?? `Visita #${id}`;
 
@@ -92,7 +151,12 @@ export default function QuestionarioScreen() {
     .filter((i) => i !== -1);
   const totalRespondidas = totalPerguntas - indicesEmBranco.length;
 
+  function irParaDocumento() {
+    router.push(`/visita/${id}/documento`);
+  }
+
   function irParaAnterior() {
+    if (enviando) return;
     if (ehPrimeira) {
       router.back();
     } else {
@@ -100,8 +164,22 @@ export default function QuestionarioScreen() {
     }
   }
 
-  function irParaDocumento() {
-    router.push(`/visita/${id}/documento`);
+  function concluirQuestionario() {
+    if (concluindoRef.current) return;
+    concluindoRef.current = true;
+
+    // todas as perguntas já foram validadas como respondidas, então vão todas no envio
+    const lista = perguntasOrdenadas.map((p) => ({
+      pergunta_id: p.id,
+      resposta: respostas[p.id].trim(),
+    }));
+
+    if (JSON.stringify(lista) === respostasEnviadas) {
+      irParaDocumento();
+      return;
+    }
+
+    enviarRespostasMutation.mutate(lista);
   }
 
   function irParaProxima() {
@@ -110,21 +188,38 @@ export default function QuestionarioScreen() {
       return;
     }
 
-    if (indicesEmBranco.length === 0) {
+    if (documentoGerado) {
       irParaDocumento();
       return;
     }
 
-    const numeros = indicesEmBranco.map((i) => i + 1).join(", ");
-    const mensagem =
-      indicesEmBranco.length === 1
-        ? `A pergunta ${numeros} está sem resposta.`
-        : `As perguntas ${numeros} estão sem resposta.`;
+    if (indicesEmBranco.length > 0) {
+      const numeros = indicesEmBranco.map((i) => i + 1).join(", ");
+      const mensagem =
+        indicesEmBranco.length === 1
+          ? `A pergunta ${numeros} está sem resposta.`
+          : `As perguntas ${numeros} estão sem resposta.`;
 
-    Alert.alert("Perguntas sem resposta", `${mensagem} Quer revisar antes de assinar?`, [
-      { text: "Continuar assim", style: "cancel", onPress: irParaDocumento },
-      { text: "Revisar", onPress: () => setIndiceAtual(indicesEmBranco[0]) },
-    ]);
+      Alert.alert("Perguntas sem resposta", `${mensagem} Responda todas antes de concluir.`, [
+        { text: "Revisar", onPress: () => setIndiceAtual(indicesEmBranco[0]) },
+      ]);
+      return;
+    }
+
+    const indiceInvalido = perguntasOrdenadas.findIndex(
+      (p) => erroFormatoResposta(p, respostas[p.id]) !== null
+    );
+    if (indiceInvalido !== -1) {
+      const perguntaInvalida = perguntasOrdenadas[indiceInvalido];
+      Alert.alert(
+        "Resposta inválida",
+        `Pergunta ${indiceInvalido + 1}: ${erroFormatoResposta(perguntaInvalida, respostas[perguntaInvalida.id])}`,
+        [{ text: "Revisar", onPress: () => setIndiceAtual(indiceInvalido) }]
+      );
+      return;
+    }
+
+    concluirQuestionario();
   }
 
   return (
@@ -140,11 +235,18 @@ export default function QuestionarioScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
+        {documentoGerado && (
+          <Text style={styles.avisoSomenteLeitura}>
+            O documento desta visita já foi gerado. As respostas não podem mais ser alteradas.
+          </Text>
+        )}
+
         <ItemPerguntaQuestionario
           key={pergunta.id}
           pergunta={pergunta}
           valorAtual={respostas[pergunta.id] ?? ""}
           onResponder={(valor) => definirResposta(pergunta.id, valor)}
+          desabilitado={bloqueado}
         />
 
         {ehUltima && (
@@ -156,6 +258,7 @@ export default function QuestionarioScreen() {
               style={styles.inputObservacoes}
               value={observacoesLivres}
               onChangeText={definirObservacoesLivres}
+              editable={!bloqueado}
               placeholder="Descreva o que você viu"
               placeholderTextColor="#8A9AB0"
               multiline
@@ -167,18 +270,28 @@ export default function QuestionarioScreen() {
 
       <View style={[styles.rodape, { paddingBottom: insets.bottom + 16 }]}>
         <Pressable
-          style={[styles.botaoRodape, styles.botaoAnterior]}
+          style={[styles.botaoRodape, styles.botaoAnterior, enviando && styles.botaoDesativado]}
           accessibilityRole="button"
+          accessibilityState={{ disabled: enviando }}
+          disabled={enviando}
           onPress={irParaAnterior}
         >
           <Text style={styles.botaoAnteriorTexto}>Anterior</Text>
         </Pressable>
         <Pressable
-          style={[styles.botaoRodape, styles.botaoProxima]}
+          style={[styles.botaoRodape, styles.botaoProxima, enviando && styles.botaoDesativado]}
           accessibilityRole="button"
+          accessibilityState={{ disabled: enviando }}
+          disabled={enviando}
           onPress={irParaProxima}
         >
-          <Text style={styles.botaoProximaTexto}>Próxima</Text>
+          {enviando ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.botaoProximaTexto}>
+              {!ehUltima ? "Próxima" : documentoGerado ? "Ver documento" : "Concluir questionário"}
+            </Text>
+          )}
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -218,6 +331,14 @@ const styles = StyleSheet.create({
   conteudo: {
     padding: 20,
     gap: 18,
+  },
+  avisoSomenteLeitura: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: "#7A5A00",
+    backgroundColor: "#FFF4CC",
+    borderRadius: 12,
+    padding: 12,
   },
   campoObservacoes: {
     gap: 8,
@@ -271,6 +392,9 @@ const styles = StyleSheet.create({
   },
   botaoProxima: {
     backgroundColor: "#1D3F94",
+  },
+  botaoDesativado: {
+    opacity: 0.6,
   },
   botaoProximaTexto: {
     fontFamily: "Inter_800ExtraBold",

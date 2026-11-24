@@ -7,6 +7,16 @@ export class SessaoExpiradaError extends Error {
   sessaoExpirada = true;
 }
 
+// erros[] traz o motivo de cada falha de validação devolvida pelo back (400)
+export class ApiError extends Error {
+  erros: string[];
+
+  constructor(mensagem: string, erros: string[] = []) {
+    super(mensagem);
+    this.erros = erros;
+  }
+}
+
 export async function sair() {
   await useSessaoStore.getState().encerrar();
   queryClient.clear();
@@ -28,10 +38,15 @@ export async function apiFetch<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch {
+    throw new ApiError("Sem conexão. Verifique a internet e tente novamente.");
+  }
 
   if (response.status === 401) {
     await sair();
@@ -40,7 +55,10 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const erro = await response.json().catch(() => null);
-    throw new Error(erro?.erro?.mensagem || erro?.mensagem || mensagemErroPadrao);
+    const erros = Array.isArray(erro?.erros)
+      ? erro.erros.filter((item: unknown): item is string => typeof item === "string")
+      : [];
+    throw new ApiError(erro?.erro?.mensagem || erro?.mensagem || mensagemErroPadrao, erros);
   }
 
   return response.json() as Promise<T>;
