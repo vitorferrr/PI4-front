@@ -45,12 +45,23 @@ interface AssinaturaRegistrada {
 
 type CorpoAssinatura =
   | { assinante_tipo: "fiscalizador"; usuario_id: number; imagem: string }
-  | { assinante_tipo: "denunciado"; assinante_nome: string; imagem: string }
-  | { assinante_tipo: "denunciado"; assinante_nome: string; recusou: true };
+  | {
+      assinante_tipo: "denunciado";
+      assinante_nome: string;
+      assinante_email?: string;
+      imagem: string;
+    }
+  | {
+      assinante_tipo: "denunciado";
+      assinante_nome: string;
+      assinante_email?: string;
+      recusou: true;
+    };
 
 interface NovaAssinatura {
   tipo: TipoAssinante;
   nome: string;
+  email?: string;
   imagem: string | null;
 }
 
@@ -161,7 +172,7 @@ export default function DocumentoVisitaScreen() {
 
   const enviandoRef = useRef(false);
   const enviarAssinaturaMutation = useMutation({
-    mutationFn: async ({ tipo, nome, imagem }: NovaAssinatura) => {
+    mutationFn: async ({ tipo, nome, email, imagem }: NovaAssinatura) => {
       let documentoAtual = documentoId;
       if (documentoAtual === null) {
         const documento = await gerarDocumentoRequest(id);
@@ -175,9 +186,19 @@ export default function DocumentoVisitaScreen() {
         if (!usuarioId || !imagem) throw new Error("Não foi possível identificar o fiscal.");
         corpo = { assinante_tipo: "fiscalizador", usuario_id: usuarioId, imagem };
       } else if (imagem) {
-        corpo = { assinante_tipo: "denunciado", assinante_nome: nome, imagem };
+        corpo = {
+          assinante_tipo: "denunciado",
+          assinante_nome: nome,
+          assinante_email: email,
+          imagem,
+        };
       } else {
-        corpo = { assinante_tipo: "denunciado", assinante_nome: nome, recusou: true };
+        corpo = {
+          assinante_tipo: "denunciado",
+          assinante_nome: nome,
+          assinante_email: email,
+          recusou: true,
+        };
       }
 
       const registrada = await enviarAssinaturaRequest(documentoAtual, corpo);
@@ -487,12 +508,15 @@ export default function DocumentoVisitaScreen() {
             situacao={assinaturaFiscal ? "ativo" : "aguardando"}
             assinatura={assinaturaResponsavel}
             permitirRecusa
+            pedirEmail
             aviso="Ao confirmar a assinatura ou a recusa, o documento será finalizado e não poderá mais ser alterado."
             enviando={tipoEnviando === "denunciado"}
-            onConfirmar={({ nome, imagem }) =>
-              enviarAssinatura({ tipo: "denunciado", nome, imagem })
+            onConfirmar={({ nome, email, imagem }) =>
+              enviarAssinatura({ tipo: "denunciado", nome, email, imagem })
             }
-            onRecusar={(nome) => enviarAssinatura({ tipo: "denunciado", nome, imagem: null })}
+            onRecusar={({ nome, email }) =>
+              enviarAssinatura({ tipo: "denunciado", nome, email, imagem: null })
+            }
             onInicioDesenho={travarRolagem}
             onFimDesenho={liberarRolagem}
           />

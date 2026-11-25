@@ -13,6 +13,13 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { formatarHora } from "@/lib/formatadores";
 import type { AssinaturaColetada } from "@/store/visitaEmAndamentoStore";
 
+const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface DadosAssinante {
+  nome: string;
+  email?: string;
+}
+
 interface CartaoAssinanteProps {
   rotulo: string;
   situacao: "ativo" | "aguardando";
@@ -20,8 +27,9 @@ interface CartaoAssinanteProps {
   nomeFixo?: string;
   rotuloCampoNome?: string;
   permitirRecusa?: boolean;
-  onConfirmar: (dados: { nome: string; imagem: string }) => void;
-  onRecusar?: (nome: string) => void;
+  pedirEmail?: boolean;
+  onConfirmar: (dados: DadosAssinante & { imagem: string }) => void;
+  onRecusar?: (dados: DadosAssinante) => void;
   onRefazer?: () => void;
   enviando?: boolean;
   aviso?: string;
@@ -36,6 +44,7 @@ export function CartaoAssinante({
   nomeFixo,
   rotuloCampoNome,
   permitirRecusa = false,
+  pedirEmail = false,
   onConfirmar,
   onRecusar,
   onRefazer,
@@ -46,8 +55,11 @@ export function CartaoAssinante({
 }: CartaoAssinanteProps) {
   const [nomeDigitado, setNomeDigitado] = useState("");
   const [avisoNome, setAvisoNome] = useState(false);
+  const [emailDigitado, setEmailDigitado] = useState("");
+  const [avisoEmail, setAvisoEmail] = useState(false);
 
   const nome = (nomeFixo ?? nomeDigitado).trim();
+  const email = emailDigitado.trim();
 
   if (assinatura) {
     const hora = formatarHora(assinatura.assinadoEm);
@@ -99,24 +111,34 @@ export function CartaoAssinante({
     );
   }
 
+  function dadosValidos() {
+    const nomeOk = Boolean(nome);
+    const emailOk = !pedirEmail || email === "" || EMAIL_VALIDO.test(email);
+    setAvisoNome(!nomeOk);
+    setAvisoEmail(!emailOk);
+    return nomeOk && emailOk;
+  }
+
+  function dadosDoAssinante(): DadosAssinante {
+    return pedirEmail && email ? { nome, email } : { nome };
+  }
+
   function confirmar(imagem: string) {
     if (enviando) return;
-    if (!nome) {
-      setAvisoNome(true);
-      return;
-    }
-    onConfirmar({ nome, imagem });
+    if (!dadosValidos()) return;
+    onConfirmar({ ...dadosDoAssinante(), imagem });
   }
 
   function recusar() {
     if (enviando) return;
-    if (!nome) {
-      setAvisoNome(true);
-      return;
-    }
+    if (!dadosValidos()) return;
     Alert.alert("Registrar recusa", `Confirmar que ${nome} se recusou a assinar o documento?`, [
       { text: "Cancelar", style: "cancel" },
-      { text: "Confirmar recusa", style: "destructive", onPress: () => onRecusar?.(nome) },
+      {
+        text: "Confirmar recusa",
+        style: "destructive",
+        onPress: () => onRecusar?.(dadosDoAssinante()),
+      },
     ]);
   }
 
@@ -140,6 +162,29 @@ export function CartaoAssinante({
             placeholderTextColor="#8A9AB0"
           />
           {avisoNome && <Text style={styles.aviso}>Informe o nome antes de continuar.</Text>}
+
+          {pedirEmail && (
+            <>
+              <Text style={styles.rotuloAtivo}>
+                E-mail <Text style={styles.opcional}>(opcional, para receber o documento)</Text>
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={emailDigitado}
+                onChangeText={(texto) => {
+                  setEmailDigitado(texto);
+                  setAvisoEmail(false);
+                }}
+                placeholder="email@exemplo.com"
+                placeholderTextColor="#8A9AB0"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+              />
+              {avisoEmail && <Text style={styles.aviso}>Informe um e-mail válido.</Text>}
+            </>
+          )}
         </View>
       )}
 
@@ -170,6 +215,10 @@ export function CartaoAssinante({
 }
 
 const styles = StyleSheet.create({
+  opcional: {
+    fontFamily: "Inter_400Regular",
+    color: "#4A5B73",
+  },
   avisoCartao: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
