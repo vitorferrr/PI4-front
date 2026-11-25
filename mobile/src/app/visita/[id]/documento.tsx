@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,111 @@ import {
   Alert,
   StyleSheet,
 } from "react-native";
-import { useLocalSearchParams, router, Stack, usePreventRemove } from "expo-router";
+import { useLocalSearchParams, router, Stack } from "expo-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { apiFetch, ApiError, SessaoExpiradaError } from "@/lib/api";
 import { formatarData } from "@/lib/formatadores";
 import { salvarImagemAssinatura } from "@/lib/arquivosAssinatura";
 import { useVisita } from "@/hooks/use-visita";
 import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
-import { useVisitaEmAndamentoStore, type TipoAssinante } from "@/store/visitaEmAndamentoStore";
+import {
+  useVisitaEmAndamentoStore,
+  type AssinaturaColetada,
+  type TipoAssinante,
+} from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { CartaoAssinante } from "@/components/CartaoAssinante";
 import { useSessaoStore } from "@/store/sessaoStore";
+import type { VisitaDetalhe } from "@/types/visita";
 
 const TOTAL_ASSINANTES = 2;
+
+interface DocumentoCriado {
+  id: number;
+}
+
+interface Finalizacao {
+  situacao: "pendente" | "finalizado" | "erro";
+  pendentes?: string[];
+  mensagem?: string;
+}
+
+interface AssinaturaRegistrada {
+  id: number;
+  finalizacao?: Finalizacao;
+}
+
+type CorpoAssinatura =
+  | { assinante_tipo: "fiscalizador"; usuario_id: number; imagem: string }
+  | {
+      assinante_tipo: "denunciado";
+      assinante_nome: string;
+      assinante_email?: string;
+      imagem: string;
+    }
+  | {
+      assinante_tipo: "denunciado";
+      assinante_nome: string;
+      assinante_email?: string;
+      recusou: true;
+    };
+
+interface NovaAssinatura {
+  tipo: TipoAssinante;
+  nome: string;
+  email?: string;
+  imagem: string | null;
+}
+
+async function gerarDocumentoRequest(visitaId: string): Promise<DocumentoCriado> {
+  return apiFetch<DocumentoCriado>(
+    `/visitas/${visitaId}/documento`,
+    { method: "POST" },
+    "Não foi possível preparar o documento da visita."
+  );
+}
+
+async function enviarAssinaturaRequest(
+  documentoId: number,
+  corpo: CorpoAssinatura
+): Promise<AssinaturaRegistrada> {
+  return apiFetch<AssinaturaRegistrada>(
+    `/documentos/${documentoId}/assinaturas`,
+    { method: "POST", body: JSON.stringify(corpo) },
+    "Não foi possível enviar a assinatura."
+  );
+}
+
+async function removerAssinaturaRequest(documentoId: number, assinaturaId: number) {
+  return apiFetch<void>(
+    `/documentos/${documentoId}/assinaturas/${assinaturaId}`,
+    { method: "DELETE" },
+    "Não foi possível refazer a assinatura."
+  );
+}
+
+async function finalizarDocumentoRequest(documentoId: number): Promise<Finalizacao> {
+  return apiFetch<Finalizacao>(
+    `/documentos/${documentoId}/finalizar`,
+    { method: "POST" },
+    "Não foi possível gerar o documento da visita."
+  );
+}
+
+async function concluirVisitaRequest(visitaId: string): Promise<VisitaDetalhe> {
+  return apiFetch<VisitaDetalhe>(
+    `/visitas/${visitaId}/concluir`,
+    { method: "PATCH" },
+    "Não foi possível concluir a visita."
+  );
+}
+
+function mensagemDoErro(erro: Error) {
+  const detalhes =
+    erro instanceof ApiError && erro.erros.length > 0 ? `\n\n${erro.erros.join("\n")}` : "";
+  return `${erro.message}${detalhes}`;
+}
 
 function useStoreHidratada() {
   const [hidratada, setHidratada] = useState(() => useVisitaEmAndamentoStore.persist.hasHydrated());
@@ -46,31 +139,168 @@ export default function DocumentoVisitaScreen() {
   const assinaturas = useVisitaEmAndamentoStore((state) => state.assinaturasColetadas);
   const registrarAssinatura = useVisitaEmAndamentoStore((state) => state.registrarAssinatura);
   const removerAssinatura = useVisitaEmAndamentoStore((state) => state.removerAssinatura);
-  const descartarAssinaturas = useVisitaEmAndamentoStore((state) => state.descartarAssinaturas);
+  const limparVisitaStore = useVisitaEmAndamentoStore((state) => state.limparVisitaStore);
+  const documentoIdStore = useVisitaEmAndamentoStore((state) => state.documentoId);
+  const definirDocumentoId = useVisitaEmAndamentoStore((state) => state.definirDocumentoId);
 
-  const temAssinaturasDestaVisita = visitaIdStore === Number(id) && assinaturas.length > 0;
-  usePreventRemove(temAssinaturasDestaVisita, ({ repeat }) => {
-    Alert.alert(
-      "Descartar assinaturas?",
-      "Se voltar ao questionário, as assinaturas já coletadas serão descartadas e precisarão ser feitas de novo.",
-      [
-        { text: "Ficar aqui", style: "cancel" },
-        {
-          text: "Descartar e voltar",
-          style: "destructive",
-          onPress: () => {
-            descartarAssinaturas();
-            repeat();
-          },
-        },
-      ]
-    );
-  });
-
+  const queryClient = useQueryClient();
   const visitaQuery = useVisita(id);
   const perguntasQuery = usePerguntasQuestionario();
   const visita = visitaQuery.data;
   const perguntas = perguntasQuery.data ?? [];
+
+  const documentoId = documentoIdStore ?? visita?.documentos?.[0]?.id ?? null;
+
+  function mostrarSucesso() {
+    queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    queryClient.invalidateQueries({ queryKey: ["visita", id] });
+    Alert.alert(
+      "Visita concluída",
+      "As assinaturas foram enviadas, o documento foi gerado e a visita foi encerrada com sucesso.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            router.dismissTo("/");
+            limparVisitaStore();
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  }
+
+  const enviandoRef = useRef(false);
+  const enviarAssinaturaMutation = useMutation({
+    mutationFn: async ({ tipo, nome, email, imagem }: NovaAssinatura) => {
+      let documentoAtual = documentoId;
+      if (documentoAtual === null) {
+        const documento = await gerarDocumentoRequest(id);
+        documentoAtual = documento.id;
+        definirDocumentoId(documento.id);
+        queryClient.invalidateQueries({ queryKey: ["visita", id] });
+      }
+
+      let corpo: CorpoAssinatura;
+      if (tipo === "fiscalizador") {
+        if (!usuarioId || !imagem) throw new Error("Não foi possível identificar o fiscal.");
+        corpo = { assinante_tipo: "fiscalizador", usuario_id: usuarioId, imagem };
+      } else if (imagem) {
+        corpo = {
+          assinante_tipo: "denunciado",
+          assinante_nome: nome,
+          assinante_email: email,
+          imagem,
+        };
+      } else {
+        corpo = {
+          assinante_tipo: "denunciado",
+          assinante_nome: nome,
+          assinante_email: email,
+          recusou: true,
+        };
+      }
+
+      const registrada = await enviarAssinaturaRequest(documentoAtual, corpo);
+
+      const imagemUri = imagem
+        ? await salvarImagemAssinatura(imagem, `visita-${id}-${tipo}-${Date.now()}`).catch(
+            () => null
+          )
+        : null;
+
+      return { idServidor: registrada.id, imagemUri, finalizacao: registrada.finalizacao };
+    },
+    onSuccess: ({ idServidor, imagemUri, finalizacao }, { tipo, nome, imagem }) => {
+      registrarAssinatura({
+        idServidor,
+        tipo,
+        nome,
+        usuarioId: tipo === "fiscalizador" ? (usuarioId ?? null) : null,
+        imagemUri,
+        recusou: imagem === null,
+        assinadoEm: new Date().toISOString(),
+      });
+
+      if (finalizacao?.situacao === "finalizado") {
+        mostrarSucesso();
+      } else if (finalizacao?.situacao === "erro") {
+        Alert.alert(
+          "Documento não gerado",
+          `${finalizacao.mensagem ?? "Não foi possível gerar o PDF."}\n\nA assinatura foi registrada. Toque em "Encerrar e enviar" para gerar o documento novamente.`
+        );
+      }
+    },
+    onError: (erro) => {
+      if (erro instanceof SessaoExpiradaError) return;
+      Alert.alert("Erro ao enviar assinatura", mensagemDoErro(erro));
+    },
+    onSettled: () => {
+      enviandoRef.current = false;
+    },
+  });
+
+  function enviarAssinatura(dados: NovaAssinatura) {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    enviarAssinaturaMutation.mutate(dados);
+  }
+
+  const tipoEnviando = enviarAssinaturaMutation.isPending
+    ? enviarAssinaturaMutation.variables?.tipo
+    : undefined;
+
+  const refazerMutation = useMutation({
+    mutationFn: async (assinatura: AssinaturaColetada) => {
+      if (documentoId === null) throw new Error("O documento da visita não foi encontrado.");
+      try {
+        await removerAssinaturaRequest(documentoId, assinatura.idServidor);
+      } catch (erro) {
+        // 404: o back já apagou numa tentativa anterior cuja resposta se perdeu
+        if (erro instanceof ApiError && erro.status === 404) return;
+        throw erro;
+      }
+    },
+    onSuccess: (_resultado, assinatura) => removerAssinatura(assinatura.tipo),
+    onError: (erro) => {
+      if (erro instanceof SessaoExpiradaError) return;
+      Alert.alert("Não foi possível refazer a assinatura", mensagemDoErro(erro));
+    },
+  });
+
+  const concluindoRef = useRef(false);
+  const concluirMutation = useMutation({
+    mutationFn: async () => {
+      if (documentoId === null) throw new Error("O documento da visita ainda não foi criado.");
+
+      const finalizacao = await finalizarDocumentoRequest(documentoId);
+      if (finalizacao.situacao === "pendente") {
+        throw new Error(`Ainda falta: ${(finalizacao.pendentes ?? []).join(", ")}.`);
+      }
+      if (finalizacao.situacao !== "finalizado") {
+        throw new Error(finalizacao.mensagem ?? "Não foi possível gerar o documento.");
+      }
+
+      return concluirVisitaRequest(id);
+    },
+    onSuccess: () => mostrarSucesso(),
+    onError: (erro) => {
+      if (erro instanceof SessaoExpiradaError) return;
+      Alert.alert(
+        "Não foi possível concluir a visita",
+        `${mensagemDoErro(erro)}\n\nOs dados continuam salvos no aparelho. Tente novamente.`
+      );
+    },
+    onSettled: () => {
+      concluindoRef.current = false;
+    },
+  });
+
+  function concluirVisita() {
+    if (concluindoRef.current) return;
+    concluindoRef.current = true;
+    concluirMutation.mutate();
+  }
 
   const titulo = "Revisar e assinar";
 
@@ -148,42 +378,29 @@ export default function DocumentoVisitaScreen() {
   const totalConcluidos = [assinaturaFiscal, assinaturaResponsavel].filter(Boolean).length;
   const totalRecusas = assinaturaResponsavel?.recusou ? 1 : 0;
 
+  const todasAssinaturasColetadas = totalConcluidos === TOTAL_ASSINANTES;
+  const podeConcluir =
+    documentoId !== null &&
+    todasAssinaturasColetadas &&
+    (visita.status === "em_andamento" || visita.status === "concluida") &&
+    !enviarAssinaturaMutation.isPending &&
+    !concluirMutation.isPending;
+
   const travarRolagem = () => setRolagemAtiva(false);
   const liberarRolagem = () => setRolagemAtiva(true);
 
-  async function salvarAssinatura(tipo: TipoAssinante, nome: string, imagemBase64: string) {
-    try {
-      const imagemUri = await salvarImagemAssinatura(
-        imagemBase64,
-        `visita-${id}-${tipo}-${Date.now()}`
-      );
-      registrarAssinatura({
-        tipo,
-        nome,
-        usuarioId: tipo === "fiscalizador" ? (usuarioId ?? null) : null,
-        imagemUri,
-        recusou: false,
-        assinadoEm: new Date().toISOString(),
-      });
-    } catch {
-      Alert.alert(
-        "Erro ao salvar assinatura",
-        "Não foi possível salvar a assinatura no aparelho. Tente novamente."
-      );
-    }
-  }
-
   function refazerFiscal() {
-    if (!assinaturaResponsavel) {
-      removerAssinatura("fiscalizador");
-      return;
-    }
+    if (!assinaturaFiscal || refazerMutation.isPending) return;
     Alert.alert(
       "Refazer assinatura do fiscal",
-      "A assinatura do responsável vem depois da do fiscal, então ela também será descartada.",
+      "A assinatura será apagada e precisará ser feita de novo.",
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Refazer as duas", style: "destructive", onPress: descartarAssinaturas },
+        {
+          text: "Refazer",
+          style: "destructive",
+          onPress: () => refazerMutation.mutate(assinaturaFiscal),
+        },
       ]
     );
   }
@@ -252,14 +469,34 @@ export default function DocumentoVisitaScreen() {
         <View style={styles.assinaturas}>
           <Text style={styles.assinaturasTitulo}>Assinaturas</Text>
 
+          {assinaturas.length === 0 && (
+            <View style={styles.avisoAmarelo}>
+              <Text style={styles.avisoAmareloTexto}>
+                Ao confirmar a primeira assinatura, as respostas do questionário não poderão mais
+                ser alteradas. Revise a prévia antes de assinar.
+              </Text>
+            </View>
+          )}
+
+          {observacoesLivres.trim() !== "" && (
+            <View style={styles.avisoAmarelo}>
+              <Text style={styles.avisoAmareloTexto}>
+                As observações ainda não são enviadas ao servidor e não vão aparecer no PDF.
+              </Text>
+            </View>
+          )}
+
           {fiscalLogado ? (
             <CartaoAssinante
               rotulo="Fiscal"
               situacao="ativo"
               nomeFixo={fiscalLogado.nome}
               assinatura={assinaturaFiscal}
-              onConfirmar={({ nome, imagem }) => salvarAssinatura("fiscalizador", nome, imagem)}
-              onRefazer={refazerFiscal}
+              enviando={tipoEnviando === "fiscalizador" || refazerMutation.isPending}
+              onConfirmar={({ nome, imagem }) =>
+                enviarAssinatura({ tipo: "fiscalizador", nome, imagem })
+              }
+              onRefazer={assinaturaResponsavel ? undefined : refazerFiscal}
               onInicioDesenho={travarRolagem}
               onFimDesenho={liberarRolagem}
             />
@@ -277,18 +514,15 @@ export default function DocumentoVisitaScreen() {
             situacao={assinaturaFiscal ? "ativo" : "aguardando"}
             assinatura={assinaturaResponsavel}
             permitirRecusa
-            onConfirmar={({ nome, imagem }) => salvarAssinatura("denunciado", nome, imagem)}
-            onRecusar={(nome) =>
-              registrarAssinatura({
-                tipo: "denunciado",
-                nome,
-                usuarioId: null,
-                imagemUri: null,
-                recusou: true,
-                assinadoEm: new Date().toISOString(),
-              })
+            pedirEmail
+            aviso="Ao confirmar a assinatura ou a recusa, o documento será finalizado e não poderá mais ser alterado."
+            enviando={tipoEnviando === "denunciado"}
+            onConfirmar={({ nome, email, imagem }) =>
+              enviarAssinatura({ tipo: "denunciado", nome, email, imagem })
             }
-            onRefazer={() => removerAssinatura("denunciado")}
+            onRecusar={({ nome, email }) =>
+              enviarAssinatura({ tipo: "denunciado", nome, email, imagem: null })
+            }
             onInicioDesenho={travarRolagem}
             onFimDesenho={liberarRolagem}
           />
@@ -300,8 +534,21 @@ export default function DocumentoVisitaScreen() {
           {totalConcluidos} de {TOTAL_ASSINANTES} assinantes concluídos
           {totalRecusas > 0 ? ` · ${totalRecusas} recusa` : ""}
         </Text>
-        <Pressable style={[styles.botaoEnviar, styles.botaoDesabilitado]} disabled>
-          <Text style={styles.botaoEnviarTexto}>Encerrar e enviar</Text>
+        {!todasAssinaturasColetadas && (
+          <Text style={styles.rodapeDica}>Colete as assinaturas para encerrar a visita.</Text>
+        )}
+        <Pressable
+          style={[styles.botaoEnviar, !podeConcluir && styles.botaoDesabilitado]}
+          disabled={!podeConcluir}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !podeConcluir, busy: concluirMutation.isPending }}
+          onPress={concluirVisita}
+        >
+          {concluirMutation.isPending ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.botaoEnviarTexto}>Encerrar e enviar</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -442,6 +689,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#4A5B73",
   },
+  avisoAmarelo: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#FFF4D6",
+  },
+  avisoAmareloTexto: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#5C3F00",
+  },
 
   rodapeTexto: {
     fontFamily: "Inter_600SemiBold",
@@ -463,6 +722,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#17803F",
     justifyContent: "center",
     alignItems: "center",
+  },
+  rodapeDica: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#4A5B73",
+    textAlign: "center",
   },
   botaoDesabilitado: {
     opacity: 0.5,

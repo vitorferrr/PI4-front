@@ -10,10 +10,12 @@ export class SessaoExpiradaError extends Error {
 
 export class ApiError extends Error {
   erros: string[];
+  status?: number;
 
-  constructor(mensagem: string, erros: string[] = []) {
+  constructor(mensagem: string, erros: string[] = [], status?: number) {
     super(mensagem);
     this.erros = erros;
+    this.status = status;
   }
 }
 
@@ -64,7 +66,11 @@ function converterErro(erro: unknown, mensagemPadrao: string): Error {
     const erros = Array.isArray(dados?.erros)
       ? dados.erros.filter((item): item is string => typeof item === "string")
       : [];
-    return new ApiError(dados?.erro?.mensagem || dados?.mensagem || mensagemPadrao, erros);
+    return new ApiError(
+      dados?.erro?.mensagem || dados?.mensagem || mensagemPadrao,
+      erros,
+      erro.response.status
+    );
   }
 
   return erro instanceof Error ? erro : new ApiError(mensagemPadrao);
