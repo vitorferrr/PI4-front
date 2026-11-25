@@ -3,7 +3,7 @@ import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 // Como no pr-review.test.js: o axios é carregado antes do window falso existir.
 import 'axios';
@@ -15,7 +15,7 @@ const originalDocument = globalThis.document;
 const storage = new Map();
 const h = React.createElement;
 let server, api, session, queryClient, defaults, disposeSession;
-let AppLayout, Dashboard, buscarDadosGerais, VisitasPage, buscarVisitas, exportarVisitas;
+let AppLayout, Dashboard, buscarDadosGerais, VisitasPage, buscarVisitas, exportarVisitas, DetalhePage, PaginaInicial;
 
 function jwt(role = 'admin') {
   const encode = (value) => btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -52,11 +52,7 @@ before(async () => {
           return source + '\nexport { buscarDadosGerais };';
         }
         if (path.endsWith('/src/pages/AdminVisitasPage.jsx')) {
-          // Os filtros vêm do teste, na ordem: pesquisa, status, gestor, fiscalizador.
-          return source.replace(
-            "import { useState } from 'react';",
-            "import { useState as useRealState } from 'react'; const useState = (initial) => useRealState(globalThis.__adminTest.filtros?.shift() ?? initial);",
-          ) + '\nexport { buscarVisitas, exportarVisitas };';
+          return source + '\nexport { buscarVisitas, exportarVisitas };';
         }
       },
     }],
@@ -73,6 +69,8 @@ before(async () => {
   ({ default: AppLayout } = await server.ssrLoadModule('/src/components/AppLayout.jsx'));
   ({ default: Dashboard, buscarDadosGerais } = await server.ssrLoadModule('/src/pages/AdminDashboardPage.jsx'));
   ({ default: VisitasPage, buscarVisitas, exportarVisitas } = await server.ssrLoadModule('/src/pages/AdminVisitasPage.jsx'));
+  ({ default: DetalhePage } = await server.ssrLoadModule('/src/pages/GestorVisitaDetalhePage.jsx'));
+  ({ default: PaginaInicial } = await server.ssrLoadModule('/src/components/PaginaInicial.jsx'));
   defaults = queryClient.getDefaultOptions();
   disposeSession = session.initializeSession();
 });
@@ -80,7 +78,6 @@ before(async () => {
 beforeEach(() => {
   session.startSession(jwt());
   queryClient.setDefaultOptions({ ...defaults, queries: { ...defaults.queries, staleTime: Infinity, retryOnMount: false } });
-  globalThis.__adminTest = {};
   api.defaults.adapter = async () => { throw new Error('Requisição não prevista pelo teste'); };
 });
 
@@ -93,19 +90,18 @@ afterEach(() => {
 after(async () => {
   disposeSession?.();
   await server?.close();
-  delete globalThis.__adminTest;
   if (originalWindow === undefined) delete globalThis.window;
   else globalThis.window = originalWindow;
   if (originalDocument === undefined) delete globalThis.document;
   else globalThis.document = originalDocument;
 });
 
-function render(element) {
+function render(element, entrada = '/admin') {
   const originalHook = React.useSyncExternalStore;
   React.useSyncExternalStore = (subscribe, snapshot) => originalHook(subscribe, snapshot, snapshot);
   try {
     return renderToStaticMarkup(h(QueryClientProvider, { client: queryClient },
-      h(MemoryRouter, { initialEntries: ['/admin'] }, element)));
+      h(MemoryRouter, { initialEntries: [entrada] }, element)));
   } finally {
     React.useSyncExternalStore = originalHook;
   }
@@ -118,9 +114,16 @@ async function cacheComErro(queryKey, status) {
   }).catch(() => {});
 }
 
+// Os filtros ficam na URL; o teste abre a tela já com eles aplicados.
 function renderVisitas(pesquisa = '', status = '', gestor = '', fiscalizador = '') {
-  globalThis.__adminTest.filtros = [pesquisa, status, gestor, fiscalizador];
-  return render(h(VisitasPage));
+  const filtros = new URLSearchParams(Object.entries({ pesquisa, status, gestor, fiscalizador }).filter(([, valor]) => valor));
+  const busca = filtros.toString();
+  return render(h(VisitasPage), `/admin/visitas${busca ? `?${busca}` : ''}`);
+}
+
+function renderDetalhe(state) {
+  const rota = h(Routes, null, h(Route, { path: '/gestor/visitas/:id', element: h(DetalhePage) }));
+  return render(rota, { pathname: '/gestor/visitas/41', state });
 }
 
 test('menu do admin leva ao painel, aos usuários e às visitas', () => {
@@ -251,4 +254,40 @@ test('exportação chama GET /admin/exportar só com os filtros preenchidos e l�
     return response(config, 'csv');
   };
   assert.deepEqual(await exportarVisitas({ status: '', gestor_id: '', fiscalizador_id: '' }), { arquivo: 'csv', total: 0, truncado: false });
+});
+
+test('filtros vindos da URL aparecem preenchidos nos campos', () => {
+  queryClient.setQueryData(['visitas'], visitasListagem);
+  const html = renderVisitas('padaria', 'em_andamento', '4', '12');
+  assert.ok(html.includes('value="padaria"'));
+  assert.ok(html.includes('<option value="em_andamento" selected="">'));
+  assert.ok(html.includes('<option value="4" selected="">'));
+  assert.ok(html.includes('<option value="12" selected="">'));
+  assert.ok(html.includes('Exibindo 1 de 3 visitas'));
+});
+
+test('detalhe volta para a lista do admin com os filtros, ou para o início se não houver origem', () => {
+  const doAdmin = renderDetalhe({ voltarPara: '/admin/visitas?status=agendada', rotuloVoltar: 'Voltar para visitas' });
+  assert.ok(doAdmin.includes('href="/admin/visitas?status=agendada"'));
+  assert.ok(doAdmin.includes('Voltar para visitas'));
+
+  const semOrigem = renderDetalhe(undefined);
+  assert.ok(semOrigem.includes('href="/"'));
+  assert.ok(semOrigem.includes('Voltar ao início'));
+
+  // só caminhos internos: um endereço externo cai no início
+  for (const voltarPara of ['//site-externo.com', 'https://site-externo.com', 42]) {
+    const html = renderDetalhe({ voltarPara, rotuloVoltar: 'Voltar' });
+    assert.ok(html.includes('Voltar ao início'), String(voltarPara));
+    assert.ok(!html.includes('site-externo'));
+  }
+});
+
+test('página inicial leva o admin ao painel e mantém as boas-vindas para os outros perfis', () => {
+  const rotas = () => h(Routes, null,
+    h(Route, { path: '/', element: h(PaginaInicial) }),
+    h(Route, { path: '/admin', element: 'PAINEL-ADMIN' }));
+  assert.ok(!render(rotas(), '/').includes('Bem-vindo'));
+  session.startSession(jwt('gestor'));
+  assert.ok(render(rotas(), '/').includes('Bem-vindo ao Sistema Procon'));
 });

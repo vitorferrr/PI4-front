@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import PrivateRoute from './components/PrivateRoute';
 import AppLayout from './components/AppLayout';
+import PaginaInicial from './components/PaginaInicial';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminUsuariosPage from './pages/AdminUsuariosPage';
 import AdminUsuarioFormPage from './pages/AdminUsuarioFormPage';
@@ -19,7 +20,7 @@ export default function App() {
 
         <Route element={<PrivateRoute />}>
           <Route element={<AppLayout />}>
-            <Route path="/" element={<div style={{ fontSize: '1.2rem', color: '#333' }}>Bem-vindo ao Sistema Procon! Escolha uma opção no menu.</div>} />
+            <Route path="/" element={<PaginaInicial />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/usuarios" element={<AdminUsuariosPage />} />
             <Route path="/admin/usuarios/novo" element={<AdminUsuarioFormPage />} />

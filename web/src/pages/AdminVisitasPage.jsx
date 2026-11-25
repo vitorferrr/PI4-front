@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import SectionCard from '../components/SectionCard';
 import VisitaStatus from '../components/VisitaStatus';
@@ -26,13 +25,18 @@ async function exportarVisitas(filtros) {
   };
 }
 
+// O link precisa estar na página e a URL não pode ser liberada logo em seguida:
+// no Firefox e no Safari isso pode ignorar o clique ou cancelar o download.
 function baixarArquivo(arquivo, nome) {
   const url = URL.createObjectURL(arquivo);
   const link = document.createElement('a');
   link.href = url;
   link.download = nome;
+  link.style.display = 'none';
+  document.body.appendChild(link);
   link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // Gestores e fiscalizadores que aparecem nas visitas, sem repetição e em ordem alfabética.
@@ -52,10 +56,22 @@ function nomesFiscalizadores(visita) {
 }
 
 export default function AdminVisitasPage() {
-  const [pesquisa, setPesquisa] = useState('');
-  const [status, setStatus] = useState('');
-  const [gestor, setGestor] = useState('');
-  const [fiscalizador, setFiscalizador] = useState('');
+  // Os filtros ficam na URL para continuarem aplicados ao voltar do detalhe da visita.
+  const location = useLocation();
+  const [filtros, setFiltros] = useSearchParams();
+  const pesquisa = filtros.get('pesquisa') ?? '';
+  const status = filtros.get('status') ?? '';
+  const gestor = filtros.get('gestor') ?? '';
+  const fiscalizador = filtros.get('fiscalizador') ?? '';
+  const alterarFiltro = (nome) => (event) => {
+    const valor = event.target.value;
+    setFiltros((atuais) => {
+      const novos = new URLSearchParams(atuais);
+      if (valor) novos.set(nome, valor);
+      else novos.delete(nome);
+      return novos;
+    }, { replace: true });
+  };
   const visitasQuery = useQuery({
     queryKey: ['visitas'],
     queryFn: ({ signal }) => buscarVisitas(signal),
@@ -103,7 +119,7 @@ export default function AdminVisitasPage() {
       ) : exportarMutation.isSuccess ? (
         <p className={styles.exportInfo} role="status">
           {exportarMutation.data.truncado
-            ? `O arquivo foi limitado às primeiras visitas de um total de ${exportarMutation.data.total}. Use os filtros para exportar o restante.`
+            ? `O arquivo não traz todas as ${exportarMutation.data.total} visitas, porque o servidor limita o tamanho da exportação. Refine os filtros para exportar menos visitas por vez.`
             : 'Arquivo visitas.csv gerado.'}
         </p>
       ) : null}
@@ -115,27 +131,27 @@ export default function AdminVisitasPage() {
             <input
               type="search"
               value={pesquisa}
-              onChange={(event) => setPesquisa(event.target.value)}
+              onChange={alterarFiltro('pesquisa')}
               placeholder="Nome ou razão social"
             />
           </label>
           <label className={styles.field}>
             <span>Status</span>
-            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <select value={status} onChange={alterarFiltro('status')}>
               <option value="">Todos os status</option>
               {Object.entries(STATUS_VISITA).map(([valor, texto]) => <option key={valor} value={valor}>{texto}</option>)}
             </select>
           </label>
           <label className={styles.field}>
             <span>Gestor</span>
-            <select value={gestor} onChange={(event) => setGestor(event.target.value)}>
+            <select value={gestor} onChange={alterarFiltro('gestor')}>
               <option value="">Todos os gestores</option>
               {gestores.map(([id, nome]) => <option key={id} value={id}>{nome}</option>)}
             </select>
           </label>
           <label className={styles.field}>
             <span>Fiscalizador</span>
-            <select value={fiscalizador} onChange={(event) => setFiscalizador(event.target.value)}>
+            <select value={fiscalizador} onChange={alterarFiltro('fiscalizador')}>
               <option value="">Todos os fiscalizadores</option>
               {fiscalizadores.map(([id, nome]) => <option key={id} value={id}>{nome}</option>)}
             </select>
@@ -193,6 +209,7 @@ export default function AdminVisitasPage() {
                         <td className={styles.nowrap}><VisitaStatus status={visita.status} /></td>
                         <td>
                           <Link to={`/gestor/visitas/${visita.id}`} className={styles.detailsLink}
+                            state={{ voltarPara: location.pathname + location.search, rotuloVoltar: 'Voltar para visitas' }}
                             aria-label={`Ver detalhes da visita ${visita.id}: ${visita.denunciado}`}>
                             Abrir
                           </Link>
