@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
 import { useSessaoStore, type UsuarioLogado } from "@/store/sessaoStore";
-import { API_URL } from "../lib/api";
+import { api } from "@/lib/api";
 
 interface RespostaLogin {
   token: string;
@@ -10,17 +11,15 @@ interface RespostaLogin {
 }
 
 async function fazerLogin(email: string, senha: string): Promise<RespostaLogin> {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, senha }),
-  });
-
-  if (!response.ok) {
+  let data: RespostaLogin;
+  try {
+    ({ data } = await api.post<RespostaLogin>("/auth/login", { email, senha }));
+  } catch (erro) {
+    if (axios.isAxiosError(erro) && !erro.response) {
+      throw new Error("Sem conexão. Verifique a internet e tente novamente.");
+    }
     throw new Error("E-mail ou senha inválidos");
   }
-
-  const data = await response.json();
 
   if (data.usuario?.role !== "fiscalizador") {
     throw new Error("Este aplicativo é exclusivo para fiscalizadores.");
