@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,14 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  Linking,
+  Platform,
+  type AlertButton,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import * as Location from "expo-location";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, SessaoExpiradaError } from "@/lib/api";
+import { capturarLocalizacao, ErroLocalizacao } from "@/lib/localizacao";
 import { useVisita } from "@/hooks/use-visita";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { VisitaDetalhe, Coordenadas } from "@/types/visita";
@@ -26,6 +29,62 @@ async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<Vi
     },
     "Erro ao iniciar a visita."
   );
+}
+
+function abrirConfiguracoesLocalizacao() {
+  // no Android dá para abrir direto a tela de localização; no iOS só as configurações do app
+  if (Platform.OS === "android") {
+    Linking.sendIntent("android.settings.LOCATION_SOURCE_SETTINGS").catch(() =>
+      Linking.openSettings()
+    );
+  } else {
+    Linking.openSettings();
+  }
+}
+
+function avisarFalhaLocalizacao(erro: unknown, tentarNovamente: () => void) {
+  const cancelar: AlertButton = { text: "Cancelar", style: "cancel" };
+  const tentar: AlertButton = { text: "Tentar novamente", onPress: tentarNovamente };
+  const motivo = erro instanceof ErroLocalizacao ? erro.motivo : null;
+
+  switch (motivo) {
+    case "permissao_negada":
+      Alert.alert(
+        "Permissão de localização necessária",
+        "A localização é usada para registrar onde a visita de fiscalização começou. Permita o acesso para continuar.",
+        [cancelar, tentar]
+      );
+      return;
+    case "permissao_bloqueada":
+      Alert.alert(
+        "Localização bloqueada",
+        "O acesso à localização foi negado para este app. Abra as configurações, permita o acesso à localização e volte para iniciar a visita.",
+        [cancelar, { text: "Abrir configurações", onPress: () => Linking.openSettings() }]
+      );
+      return;
+    case "servico_desativado":
+      Alert.alert(
+        "GPS desativado",
+        "Ative a localização (GPS) do aparelho para iniciar a visita.",
+        Platform.OS === "android"
+          ? [cancelar, { text: "Abrir configurações", onPress: abrirConfiguracoesLocalizacao }]
+          : [cancelar, tentar]
+      );
+      return;
+    case "sem_sinal":
+      Alert.alert(
+        "Sem sinal de GPS",
+        "Não foi possível obter sua localização. Vá para um local aberto ou perto de uma janela e tente novamente.",
+        [cancelar, tentar]
+      );
+      return;
+    default:
+      Alert.alert(
+        "Erro de GPS",
+        "Não foi possível obter sua localização. Verifique se o GPS está ligado e tente novamente.",
+        [cancelar, tentar]
+      );
+  }
 }
 
 export default function VisitaDetalheScreen() {
@@ -45,6 +104,8 @@ export default function VisitaDetalheScreen() {
       router.push(`/visita/${id}/questionario`);
     },
     onError: (err) => {
+      // o handler global do queryClient já avisa e leva para o login
+      if (err instanceof SessaoExpiradaError) return;
       Alert.alert(
         "Erro ao iniciar visita",
         err instanceof Error ? err.message : "Não foi possível iniciar a visita."
@@ -52,64 +113,20 @@ export default function VisitaDetalheScreen() {
     },
   });
 
+  const capturandoRef = useRef(false);
   const handleIniciarComGps = async () => {
+    if (capturandoRef.current) return;
+    capturandoRef.current = true;
+    setCarregandoGps(true);
+
     let coords: Coordenadas;
-
     try {
-      setCarregandoGps(true);
-
-      const servicoAtivo = await Location.hasServicesEnabledAsync();
-      if (!servicoAtivo) {
-        Alert.alert(
-          "GPS Desativado",
-          "Ative os serviços de localização do dispositivo para iniciar a visita."
-        );
-        return;
-      }
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permissão negada",
-          "Precisamos da sua localização (GPS) para iniciar a visita de fiscalização."
-        );
-        return;
-      }
-
-      const posicaoPromise = Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("TIMEOUT_GPS")), 15000)
-      );
-
-      let localizacao: Location.LocationObject | null = null;
-      try {
-        localizacao = await Promise.race([posicaoPromise, timeoutPromise]);
-      } catch {
-        localizacao = await Location.getLastKnownPositionAsync();
-      }
-
-      if (!localizacao) {
-        Alert.alert(
-          "Erro de GPS",
-          "Não foi possível obter a sua localização atual. Verifique se o GPS está ligado."
-        );
-        return;
-      }
-
-      coords = {
-        latitude: localizacao.coords.latitude,
-        longitude: localizacao.coords.longitude,
-      };
-    } catch {
-      Alert.alert(
-        "Erro de GPS",
-        "Não foi possível obter a sua localização atual. Verifique se o GPS está ligado."
-      );
+      coords = await capturarLocalizacao();
+    } catch (erro) {
+      avisarFalhaLocalizacao(erro, handleIniciarComGps);
       return;
     } finally {
+      capturandoRef.current = false;
       setCarregandoGps(false);
     }
 
@@ -205,6 +222,10 @@ export default function VisitaDetalheScreen() {
         </Pressable>
       )}
 
+      {podeIniciar && carregandoGps && (
+        <Text style={styles.textoAuxiliar}>Obtendo sua localização...</Text>
+      )}
+
       {emAndamento && (
         <Pressable
           style={styles.botao}
@@ -238,6 +259,7 @@ const styles = StyleSheet.create({
   textoAuxiliar: {
     color: "#555",
     fontSize: 15,
+    textAlign: "center",
   },
   card: {
     backgroundColor: "#fff",

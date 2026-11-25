@@ -4,6 +4,9 @@ import { useVisitaEmAndamentoStore } from "./visitaEmAndamentoStore";
 
 export const TOKEN_KEY = "token";
 export const USUARIO_KEY = "usuario";
+// id de quem estava com a visita em andamento: ela sobrevive à expiração do token,
+// mas não pode aparecer para outro fiscal que faça login no mesmo aparelho
+const DONO_VISITA_KEY = "visita_dono";
 
 export interface UsuarioLogado {
   id: number;
@@ -18,7 +21,7 @@ type SessaoState = {
   carregada: boolean;
   carregar: () => Promise<void>;
   entrar: (token: string, usuario: UsuarioLogado) => Promise<void>;
-  encerrar: () => Promise<void>;
+  encerrar: (opcoes?: { manterVisita?: boolean }) => Promise<void>;
 };
 
 function lerUsuarioSalvo(texto: string | null): UsuarioLogado | null {
@@ -50,13 +53,23 @@ export const useSessaoStore = create<SessaoState>((set) => ({
   },
 
   entrar: async (token, usuario) => {
+    const donoVisita = await SecureStore.getItemAsync(DONO_VISITA_KEY).catch(() => null);
+    if (donoVisita !== String(usuario.id)) {
+      useVisitaEmAndamentoStore.getState().limparVisitaStore();
+    }
+    await SecureStore.setItemAsync(DONO_VISITA_KEY, String(usuario.id));
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     await SecureStore.setItemAsync(USUARIO_KEY, JSON.stringify(usuario));
     set({ token, usuario });
   },
 
-  encerrar: async () => {
-    useVisitaEmAndamentoStore.getState().limparVisitaStore();
+  // manterVisita: usado quando o token expira no meio da visita, para o fiscal
+  // não perder respostas e assinaturas (que já foram enviadas ao back)
+  encerrar: async ({ manterVisita = false } = {}) => {
+    if (!manterVisita) {
+      useVisitaEmAndamentoStore.getState().limparVisitaStore();
+      await SecureStore.deleteItemAsync(DONO_VISITA_KEY).catch(() => {});
+    }
     set({ token: null, usuario: null });
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(USUARIO_KEY);

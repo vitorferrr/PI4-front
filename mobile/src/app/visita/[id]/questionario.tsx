@@ -87,7 +87,7 @@ export default function QuestionarioScreen() {
     },
     onError: (erro) => {
       concluindoRef.current = false;
-      // o apiFetch já levou o fiscal para o login
+      // o handler global do queryClient já leva o fiscal para o login
       if (erro instanceof SessaoExpiradaError) return;
       const detalhes =
         erro instanceof ApiError && erro.erros.length > 0 ? `\n\n${erro.erros.join("\n")}` : "";
