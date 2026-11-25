@@ -13,7 +13,7 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { formatarHora } from "@/lib/formatadores";
 import type { AssinaturaColetada } from "@/store/visitaEmAndamentoStore";
 
-const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_VALIDO = /^[^\s@<>,;:"()[\]\\]+@[^\s@<>,;:"()[\]\\]+\.[^\s@<>,;:"()[\]\\]+$/;
 
 interface DadosAssinante {
   nome: string;

@@ -253,7 +253,13 @@ export default function DocumentoVisitaScreen() {
   const refazerMutation = useMutation({
     mutationFn: async (assinatura: AssinaturaColetada) => {
       if (documentoId === null) throw new Error("O documento da visita não foi encontrado.");
-      await removerAssinaturaRequest(documentoId, assinatura.idServidor);
+      try {
+        await removerAssinaturaRequest(documentoId, assinatura.idServidor);
+      } catch (erro) {
+        // 404: o back já apagou numa tentativa anterior cuja resposta se perdeu
+        if (erro instanceof ApiError && erro.status === 404) return;
+        throw erro;
+      }
     },
     onSuccess: (_resultado, assinatura) => removerAssinatura(assinatura.tipo),
     onError: (erro) => {
