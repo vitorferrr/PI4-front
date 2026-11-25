@@ -1,17 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Alert } from "react-native";
 import { useLocalSearchParams, router, Stack, useFocusEffect, usePreventRemove } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Button, TextInput } from "react-native-paper";
+import { cores } from "@/theme";
 import { useMutation } from "@tanstack/react-query";
 import { apiFetch, ApiError, SessaoExpiradaError } from "@/lib/api";
 import { formatarHora } from "@/lib/formatadores";
@@ -47,8 +39,6 @@ export default function QuestionarioScreen() {
   const insets = useSafeAreaInsets();
 
   const [indiceAtual, setIndiceAtual] = useState(0);
-  // trava síncrona: o isPending só muda no próximo render, então um toque duplo enviaria duas vezes
-  // ou abriria o documento duas vezes. É liberada em erro ou quando o fiscal volta para esta tela.
   const concluindoRef = useRef(false);
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
@@ -87,7 +77,6 @@ export default function QuestionarioScreen() {
     },
     onError: (erro) => {
       concluindoRef.current = false;
-      // o apiFetch já levou o fiscal para o login
       if (erro instanceof SessaoExpiradaError) return;
       const detalhes =
         erro instanceof ApiError && erro.erros.length > 0 ? `\n\n${erro.erros.join("\n")}` : "";
@@ -96,11 +85,9 @@ export default function QuestionarioScreen() {
   });
 
   const enviando = enviarRespostasMutation.isPending;
-  // depois do POST /visitas/:id/documento o back não aceita mais alterar as respostas
   const documentoGerado = (visita?.documentos?.length ?? 0) > 0;
   const bloqueado = enviando || documentoGerado;
 
-  // durante o envio, impede sair da tela (voltar do cabeçalho, botão do Android e gesto do iOS)
   usePreventRemove(enviando, () => {});
 
   useFocusEffect(
@@ -117,7 +104,7 @@ export default function QuestionarioScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <CabecalhoVisita titulo={tituloCabecalho} subtitulo="Auto de Constatação" />
         <View style={styles.centralizado}>
-          <ActivityIndicator size="large" color="#1D3F94" />
+          <ActivityIndicator size="large" />
         </View>
       </View>
     );
@@ -132,9 +119,14 @@ export default function QuestionarioScreen() {
           <Text style={styles.mensagem}>
             {isError ? error.message : "Nenhuma pergunta cadastrada no questionário."}
           </Text>
-          <Pressable style={styles.botaoTentarNovamente} onPress={() => refetch()}>
-            <Text style={styles.botaoTentarNovamenteTexto}>Tentar novamente</Text>
-          </Pressable>
+          <Button
+            mode="contained"
+            onPress={() => refetch()}
+            style={styles.botaoArredondado}
+            labelStyle={styles.botaoTexto}
+          >
+            Tentar novamente
+          </Button>
         </View>
       </View>
     );
@@ -168,7 +160,6 @@ export default function QuestionarioScreen() {
     if (concluindoRef.current) return;
     concluindoRef.current = true;
 
-    // todas as perguntas já foram validadas como respondidas, então vão todas no envio
     const lista = perguntasOrdenadas.map((p) => ({
       pergunta_id: p.id,
       resposta: respostas[p.id].trim(),
@@ -255,44 +246,46 @@ export default function QuestionarioScreen() {
               Observações <Text style={styles.opcional}>(opcional)</Text>
             </Text>
             <TextInput
-              style={styles.inputObservacoes}
+              mode="outlined"
               value={observacoesLivres}
               onChangeText={definirObservacoesLivres}
               editable={!bloqueado}
               placeholder="Descreva o que você viu"
-              placeholderTextColor="#8A9AB0"
+              placeholderTextColor={cores.textoApagado}
               multiline
               textAlignVertical="top"
+              accessibilityLabel="Observações"
+              outlineColor={cores.borda}
+              outlineStyle={styles.campoBorda}
+              style={styles.inputObservacoes}
             />
           </View>
         )}
       </ScrollView>
 
       <View style={[styles.rodape, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable
-          style={[styles.botaoRodape, styles.botaoAnterior, enviando && styles.botaoDesativado]}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: enviando }}
+        <Button
+          mode="outlined"
           disabled={enviando}
           onPress={irParaAnterior}
+          textColor={cores.texto}
+          style={[styles.botaoRodape, styles.botaoAnterior]}
+          contentStyle={styles.botaoRodapeConteudo}
+          labelStyle={styles.botaoTexto}
         >
-          <Text style={styles.botaoAnteriorTexto}>Anterior</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.botaoRodape, styles.botaoProxima, enviando && styles.botaoDesativado]}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: enviando }}
+          Anterior
+        </Button>
+        <Button
+          mode="contained"
           disabled={enviando}
+          loading={enviando}
           onPress={irParaProxima}
+          style={styles.botaoRodape}
+          contentStyle={styles.botaoRodapeConteudo}
+          labelStyle={styles.botaoProximaTexto}
         >
-          {enviando ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.botaoProximaTexto}>
-              {!ehUltima ? "Próxima" : documentoGerado ? "Ver documento" : "Concluir questionário"}
-            </Text>
-          )}
-        </Pressable>
+          {!ehUltima ? "Próxima" : documentoGerado ? "Ver documento" : "Concluir questionário"}
+        </Button>
       </View>
     </KeyboardAvoidingView>
   );
@@ -316,15 +309,11 @@ const styles = StyleSheet.create({
     color: "#4A5B73",
     textAlign: "center",
   },
-  botaoTentarNovamente: {
-    backgroundColor: "#1D3F94",
+  botaoArredondado: {
     borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
   },
-  botaoTentarNovamenteTexto: {
+  botaoTexto: {
     fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
     fontSize: 16,
   },
 
@@ -354,15 +343,11 @@ const styles = StyleSheet.create({
   },
   inputObservacoes: {
     minHeight: 96,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "#C5D3E3",
+    backgroundColor: cores.branco,
+  },
+  campoBorda: {
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: "Inter_400Regular",
-    fontSize: 16,
-    color: "#0F1E33",
+    borderWidth: 1.5,
   },
 
   rodape: {
@@ -376,29 +361,17 @@ const styles = StyleSheet.create({
   },
   botaoRodape: {
     flex: 1,
-    height: 56,
     borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
+  },
+  botaoRodapeConteudo: {
+    height: 56,
   },
   botaoAnterior: {
     borderWidth: 1.5,
-    borderColor: "#C5D3E3",
-  },
-  botaoAnteriorTexto: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 16,
-    color: "#0F1E33",
-  },
-  botaoProxima: {
-    backgroundColor: "#1D3F94",
-  },
-  botaoDesativado: {
-    opacity: 0.6,
+    borderColor: cores.borda,
   },
   botaoProximaTexto: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 16,
-    color: "#FFFFFF",
   },
 });

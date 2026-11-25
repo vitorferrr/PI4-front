@@ -1,23 +1,117 @@
-import { Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Card } from "react-native-paper";
 import { router } from "expo-router";
 import type { VisitaDetalhe } from "@/types/visita";
-import { formatarData, formatarStatus } from "@/lib/formatadores";
+import { formatarStatus } from "@/lib/formatadores";
+import { cores } from "@/theme";
+import { SeloStatus } from "@/components/SeloStatus";
 
-export function VisitaCard({ visita }: { visita: VisitaDetalhe }) {
+function formatarDiaMes(dataIso: string) {
+  const data = new Date(dataIso);
+  if (Number.isNaN(data.getTime())) return null;
+  return data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+function estaAtrasada(visita: VisitaDetalhe) {
+  if (visita.status === "concluida" || visita.status === "cancelada") return false;
+  const inicioDeHoje = new Date();
+  inicioDeHoje.setHours(0, 0, 0, 0);
+  return new Date(visita.data_agendada) < inicioDeHoje;
+}
+
+interface VisitaCardProps {
+  visita: VisitaDetalhe;
+  salvaNoAparelho?: boolean;
+}
+
+export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps) {
+  const diaMes = formatarDiaMes(visita.data_agendada);
+  const atrasada = estaAtrasada(visita);
+  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(" · ");
+
   return (
-    <Pressable
-      style={styles.card}
-      accessibilityRole="button"
+    <Card
+      mode="outlined"
+      style={styles.cartao}
+      contentStyle={styles.conteudo}
       onPress={() => router.push(`/visita/${visita.id}`)}
+      accessibilityLabel={`${visita.denunciado}, ${formatarStatus(visita.status)}`}
     >
-      <Text style={styles.titulo}>{visita.denunciado}</Text>
-      <Text>{formatarStatus(visita.status)}</Text>
-      <Text>Agendada para {formatarData(visita.data_agendada)}</Text>
-    </Pressable>
+      <View style={styles.linhaTopo}>
+        <SeloStatus status={visita.status} />
+        {diaMes && (
+          <Text style={[styles.prazo, atrasada && styles.prazoAtrasado]}>
+            {atrasada ? `Venceu ${diaMes}` : `Até ${diaMes}`}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.textos}>
+        <Text style={styles.nome}>{visita.denunciado}</Text>
+        {endereco !== "" && <Text style={styles.detalhe}>{endereco}</Text>}
+      </View>
+
+      {salvaNoAparelho && (
+        <View style={styles.linhaAparelho}>
+          <View style={styles.bolinha} />
+          <Text style={styles.aparelhoTexto}>Em andamento · salva no aparelho</Text>
+        </View>
+      )}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 16, borderWidth: 1, borderColor: "#ccc", borderRadius: 8, gap: 4 },
-  titulo: { fontWeight: "600" },
+  cartao: {
+    borderRadius: 16,
+    borderColor: cores.bordaClara,
+    backgroundColor: cores.branco,
+  },
+  conteudo: {
+    padding: 16,
+    gap: 10,
+  },
+  linhaTopo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  prazo: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+    color: "#33435A",
+  },
+  prazoAtrasado: {
+    color: cores.erro,
+  },
+  textos: {
+    gap: 2,
+  },
+  nome: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
+    color: cores.texto,
+  },
+  detalhe: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: cores.textoSecundario,
+  },
+  linhaAparelho: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  bolinha: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#7A5300",
+  },
+  aparelhoTexto: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: "#7A5300",
+  },
 });

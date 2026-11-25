@@ -15,6 +15,8 @@ export interface VisitaDetalhe {
   data_agendada: string;
   data_realizacao: string | null;
   observacoes_livres: string | null;
+  endereco?: string | null;
+  bairro?: string | null;
   gestor?: UsuarioResumo;
   fiscalizadores?: UsuarioResumo[];
   documentos?: { id: number }[];

@@ -1,6 +1,8 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { IconButton, ProgressBar } from "react-native-paper";
+import { cores } from "@/theme";
 
 interface CabecalhoVisitaProps {
   titulo: string;
@@ -28,14 +30,14 @@ export function CabecalhoVisita({
   return (
     <View style={[styles.cabecalho, { paddingTop: insets.top + 8 }]}>
       <View style={styles.linha}>
-        <Pressable
+        <IconButton
+          icon="chevron-left"
+          size={32}
+          iconColor={cores.branco}
           style={styles.botaoVoltar}
-          accessibilityRole="button"
           accessibilityLabel={rotuloVoltar}
           onPress={() => router.back()}
-        >
-          <Text style={styles.botaoVoltarTexto}>‹</Text>
-        </Pressable>
+        />
 
         <View style={styles.textos}>
           <Text style={styles.titulo} numberOfLines={2}>
@@ -68,9 +70,12 @@ export function CabecalhoVisita({
               {progresso.respondidas} de {progresso.total} respondidas
             </Text>
           </View>
-          <View style={styles.barraFundo}>
-            <View style={[styles.barraPreenchida, { width: `${porcentagemRespondida}%` }]} />
-          </View>
+          <ProgressBar
+            progress={porcentagemRespondida / 100}
+            color={cores.amarelo}
+            style={styles.barra}
+            accessibilityLabel={`${porcentagemRespondida}% respondido`}
+          />
         </View>
       ) : null}
     </View>
@@ -92,14 +97,7 @@ const styles = StyleSheet.create({
   botaoVoltar: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  botaoVoltarTexto: {
-    color: "#FFFFFF",
-    fontSize: 36,
-    lineHeight: 38,
+    margin: 0,
   },
   textos: {
     flex: 1,
@@ -158,15 +156,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#FFFFFF",
   },
-  barraFundo: {
+  barra: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#172F6E",
-    overflow: "hidden",
-  },
-  barraPreenchida: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FFCC00",
+    backgroundColor: cores.azulEscuro,
   },
 });

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Button } from "react-native-paper";
 import SignatureCanvas, { type SignatureViewRef } from "react-native-signature-canvas";
+import { cores } from "@/theme";
 
 interface SignaturePadProps {
   onConfirmar: (imagemBase64: string) => void;
@@ -83,20 +85,25 @@ export function SignaturePad({
       {avisoVazio && <Text style={styles.aviso}>Faça a assinatura antes de confirmar.</Text>}
 
       <View style={styles.botoes}>
-        <Pressable
-          style={[styles.botao, styles.botaoLimpar]}
-          accessibilityRole="button"
+        <Button
+          mode="outlined"
           onPress={limpar}
+          textColor={cores.texto}
+          style={[styles.botao, styles.botaoLimpar]}
+          contentStyle={styles.botaoConteudo}
+          labelStyle={styles.botaoTexto}
         >
-          <Text style={styles.botaoLimparTexto}>Limpar</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.botao, styles.botaoConfirmar]}
-          accessibilityRole="button"
+          Limpar
+        </Button>
+        <Button
+          mode="contained"
           onPress={confirmar}
+          style={styles.botao}
+          contentStyle={styles.botaoConteudo}
+          labelStyle={styles.botaoTexto}
         >
-          <Text style={styles.botaoConfirmarTexto}>Confirmar assinatura</Text>
-        </Pressable>
+          Confirmar assinatura
+        </Button>
       </View>
     </View>
   );
@@ -155,26 +162,18 @@ const styles = StyleSheet.create({
   },
   botao: {
     flex: 1,
-    height: 44,
     borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+  },
+  botaoConteudo: {
+    height: 44,
   },
   botaoLimpar: {
     borderWidth: 1.5,
-    borderColor: "#C5D3E3",
+    borderColor: cores.borda,
   },
-  botaoLimparTexto: {
+  botaoTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
-    color: "#0F1E33",
-  },
-  botaoConfirmar: {
-    backgroundColor: "#1D3F94",
-  },
-  botaoConfirmarTexto: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: "#FFFFFF",
+    marginHorizontal: 8,
   },
 });

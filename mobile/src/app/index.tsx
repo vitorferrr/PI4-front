@@ -1,84 +1,271 @@
-import { View, Text, SectionList, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { useState } from "react";
+import { View, Text, FlatList, Pressable, Alert, StyleSheet } from "react-native";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Avatar, Button, Chip } from "react-native-paper";
 import { useVisitas } from "@/hooks/use-visitas";
 import { sair } from "@/lib/api";
+import { useSessaoStore } from "@/store/sessaoStore";
+import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { VisitaCard } from "@/components/VisitaCard";
+import { FaixaTopo } from "@/components/FaixaTopo";
+import { cores } from "@/theme";
 import type { StatusVisita, VisitaDetalhe } from "@/types/visita";
+
+type Filtro = "pendentes" | "finalizadas";
 
 const STATUS_FINALIZADOS: StatusVisita[] = ["concluida", "cancelada"];
 
-// Separa as visitas pendentes das encerradas
-function separarVisitas(visitas: VisitaDetalhe[]) {
-  const aFazer = visitas.filter((v) => !STATUS_FINALIZADOS.includes(v.status));
-  const finalizadas = visitas.filter((v) => STATUS_FINALIZADOS.includes(v.status));
-
-  return [
-    { titulo: "A fazer", data: aFazer },
-    { titulo: "Finalizadas", data: finalizadas },
-  ].filter((secao) => secao.data.length > 0);
+function filtrarVisitas(visitas: VisitaDetalhe[], filtro: Filtro) {
+  return visitas.filter((visita) => {
+    const finalizada = STATUS_FINALIZADOS.includes(visita.status);
+    return filtro === "finalizadas" ? finalizada : !finalizada;
+  });
 }
 
-function ListaVisitas() {
-  const { data, isPending, isError, error, refetch, isRefetching } = useVisitas();
+function dataDeHoje() {
+  const texto = new Date().toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
 
-  if (isPending) {
-    return (
-      <View style={styles.centro}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/);
+  const primeira = partes[0]?.charAt(0) ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : "";
+  return (primeira + ultima).toUpperCase();
+}
 
-  if (isError) {
-    return (
-      <View style={styles.centro}>
-        <Text>{error.message}</Text>
-        <Pressable style={styles.botao} accessibilityRole="button" onPress={() => refetch()}>
-          <Text>Tentar novamente</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  return (
-    <SectionList
-      sections={separarVisitas(data)}
-      keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <VisitaCard visita={item} />}
-      renderSectionHeader={({ section }) => <Text style={styles.secao}>{section.titulo}</Text>}
-      stickySectionHeadersEnabled={false}
-      contentContainerStyle={styles.lista}
-      refreshing={isRefetching}
-      onRefresh={refetch}
-      ListEmptyComponent={<Text style={styles.vazio}>Nenhuma visita atribuída a você.</Text>}
-    />
-  );
+function confirmarSaida() {
+  Alert.alert("Sair da conta", "Deseja sair do aplicativo?", [
+    { text: "Cancelar", style: "cancel" },
+    { text: "Sair", style: "destructive", onPress: () => sair().catch(() => {}) },
+  ]);
 }
 
 export default function VisitasScreen() {
+  const insets = useSafeAreaInsets();
+  const usuario = useSessaoStore((state) => state.usuario);
+  const visitaNoAparelho = useVisitaEmAndamentoStore((state) => state.visitaId);
+  const { data, isPending, isError, error, refetch, isRefetching } = useVisitas();
+  const [filtro, setFiltro] = useState<Filtro>("pendentes");
+
+  const visitas = data ?? [];
+  const pendentes = filtrarVisitas(visitas, "pendentes");
+  const finalizadas = filtrarVisitas(visitas, "finalizadas");
+  const visiveis = filtro === "pendentes" ? pendentes : finalizadas;
+  const primeiroNome = usuario?.nome.trim().split(/\s+/)[0] ?? "";
+
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: "Minhas visitas" }} />
+    <View style={styles.tela}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar style="light" />
 
-      <ListaVisitas />
+      <View style={styles.cabecalho}>
+        <FaixaTopo />
+        <View style={styles.saudacao}>
+          <View style={styles.saudacaoTextos}>
+            <Text style={styles.data}>{dataDeHoje()}</Text>
+            <Text style={styles.ola} accessibilityRole="header">
+              Olá{primeiroNome ? `, ${primeiroNome}` : ""}
+            </Text>
+          </View>
+          <Pressable
+            onPress={confirmarSaida}
+            accessibilityRole="button"
+            accessibilityLabel="Perfil e sair"
+            hitSlop={8}
+          >
+            <Avatar.Text
+              size={48}
+              label={usuario ? iniciais(usuario.nome) : "?"}
+              style={styles.avatar}
+              labelStyle={styles.avatarTexto}
+              color={cores.azulEscuro}
+            />
+          </Pressable>
+        </View>
+      </View>
 
-      {/* só para testar o login enquanto não tem tela de perfil */}
-      <Pressable
-        style={styles.botao}
-        accessibilityRole="button"
-        onPress={() => sair().catch(() => {})}
-      >
-        <Text>Sair (temporário)</Text>
-      </Pressable>
+      <View style={styles.filtros} accessibilityRole="tablist">
+        <Chip
+          selected={filtro === "pendentes"}
+          showSelectedCheck={false}
+          onPress={() => setFiltro("pendentes")}
+          style={[styles.filtro, filtro === "pendentes" && styles.filtroAtivo]}
+          textStyle={[styles.filtroTexto, filtro === "pendentes" && styles.filtroTextoAtivo]}
+          accessibilityRole="tab"
+        >
+          {`Pendentes · ${pendentes.length}`}
+        </Chip>
+        <Chip
+          selected={filtro === "finalizadas"}
+          showSelectedCheck={false}
+          onPress={() => setFiltro("finalizadas")}
+          style={[styles.filtro, filtro === "finalizadas" && styles.filtroAtivo]}
+          textStyle={[styles.filtroTexto, filtro === "finalizadas" && styles.filtroTextoAtivo]}
+          accessibilityRole="tab"
+        >
+          {`Finalizadas · ${finalizadas.length}`}
+        </Chip>
+      </View>
+
+      {isPending ? (
+        <View style={styles.centro}>
+          <ActivityIndicator size="large" />
+        </View>
+      ) : isError ? (
+        <View style={styles.centro}>
+          <Text style={styles.mensagem}>{error.message}</Text>
+          <Button mode="contained" onPress={() => refetch()}>
+            Tentar novamente
+          </Button>
+        </View>
+      ) : (
+        <FlatList
+          data={visiveis}
+          keyExtractor={(visita) => String(visita.id)}
+          renderItem={({ item }) => (
+            <VisitaCard visita={item} salvaNoAparelho={item.id === visitaNoAparelho} />
+          )}
+          contentContainerStyle={styles.lista}
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          ListEmptyComponent={
+            <Text style={styles.mensagem}>
+              {filtro === "pendentes"
+                ? "Nenhuma visita pendente atribuída a você."
+                : "Nenhuma visita finalizada ainda."}
+            </Text>
+          }
+        />
+      )}
+
+      <View style={[styles.rodape, { paddingBottom: 24 + insets.bottom }]}>
+        <Button
+          mode="outlined"
+          icon="sync"
+          onPress={() => refetch()}
+          loading={isRefetching}
+          disabled={isPending || isRefetching}
+          style={styles.botaoSincronizar}
+          contentStyle={styles.botaoSincronizarConteudo}
+          labelStyle={styles.botaoSincronizarTexto}
+        >
+          Sincronizar agora
+        </Button>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
-  lista: { padding: 16, gap: 12 },
-  secao: { fontWeight: "600", marginTop: 8 },
-  vazio: { textAlign: "center", marginTop: 40 },
-  botao: { padding: 16, alignItems: "center" },
+  tela: {
+    flex: 1,
+    backgroundColor: cores.fundo,
+  },
+  cabecalho: {
+    backgroundColor: cores.azul,
+  },
+  saudacao: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 22,
+    paddingHorizontal: 20,
+    paddingBottom: 22,
+  },
+  saudacaoTextos: {
+    gap: 2,
+    flex: 1,
+  },
+  data: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: "#D6E6F8",
+  },
+  ola: {
+    fontFamily: "BarlowCondensed_800ExtraBold",
+    fontSize: 34,
+    lineHeight: 38,
+    textTransform: "uppercase",
+    color: cores.branco,
+  },
+  avatar: {
+    backgroundColor: cores.amarelo,
+  },
+  avatarTexto: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 16,
+  },
+  filtros: {
+    flexDirection: "row",
+    gap: 6,
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  filtro: {
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: cores.borda,
+    backgroundColor: cores.branco,
+  },
+  filtroAtivo: {
+    borderColor: cores.azulEscuro,
+    backgroundColor: cores.azulEscuro,
+  },
+  filtroTexto: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: "#33435A",
+  },
+  filtroTextoAtivo: {
+    fontFamily: "Inter_700Bold",
+    color: cores.branco,
+  },
+  lista: {
+    paddingTop: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  centro: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    padding: 20,
+  },
+  mensagem: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    textAlign: "center",
+    color: cores.textoSecundario,
+    marginTop: 24,
+  },
+  rodape: {
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    backgroundColor: cores.fundo,
+    borderTopWidth: 1,
+    borderTopColor: cores.bordaClara,
+  },
+  botaoSincronizar: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: cores.azul,
+    backgroundColor: cores.branco,
+  },
+  botaoSincronizarConteudo: {
+    height: 52,
+  },
+  botaoSincronizarTexto: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+  },
 });

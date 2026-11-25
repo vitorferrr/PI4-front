@@ -9,8 +9,10 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
+import { PaperProvider } from "react-native-paper";
 import { queryClient } from "@/lib/queryClient";
 import { useSessaoStore } from "@/store/sessaoStore";
+import { tema } from "@/theme";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,18 +44,20 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Stack>
-        <Stack.Protected guard={!autenticado}>
-          <Stack.Screen name="login" />
-        </Stack.Protected>
+      <PaperProvider theme={tema}>
+        <Stack>
+          <Stack.Protected guard={!autenticado}>
+            <Stack.Screen name="login" />
+          </Stack.Protected>
 
-        <Stack.Protected guard={autenticado}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="visita/[id]/index" />
-          <Stack.Screen name="visita/[id]/questionario" />
-          <Stack.Screen name="visita/[id]/documento" />
-        </Stack.Protected>
-      </Stack>
+          <Stack.Protected guard={autenticado}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="visita/[id]/index" />
+            <Stack.Screen name="visita/[id]/questionario" />
+            <Stack.Screen name="visita/[id]/documento" />
+          </Stack.Protected>
+        </Stack>
+      </PaperProvider>
     </QueryClientProvider>
   );
 }

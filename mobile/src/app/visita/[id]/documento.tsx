@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-} from "react-native";
+import { View, Text, ScrollView, Alert, StyleSheet } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
+import { ActivityIndicator, Button } from "react-native-paper";
+import { cores } from "@/theme";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, ApiError, SessaoExpiradaError } from "@/lib/api";
@@ -258,7 +252,6 @@ export default function DocumentoVisitaScreen() {
       try {
         await removerAssinaturaRequest(documentoId, assinatura.idServidor);
       } catch (erro) {
-        // 404: o back já apagou numa tentativa anterior cuja resposta se perdeu
         if (erro instanceof ApiError && erro.status === 404) return;
         throw erro;
       }
@@ -312,7 +305,7 @@ export default function DocumentoVisitaScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <CabecalhoVisita titulo={titulo} rotuloVoltar="Voltar ao questionário" />
         <View style={styles.centralizado}>
-          <ActivityIndicator size="large" color="#1D3F94" />
+          <ActivityIndicator size="large" />
         </View>
       </View>
     );
@@ -326,15 +319,17 @@ export default function DocumentoVisitaScreen() {
         <CabecalhoVisita titulo={titulo} rotuloVoltar="Voltar ao questionário" />
         <View style={styles.centralizado}>
           <Text style={styles.erro}>{erro?.message ?? "Erro ao carregar visita."}</Text>
-          <Pressable
-            style={styles.botaoSecundario}
+          <Button
+            mode="outlined"
             onPress={() => {
               visitaQuery.refetch();
               perguntasQuery.refetch();
             }}
+            style={styles.botaoSecundario}
+            labelStyle={styles.botaoTexto}
           >
-            <Text style={styles.botaoSecundarioTexto}>Tentar novamente</Text>
-          </Pressable>
+            Tentar novamente
+          </Button>
         </View>
       </View>
     );
@@ -354,12 +349,14 @@ export default function DocumentoVisitaScreen() {
             As respostas desta visita não estão neste aparelho. Preencha o questionário antes de
             revisar o documento.
           </Text>
-          <Pressable
-            style={styles.botaoPrimario}
+          <Button
+            mode="contained"
             onPress={() => router.replace(`/visita/${id}/questionario`)}
+            style={styles.botaoArredondado}
+            labelStyle={styles.botaoTexto}
           >
-            <Text style={styles.botaoPrimarioTexto}>Ir para o questionário</Text>
-          </Pressable>
+            Ir para o questionário
+          </Button>
         </View>
       </View>
     );
@@ -539,19 +536,18 @@ export default function DocumentoVisitaScreen() {
         {!todasAssinaturasColetadas && (
           <Text style={styles.rodapeDica}>Colete as assinaturas para encerrar a visita.</Text>
         )}
-        <Pressable
-          style={[styles.botaoEnviar, !podeConcluir && styles.botaoDesabilitado]}
+        <Button
+          mode="contained"
+          buttonColor={cores.sucesso}
           disabled={!podeConcluir}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !podeConcluir, busy: concluirMutation.isPending }}
+          loading={concluirMutation.isPending}
           onPress={concluirVisita}
+          style={styles.botaoEnviar}
+          contentStyle={styles.botaoEnviarConteudo}
+          labelStyle={styles.botaoEnviarTexto}
         >
-          {concluirMutation.isPending ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.botaoEnviarTexto}>Encerrar e enviar</Text>
-          )}
-        </Pressable>
+          Encerrar e enviar
+        </Button>
       </View>
     </View>
   );
@@ -576,15 +572,11 @@ const styles = StyleSheet.create({
     color: "#33435A",
     textAlign: "center",
   },
-  botaoPrimario: {
-    backgroundColor: "#1D3F94",
+  botaoArredondado: {
     borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
   },
-  botaoPrimarioTexto: {
+  botaoTexto: {
     fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
     fontSize: 16,
   },
 
@@ -719,11 +711,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   botaoEnviar: {
-    height: 60,
     borderRadius: 16,
-    backgroundColor: "#17803F",
-    justifyContent: "center",
-    alignItems: "center",
+  },
+  botaoEnviarConteudo: {
+    height: 60,
   },
   rodapeDica: {
     fontFamily: "Inter_400Regular",
@@ -731,13 +722,9 @@ const styles = StyleSheet.create({
     color: "#4A5B73",
     textAlign: "center",
   },
-  botaoDesabilitado: {
-    opacity: 0.5,
-  },
   botaoEnviarTexto: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 18,
-    color: "#FFFFFF",
   },
 
   erro: {
@@ -748,13 +735,7 @@ const styles = StyleSheet.create({
   },
   botaoSecundario: {
     borderWidth: 1.5,
-    borderColor: "#1D3F94",
+    borderColor: cores.azul,
     borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  botaoSecundarioTexto: {
-    fontFamily: "Inter_700Bold",
-    color: "#1D3F94",
   },
 });

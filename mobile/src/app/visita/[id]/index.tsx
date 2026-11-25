@@ -1,21 +1,18 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ActivityIndicator,
-  ScrollView,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Button, Icon, IconButton } from "react-native-paper";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { apiFetch } from "@/lib/api";
 import { useVisita } from "@/hooks/use-visita";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { VisitaDetalhe, Coordenadas } from "@/types/visita";
-import { formatarData, formatarStatus } from "@/lib/formatadores";
+import { formatarData } from "@/lib/formatadores";
+import { SeloStatus } from "@/components/SeloStatus";
+import { cores } from "@/theme";
 
 async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<VisitaDetalhe> {
   return apiFetch<VisitaDetalhe>(
@@ -28,9 +25,27 @@ async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<Vi
   );
 }
 
+function MapaIlustrativo() {
+  return (
+    <View
+      style={styles.mapa}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <View style={[styles.rua, styles.ruaHorizontal]} />
+      <View style={[styles.rua, styles.ruaInclinada]} />
+      <View style={[styles.rua, styles.ruaVertical]} />
+      <View style={styles.pino}>
+        <Icon source="map-marker" size={48} color="#C8372D" />
+      </View>
+    </View>
+  );
+}
+
 export default function VisitaDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
   const [carregandoGps, setCarregandoGps] = useState(false);
   const iniciarVisitaStore = useVisitaEmAndamentoStore((state) => state.iniciarVisitaStore);
 
@@ -116,11 +131,23 @@ export default function VisitaDetalheScreen() {
     iniciarMutation.mutate(coords);
   };
 
+  const botaoVoltar = (
+    <IconButton
+      icon="chevron-left"
+      size={26}
+      iconColor={cores.azulEscuro}
+      containerColor={cores.branco}
+      style={[styles.voltar, { top: insets.top + 8 }]}
+      onPress={() => router.back()}
+      accessibilityLabel="Voltar para a lista"
+    />
+  );
+
   if (isLoading) {
     return (
       <View style={styles.centralizado}>
-        <Stack.Screen options={{ title: "Detalhes da Visita" }} />
-        <ActivityIndicator size="large" color="#1F3864" />
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator size="large" />
         <Text style={styles.textoAuxiliar}>Carregando detalhes da visita...</Text>
       </View>
     );
@@ -129,13 +156,14 @@ export default function VisitaDetalheScreen() {
   if (isError || !visita) {
     return (
       <View style={styles.centralizado}>
-        <Stack.Screen options={{ title: "Detalhes da Visita" }} />
+        <Stack.Screen options={{ headerShown: false }} />
+        {botaoVoltar}
         <Text style={styles.erro}>
           {error instanceof Error ? error.message : "Erro ao carregar visita."}
         </Text>
-        <Pressable style={styles.botaoSecundario} onPress={() => refetch()}>
-          <Text style={styles.botaoSecundarioTexto}>Tentar novamente</Text>
-        </Pressable>
+        <Button mode="outlined" onPress={() => refetch()}>
+          Tentar novamente
+        </Button>
       </View>
     );
   }
@@ -143,89 +171,252 @@ export default function VisitaDetalheScreen() {
   const podeIniciar = visita.status === "agendada";
   const emAndamento = visita.status === "em_andamento";
   const processandoInicio = carregandoGps || iniciarMutation.isPending;
+  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(" · ");
+  const fiscais = visita.fiscalizadores?.map((fiscal) => fiscal.nome).join(", ");
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: `Visita #${visita.id}` }} />
+    <View style={styles.tela}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar style="dark" />
 
-      <View style={styles.card}>
-        <View style={styles.cabecalhoCard}>
-          <Text style={styles.rotulo}>Denunciado / Estabelecimento</Text>
-          <View style={styles.badgeStatus}>
-            <Text style={styles.badgeStatusTexto}>{formatarStatus(visita.status)}</Text>
+      <ScrollView contentContainerStyle={styles.rolagem} bounces={false} overScrollMode="never">
+        <MapaIlustrativo />
+
+        <View style={styles.conteudo}>
+          <View style={styles.identificacao}>
+            <SeloStatus status={visita.status} />
+            <Text style={styles.titulo} accessibilityRole="header">
+              {visita.denunciado}
+            </Text>
+            {endereco !== "" && <Text style={styles.endereco}>{endereco}</Text>}
+            <Text style={styles.prazo}>Agendada para {formatarData(visita.data_agendada)}</Text>
+            {visita.data_realizacao && (
+              <Text style={styles.prazo}>Iniciada em {formatarData(visita.data_realizacao)}</Text>
+            )}
           </View>
+
+          <View style={styles.secao}>
+            <Text style={styles.secaoTitulo}>Responsáveis</Text>
+            <View style={styles.linha}>
+              <Text style={styles.linhaRotulo}>Gestor</Text>
+              <Text style={styles.linhaValor}>{visita.gestor?.nome || "Não informado"}</Text>
+            </View>
+            <View style={styles.linha}>
+              <Text style={styles.linhaRotulo}>Fiscal</Text>
+              <Text style={styles.linhaValor}>{fiscais || "Não informado"}</Text>
+            </View>
+          </View>
+
+          {visita.observacoes_livres ? (
+            <View style={styles.secao}>
+              <Text style={styles.secaoTitulo}>Observações</Text>
+              <Text style={styles.texto}>{visita.observacoes_livres}</Text>
+            </View>
+          ) : null}
         </View>
-        <Text style={styles.titulo}>{visita.denunciado}</Text>
+      </ScrollView>
 
-        <View style={styles.divisor} />
+      {botaoVoltar}
 
-        <Text style={styles.rotulo}>Data Agendada</Text>
-        <Text style={styles.valor}>{formatarData(visita.data_agendada)}</Text>
-
-        {visita.data_realizacao && (
-          <>
-            <Text style={styles.rotulo}>Iniciada em</Text>
-            <Text style={styles.valor}>{formatarData(visita.data_realizacao)}</Text>
-          </>
-        )}
-
-        <Text style={styles.rotulo}>Gestor Responsável</Text>
-        <Text style={styles.valor}>{visita.gestor?.nome || "Não informado"}</Text>
-
-        <Text style={styles.rotulo}>Fiscalizadores Atribuídos</Text>
-        <Text style={styles.valor}>
-          {visita.fiscalizadores && visita.fiscalizadores.length > 0
-            ? visita.fiscalizadores.map((f) => f.nome).join(", ")
-            : "Nenhum fiscalizador listado"}
-        </Text>
-
-        {visita.observacoes_livres ? (
-          <>
-            <Text style={styles.rotulo}>Observações</Text>
-            <Text style={styles.valor}>{visita.observacoes_livres}</Text>
-          </>
-        ) : null}
-      </View>
-
-      {iniciarMutation.isError && (
-        <Text style={styles.erro}>
-          {iniciarMutation.error instanceof Error
-            ? iniciarMutation.error.message
-            : "Erro ao iniciar visita."}
-        </Text>
-      )}
-
-      {podeIniciar && (
-        <Pressable style={styles.botao} onPress={handleIniciarComGps} disabled={processandoInicio}>
-          {processandoInicio ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.botaoTexto}>Iniciar visita</Text>
+      {(podeIniciar || emAndamento) && (
+        <View style={[styles.rodape, { paddingBottom: 24 + insets.bottom }]}>
+          {podeIniciar && (
+            <View style={styles.avisoGps}>
+              <Icon source="map-marker-outline" size={18} color={cores.azul} />
+              <Text style={styles.avisoGpsTexto}>
+                Sua localização é registrada só agora, no início da visita.
+              </Text>
+            </View>
           )}
-        </Pressable>
-      )}
 
-      {emAndamento && (
-        <Pressable
-          style={styles.botao}
-          onPress={() => {
-            iniciarVisitaStore(visita.id);
-            router.push(`/visita/${visita.id}/questionario`);
-          }}
-        >
-          <Text style={styles.botaoTexto}>Continuar para o questionário</Text>
-        </Pressable>
+          {podeIniciar ? (
+            <Button
+              mode="contained"
+              icon="crosshairs-gps"
+              buttonColor={cores.sucesso}
+              onPress={handleIniciarComGps}
+              loading={processandoInicio}
+              disabled={processandoInicio}
+              style={styles.botaoPrincipal}
+              contentStyle={styles.botaoPrincipalConteudo}
+              labelStyle={styles.botaoPrincipalTexto}
+            >
+              Iniciar visita
+            </Button>
+          ) : (
+            <Button
+              mode="contained"
+              icon="clipboard-text-outline"
+              onPress={() => {
+                iniciarVisitaStore(visita.id);
+                router.push(`/visita/${visita.id}/questionario`);
+              }}
+              style={styles.botaoPrincipal}
+              contentStyle={styles.botaoPrincipalConteudo}
+              labelStyle={styles.botaoPrincipalTexto}
+            >
+              Continuar para o questionário
+            </Button>
+          )}
+        </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  tela: {
+    flex: 1,
+    backgroundColor: cores.fundo,
+  },
+  rolagem: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: "#f5f6fa",
+  },
+  mapa: {
+    height: 230,
+    backgroundColor: "#D7E6F5",
+    overflow: "hidden",
+  },
+  rua: {
+    position: "absolute",
+    backgroundColor: cores.branco,
+  },
+  ruaHorizontal: {
+    left: -20,
+    right: -20,
+    top: 110,
+    height: 16,
+    transform: [{ rotate: "-8deg" }],
+  },
+  ruaInclinada: {
+    top: -20,
+    bottom: -20,
+    left: "59%",
+    width: 12,
+    transform: [{ rotate: "10deg" }],
+  },
+  ruaVertical: {
+    top: 0,
+    bottom: 0,
+    left: "20%",
+    width: 8,
+  },
+  pino: {
+    position: "absolute",
+    top: 66,
+    alignSelf: "center",
+  },
+  voltar: {
+    position: "absolute",
+    left: 8,
+    margin: 0,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: "#0A3D7A",
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  conteudo: {
+    flex: 1,
+    marginTop: -24,
+    backgroundColor: cores.fundo,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 22,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
     gap: 16,
+  },
+  identificacao: {
+    gap: 6,
+  },
+  titulo: {
+    fontFamily: "BarlowCondensed_800ExtraBold",
+    fontSize: 32,
+    lineHeight: 34,
+    textTransform: "uppercase",
+    color: cores.azulEscuro,
+  },
+  endereco: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    color: "#33435A",
+  },
+  prazo: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    color: "#33435A",
+  },
+  secao: {
+    backgroundColor: cores.branco,
+    borderWidth: 1,
+    borderColor: cores.bordaClara,
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
+  },
+  secaoTitulo: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    color: cores.textoSecundario,
+  },
+  linha: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  linhaRotulo: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    color: cores.textoSecundario,
+  },
+  linhaValor: {
+    flex: 1,
+    textAlign: "right",
+    fontFamily: "Inter_700Bold",
+    fontSize: 15,
+    color: cores.texto,
+  },
+  texto: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    lineHeight: 22,
+    color: cores.texto,
+  },
+  rodape: {
+    paddingTop: 14,
+    paddingHorizontal: 20,
+    backgroundColor: cores.branco,
+    borderTopWidth: 1,
+    borderTopColor: cores.bordaClara,
+    gap: 10,
+  },
+  avisoGps: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  avisoGpsTexto: {
+    flex: 1,
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#33435A",
+  },
+  botaoPrincipal: {
+    borderRadius: 16,
+  },
+  botaoPrincipalConteudo: {
+    height: 60,
+  },
+  botaoPrincipalTexto: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 18,
   },
   centralizado: {
     flex: 1,
@@ -233,84 +424,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
     gap: 12,
-    backgroundColor: "#f5f6fa",
+    backgroundColor: cores.fundo,
   },
   textoAuxiliar: {
-    color: "#555",
+    fontFamily: "Inter_400Regular",
     fontSize: 15,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#e1e4e8",
-    gap: 6,
-  },
-  cabecalhoCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  titulo: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1F3864",
-    marginBottom: 4,
-  },
-  divisor: {
-    height: 1,
-    backgroundColor: "#e1e4e8",
-    marginVertical: 8,
-  },
-  rotulo: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6c757d",
-    textTransform: "uppercase",
-    marginTop: 6,
-  },
-  valor: {
-    fontSize: 16,
-    color: "#212529",
-  },
-  badgeStatus: {
-    backgroundColor: "#e8eef7",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeStatusTexto: {
-    color: "#1F3864",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  botao: {
-    backgroundColor: "#1F3864",
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  botaoTexto: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  botaoSecundario: {
-    borderWidth: 1,
-    borderColor: "#1F3864",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  botaoSecundarioTexto: {
-    color: "#1F3864",
-    fontWeight: "600",
+    color: cores.textoSecundario,
   },
   erro: {
-    color: "#c0392b",
-    textAlign: "center",
+    fontFamily: "Inter_600SemiBold",
     fontSize: 16,
+    textAlign: "center",
+    color: cores.erro,
   },
 });
