@@ -49,6 +49,15 @@ export const useSessaoStore = create<SessaoState>((set) => ({
       return;
     }
 
+    // migração: quem já estava logado antes desta versão não tem o dono gravado.
+    // Sem isso, a primeira expiração depois do update apagaria a visita em andamento.
+    if (usuario) {
+      const donoVisita = await SecureStore.getItemAsync(DONO_VISITA_KEY).catch(() => null);
+      if (donoVisita === null) {
+        await SecureStore.setItemAsync(DONO_VISITA_KEY, String(usuario.id)).catch(() => {});
+      }
+    }
+
     set({ token, usuario, carregada: true });
   },
 

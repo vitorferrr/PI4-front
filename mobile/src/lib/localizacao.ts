@@ -51,7 +51,9 @@ async function lerPosicao() {
 
   try {
     const atual = await Promise.race([
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      // High usa o GPS: a coordenada vai para o documento como local de início da
+      // visita, e o Balanced (rede/Wi-Fi) costuma errar em torno de 100 m
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
       timeout,
     ]).catch(() => null);
     if (atual) return atual;

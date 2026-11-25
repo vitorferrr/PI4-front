@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
-import { router } from "expo-router";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { useSessaoStore } from "@/store/sessaoStore";
+import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 
 // o interceptor do axios (lib/api.ts) transforma o 401 do back em SessaoExpiradaError
 export function ehSessaoExpirada(erro: unknown) {
@@ -21,12 +21,15 @@ async function tratarSessaoExpirada() {
   encerrandoSessaoExpirada = true;
 
   try {
-    // a visita em andamento fica salva: depois do login o fiscal continua de onde parou
+    const temVisitaEmAndamento = useVisitaEmAndamentoStore.getState().visitaId !== null;
+    // a visita em andamento fica salva: depois do login o fiscal continua de onde parou.
+    // Não precisa navegar: ao zerar o token, o Stack.Protected do _layout leva para o login.
     await encerrarSessao({ manterVisita: true });
-    router.replace("/login");
     Alert.alert(
       "Sessão expirada",
-      "Por segurança, faça login novamente. Os dados da visita em andamento continuam salvos."
+      temVisitaEmAndamento
+        ? "Por segurança, faça login novamente. Os dados da visita em andamento continuam salvos."
+        : "Por segurança, faça login novamente."
     );
   } finally {
     encerrandoSessaoExpirada = false;
