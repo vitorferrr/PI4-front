@@ -31,7 +31,6 @@ interface VisitaEmAndamentoState {
   definirRespostasEnviadas: (conteudo: string) => void;
   registrarAssinatura: (assinatura: AssinaturaColetada) => void;
   removerAssinatura: (tipo: TipoAssinante) => void;
-  descartarAssinaturas: () => void;
   limparVisitaStore: () => void;
 }
 
@@ -84,14 +83,12 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
       definirResposta: (perguntaId, valor) => {
         const state = get();
         if (state.respostas[perguntaId] === valor) return;
-        if (state.assinaturasColetadas.length > 0) get().descartarAssinaturas();
         set({ respostas: { ...state.respostas, [perguntaId]: valor } });
       },
 
       definirObservacoesLivres: (texto) => {
         const state = get();
         if (state.observacoesLivres === texto) return;
-        if (state.assinaturasColetadas.length > 0) get().descartarAssinaturas();
         set({ observacoesLivres: texto });
       },
 
@@ -114,11 +111,6 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
         set({
           assinaturasColetadas: state.assinaturasColetadas.filter((a) => a.tipo !== tipo),
         });
-      },
-
-      descartarAssinaturas: () => {
-        apagarArquivos(get().assinaturasColetadas);
-        set({ assinaturasColetadas: [] });
       },
 
       limparVisitaStore: () => {
@@ -144,6 +136,7 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
         if (versaoSalva < 3) estado.assinaturasColetadas = [];
         if (versaoSalva < 4) estado.respostasEnviadas = null;
         if (versaoSalva < 5) {
+          apagarArquivos(estado.assinaturasColetadas ?? []);
           estado.assinaturasColetadas = [];
           estado.documentoId = null;
         }

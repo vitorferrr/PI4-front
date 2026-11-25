@@ -24,6 +24,7 @@ interface CartaoAssinanteProps {
   onRecusar?: (nome: string) => void;
   onRefazer?: () => void;
   enviando?: boolean;
+  aviso?: string;
   onInicioDesenho?: () => void;
   onFimDesenho?: () => void;
 }
@@ -39,6 +40,7 @@ export function CartaoAssinante({
   onRecusar,
   onRefazer,
   enviando = false,
+  aviso,
   onInicioDesenho,
   onFimDesenho,
 }: CartaoAssinanteProps) {
@@ -141,7 +143,8 @@ export function CartaoAssinante({
         </View>
       )}
 
-      {/* enquanto envia, a área fica apagada e não aceita toques */}
+      {aviso && <Text style={styles.avisoCartao}>{aviso}</Text>}
+
       <View pointerEvents={enviando ? "none" : "auto"} style={enviando && styles.bloqueado}>
         <SignaturePad
           onConfirmar={confirmar}
@@ -167,6 +170,12 @@ export function CartaoAssinante({
 }
 
 const styles = StyleSheet.create({
+  avisoCartao: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#5C3F00",
+  },
   bloqueado: {
     opacity: 0.5,
   },

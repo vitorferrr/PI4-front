@@ -16,7 +16,11 @@ import { formatarData } from "@/lib/formatadores";
 import { salvarImagemAssinatura } from "@/lib/arquivosAssinatura";
 import { useVisita } from "@/hooks/use-visita";
 import { usePerguntasQuestionario, estaRespondida } from "@/hooks/use-perguntas-questionario";
-import { useVisitaEmAndamentoStore, type TipoAssinante } from "@/store/visitaEmAndamentoStore";
+import {
+  useVisitaEmAndamentoStore,
+  type AssinaturaColetada,
+  type TipoAssinante,
+} from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { CartaoAssinante } from "@/components/CartaoAssinante";
 import { useSessaoStore } from "@/store/sessaoStore";
@@ -28,8 +32,15 @@ interface DocumentoCriado {
   id: number;
 }
 
+interface Finalizacao {
+  situacao: "pendente" | "finalizado" | "erro";
+  pendentes?: string[];
+  mensagem?: string;
+}
+
 interface AssinaturaRegistrada {
   id: number;
+  finalizacao?: Finalizacao;
 }
 
 type CorpoAssinatura =
@@ -59,6 +70,22 @@ async function enviarAssinaturaRequest(
     `/documentos/${documentoId}/assinaturas`,
     { method: "POST", body: JSON.stringify(corpo) },
     "Não foi possível enviar a assinatura."
+  );
+}
+
+async function removerAssinaturaRequest(documentoId: number, assinaturaId: number) {
+  return apiFetch<void>(
+    `/documentos/${documentoId}/assinaturas/${assinaturaId}`,
+    { method: "DELETE" },
+    "Não foi possível refazer a assinatura."
+  );
+}
+
+async function finalizarDocumentoRequest(documentoId: number): Promise<Finalizacao> {
+  return apiFetch<Finalizacao>(
+    `/documentos/${documentoId}/finalizar`,
+    { method: "POST" },
+    "Não foi possível gerar o documento da visita."
   );
 }
 
@@ -100,6 +127,7 @@ export default function DocumentoVisitaScreen() {
   const observacoesLivres = useVisitaEmAndamentoStore((state) => state.observacoesLivres);
   const assinaturas = useVisitaEmAndamentoStore((state) => state.assinaturasColetadas);
   const registrarAssinatura = useVisitaEmAndamentoStore((state) => state.registrarAssinatura);
+  const removerAssinatura = useVisitaEmAndamentoStore((state) => state.removerAssinatura);
   const limparVisitaStore = useVisitaEmAndamentoStore((state) => state.limparVisitaStore);
   const documentoIdStore = useVisitaEmAndamentoStore((state) => state.documentoId);
   const definirDocumentoId = useVisitaEmAndamentoStore((state) => state.definirDocumentoId);
@@ -112,30 +140,35 @@ export default function DocumentoVisitaScreen() {
 
   const documentoId = documentoIdStore ?? visita?.documentos?.[0]?.id ?? null;
 
-  const {
-    mutate: gerarDocumento,
-    isIdle: geracaoNaoComecou,
-    isError: geracaoFalhou,
-    error: erroGeracao,
-  } = useMutation({
-    mutationFn: () => gerarDocumentoRequest(id),
-    onSuccess: (documento) => {
-      definirDocumentoId(documento.id);
-      queryClient.invalidateQueries({ queryKey: ["visita", id] });
-    },
-  });
-
-  const dadosDestaVisita = storeHidratada && visitaIdStore === Number(id);
-  const precisaGerarDocumento = dadosDestaVisita && Boolean(visita) && documentoId === null;
-
-  useEffect(() => {
-    if (precisaGerarDocumento && geracaoNaoComecou) gerarDocumento();
-  }, [precisaGerarDocumento, geracaoNaoComecou, gerarDocumento]);
+  function mostrarSucesso() {
+    queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    queryClient.invalidateQueries({ queryKey: ["visita", id] });
+    Alert.alert(
+      "Visita concluída",
+      "As assinaturas foram enviadas, o documento foi gerado e a visita foi encerrada com sucesso.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            router.dismissTo("/");
+            limparVisitaStore();
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  }
 
   const enviandoRef = useRef(false);
   const enviarAssinaturaMutation = useMutation({
     mutationFn: async ({ tipo, nome, imagem }: NovaAssinatura) => {
-      if (documentoId === null) throw new Error("O documento da visita ainda não foi preparado.");
+      let documentoAtual = documentoId;
+      if (documentoAtual === null) {
+        const documento = await gerarDocumentoRequest(id);
+        documentoAtual = documento.id;
+        definirDocumentoId(documento.id);
+        queryClient.invalidateQueries({ queryKey: ["visita", id] });
+      }
 
       let corpo: CorpoAssinatura;
       if (tipo === "fiscalizador") {
@@ -147,7 +180,7 @@ export default function DocumentoVisitaScreen() {
         corpo = { assinante_tipo: "denunciado", assinante_nome: nome, recusou: true };
       }
 
-      const registrada = await enviarAssinaturaRequest(documentoId, corpo);
+      const registrada = await enviarAssinaturaRequest(documentoAtual, corpo);
 
       const imagemUri = imagem
         ? await salvarImagemAssinatura(imagem, `visita-${id}-${tipo}-${Date.now()}`).catch(
@@ -155,9 +188,9 @@ export default function DocumentoVisitaScreen() {
           )
         : null;
 
-      return { idServidor: registrada.id, imagemUri };
+      return { idServidor: registrada.id, imagemUri, finalizacao: registrada.finalizacao };
     },
-    onSuccess: ({ idServidor, imagemUri }, { tipo, nome, imagem }) => {
+    onSuccess: ({ idServidor, imagemUri, finalizacao }, { tipo, nome, imagem }) => {
       registrarAssinatura({
         idServidor,
         tipo,
@@ -167,6 +200,15 @@ export default function DocumentoVisitaScreen() {
         recusou: imagem === null,
         assinadoEm: new Date().toISOString(),
       });
+
+      if (finalizacao?.situacao === "finalizado") {
+        mostrarSucesso();
+      } else if (finalizacao?.situacao === "erro") {
+        Alert.alert(
+          "Documento não gerado",
+          `${finalizacao.mensagem ?? "Não foi possível gerar o PDF."}\n\nA assinatura foi registrada. Toque em "Encerrar e enviar" para gerar o documento novamente.`
+        );
+      }
     },
     onError: (erro) => {
       if (erro instanceof SessaoExpiradaError) return;
@@ -187,28 +229,34 @@ export default function DocumentoVisitaScreen() {
     ? enviarAssinaturaMutation.variables?.tipo
     : undefined;
 
+  const refazerMutation = useMutation({
+    mutationFn: async (assinatura: AssinaturaColetada) => {
+      if (documentoId === null) throw new Error("O documento da visita não foi encontrado.");
+      await removerAssinaturaRequest(documentoId, assinatura.idServidor);
+    },
+    onSuccess: (_resultado, assinatura) => removerAssinatura(assinatura.tipo),
+    onError: (erro) => {
+      if (erro instanceof SessaoExpiradaError) return;
+      Alert.alert("Não foi possível refazer a assinatura", mensagemDoErro(erro));
+    },
+  });
+
   const concluindoRef = useRef(false);
   const concluirMutation = useMutation({
-    mutationFn: () => concluirVisitaRequest(id),
-    onSuccess: (visitaAtualizada) => {
-      queryClient.setQueryData(["visita", id], visitaAtualizada);
-      queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    mutationFn: async () => {
+      if (documentoId === null) throw new Error("O documento da visita ainda não foi criado.");
 
-      Alert.alert(
-        "Visita concluída",
-        "As assinaturas foram enviadas e a visita foi encerrada com sucesso.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              router.dismissTo("/");
-              limparVisitaStore();
-            },
-          },
-        ],
-        { cancelable: false }
-      );
+      const finalizacao = await finalizarDocumentoRequest(documentoId);
+      if (finalizacao.situacao === "pendente") {
+        throw new Error(`Ainda falta: ${(finalizacao.pendentes ?? []).join(", ")}.`);
+      }
+      if (finalizacao.situacao !== "finalizado") {
+        throw new Error(finalizacao.mensagem ?? "Não foi possível gerar o documento.");
+      }
+
+      return concluirVisitaRequest(id);
     },
+    onSuccess: () => mostrarSucesso(),
     onError: (erro) => {
       if (erro instanceof SessaoExpiradaError) return;
       Alert.alert(
@@ -307,12 +355,28 @@ export default function DocumentoVisitaScreen() {
   const podeConcluir =
     documentoId !== null &&
     todasAssinaturasColetadas &&
-    visita.status === "em_andamento" &&
+    (visita.status === "em_andamento" || visita.status === "concluida") &&
     !enviarAssinaturaMutation.isPending &&
     !concluirMutation.isPending;
 
   const travarRolagem = () => setRolagemAtiva(false);
   const liberarRolagem = () => setRolagemAtiva(true);
+
+  function refazerFiscal() {
+    if (!assinaturaFiscal || refazerMutation.isPending) return;
+    Alert.alert(
+      "Refazer assinatura do fiscal",
+      "A assinatura será apagada e precisará ser feita de novo.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Refazer",
+          style: "destructive",
+          onPress: () => refazerMutation.mutate(assinaturaFiscal),
+        },
+      ]
+    );
+  }
 
   return (
     <View style={styles.tela}>
@@ -378,65 +442,60 @@ export default function DocumentoVisitaScreen() {
         <View style={styles.assinaturas}>
           <Text style={styles.assinaturasTitulo}>Assinaturas</Text>
 
-          {documentoId === null ? (
-            <View style={styles.cartaoAviso}>
-              {geracaoFalhou ? (
-                <>
-                  <Text style={styles.erroDocumento}>
-                    {erroGeracao ? mensagemDoErro(erroGeracao) : "Erro ao preparar o documento."}
-                  </Text>
-                  <Pressable style={styles.botaoSecundario} onPress={() => gerarDocumento()}>
-                    <Text style={styles.botaoSecundarioTexto}>Tentar novamente</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <View style={styles.preparando}>
-                  <ActivityIndicator color="#1D3F94" />
-                  <Text style={styles.cartaoAvisoTexto}>Preparando o documento...</Text>
-                </View>
-              )}
+          {assinaturas.length === 0 && (
+            <View style={styles.avisoAmarelo}>
+              <Text style={styles.avisoAmareloTexto}>
+                Ao confirmar a primeira assinatura, as respostas do questionário não poderão mais
+                ser alteradas. Revise a prévia antes de assinar.
+              </Text>
             </View>
-          ) : (
-            <>
-              {/* 1º assinante: o fiscal logado. Sem "Refazer": o back da sprint 2 não apaga assinaturas */}
-              {fiscalLogado ? (
-                <CartaoAssinante
-                  rotulo="Fiscal"
-                  situacao="ativo"
-                  nomeFixo={fiscalLogado.nome}
-                  assinatura={assinaturaFiscal}
-                  enviando={tipoEnviando === "fiscalizador"}
-                  onConfirmar={({ nome, imagem }) =>
-                    enviarAssinatura({ tipo: "fiscalizador", nome, imagem })
-                  }
-                  onInicioDesenho={travarRolagem}
-                  onFimDesenho={liberarRolagem}
-                />
-              ) : (
-                <View style={styles.cartaoAviso}>
-                  <Text style={styles.cartaoAvisoTexto}>
-                    Só um fiscal atribuído a esta visita pode assinar como fiscal.
-                  </Text>
-                </View>
-              )}
-
-              {/* 2º assinante: o responsável pelo estabelecimento, só depois do fiscal */}
-              <CartaoAssinante
-                rotulo="Responsável"
-                rotuloCampoNome="Responsável pelo estabelecimento"
-                situacao={assinaturaFiscal ? "ativo" : "aguardando"}
-                assinatura={assinaturaResponsavel}
-                permitirRecusa
-                enviando={tipoEnviando === "denunciado"}
-                onConfirmar={({ nome, imagem }) =>
-                  enviarAssinatura({ tipo: "denunciado", nome, imagem })
-                }
-                onRecusar={(nome) => enviarAssinatura({ tipo: "denunciado", nome, imagem: null })}
-                onInicioDesenho={travarRolagem}
-                onFimDesenho={liberarRolagem}
-              />
-            </>
           )}
+
+          {observacoesLivres.trim() !== "" && (
+            <View style={styles.avisoAmarelo}>
+              <Text style={styles.avisoAmareloTexto}>
+                As observações ainda não são enviadas ao servidor e não vão aparecer no PDF.
+              </Text>
+            </View>
+          )}
+
+          {fiscalLogado ? (
+            <CartaoAssinante
+              rotulo="Fiscal"
+              situacao="ativo"
+              nomeFixo={fiscalLogado.nome}
+              assinatura={assinaturaFiscal}
+              enviando={tipoEnviando === "fiscalizador" || refazerMutation.isPending}
+              onConfirmar={({ nome, imagem }) =>
+                enviarAssinatura({ tipo: "fiscalizador", nome, imagem })
+              }
+              onRefazer={assinaturaResponsavel ? undefined : refazerFiscal}
+              onInicioDesenho={travarRolagem}
+              onFimDesenho={liberarRolagem}
+            />
+          ) : (
+            <View style={styles.cartaoAviso}>
+              <Text style={styles.cartaoAvisoTexto}>
+                Só um fiscal atribuído a esta visita pode assinar como fiscal.
+              </Text>
+            </View>
+          )}
+
+          <CartaoAssinante
+            rotulo="Responsável"
+            rotuloCampoNome="Responsável pelo estabelecimento"
+            situacao={assinaturaFiscal ? "ativo" : "aguardando"}
+            assinatura={assinaturaResponsavel}
+            permitirRecusa
+            aviso="Ao confirmar a assinatura ou a recusa, o documento será finalizado e não poderá mais ser alterado."
+            enviando={tipoEnviando === "denunciado"}
+            onConfirmar={({ nome, imagem }) =>
+              enviarAssinatura({ tipo: "denunciado", nome, imagem })
+            }
+            onRecusar={(nome) => enviarAssinatura({ tipo: "denunciado", nome, imagem: null })}
+            onInicioDesenho={travarRolagem}
+            onFimDesenho={liberarRolagem}
+          />
         </View>
       </ScrollView>
 
@@ -600,16 +659,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#4A5B73",
   },
-  preparando: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  avisoAmarelo: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#FFF4D6",
   },
-  erroDocumento: {
+  avisoAmareloTexto: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-    color: "#A12A20",
-    marginBottom: 10,
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#5C3F00",
   },
 
   rodapeTexto: {
