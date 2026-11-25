@@ -82,7 +82,7 @@ function converterErro(erro: unknown, mensagemPadrao: string): Error {
 
 export async function apiFetch<T>(
   path: string,
-  init: RequestInit = {},
+  init: RequestInit & { timeout?: number } = {},
   mensagemErroPadrao = "Erro na comunicação com o servidor."
 ): Promise<T> {
   try {
@@ -91,6 +91,7 @@ export async function apiFetch<T>(
       method: init.method ?? "GET",
       data: init.body ?? undefined,
       headers: init.headers as Record<string, string> | undefined,
+      timeout: init.timeout,
     });
     return (resposta.status === 204 ? undefined : resposta.data) as T;
   } catch (erro) {
