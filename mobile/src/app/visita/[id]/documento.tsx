@@ -20,6 +20,7 @@ import { useVisitaEmAndamentoStore, type TipoAssinante } from "@/store/visitaEmA
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { CartaoAssinante } from "@/components/CartaoAssinante";
 import { useSessaoStore } from "@/store/sessaoStore";
+import type { VisitaDetalhe } from "@/types/visita";
 
 const TOTAL_ASSINANTES = 2;
 
@@ -58,6 +59,14 @@ async function enviarAssinaturaRequest(
     `/documentos/${documentoId}/assinaturas`,
     { method: "POST", body: JSON.stringify(corpo) },
     "Não foi possível enviar a assinatura."
+  );
+}
+
+async function concluirVisitaRequest(visitaId: string): Promise<VisitaDetalhe> {
+  return apiFetch<VisitaDetalhe>(
+    `/visitas/${visitaId}/concluir`,
+    { method: "PATCH" },
+    "Não foi possível concluir a visita."
   );
 }
 
@@ -177,6 +186,24 @@ export default function DocumentoVisitaScreen() {
     ? enviarAssinaturaMutation.variables?.tipo
     : undefined;
 
+  const concluindoRef = useRef(false);
+  const concluirMutation = useMutation({
+    mutationFn: () => concluirVisitaRequest(id),
+    onSuccess: (visitaAtualizada) => {
+      queryClient.setQueryData(["visita", id], visitaAtualizada);
+      queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    },
+    onSettled: () => {
+      concluindoRef.current = false;
+    },
+  });
+
+  function concluirVisita() {
+    if (concluindoRef.current) return;
+    concluindoRef.current = true;
+    concluirMutation.mutate();
+  }
+
   const titulo = "Revisar e assinar";
 
   if (!storeHidratada || visitaQuery.isLoading || perguntasQuery.isLoading) {
@@ -252,6 +279,14 @@ export default function DocumentoVisitaScreen() {
 
   const totalConcluidos = [assinaturaFiscal, assinaturaResponsavel].filter(Boolean).length;
   const totalRecusas = assinaturaResponsavel?.recusou ? 1 : 0;
+
+  const todasAssinaturasColetadas = totalConcluidos === TOTAL_ASSINANTES;
+  const podeConcluir =
+    documentoId !== null &&
+    todasAssinaturasColetadas &&
+    visita.status === "em_andamento" &&
+    !enviarAssinaturaMutation.isPending &&
+    !concluirMutation.isPending;
 
   const travarRolagem = () => setRolagemAtiva(false);
   const liberarRolagem = () => setRolagemAtiva(true);
@@ -387,8 +422,21 @@ export default function DocumentoVisitaScreen() {
           {totalConcluidos} de {TOTAL_ASSINANTES} assinantes concluídos
           {totalRecusas > 0 ? ` · ${totalRecusas} recusa` : ""}
         </Text>
-        <Pressable style={[styles.botaoEnviar, styles.botaoDesabilitado]} disabled>
-          <Text style={styles.botaoEnviarTexto}>Encerrar e enviar</Text>
+        {!todasAssinaturasColetadas && (
+          <Text style={styles.rodapeDica}>Colete as assinaturas para encerrar a visita.</Text>
+        )}
+        <Pressable
+          style={[styles.botaoEnviar, !podeConcluir && styles.botaoDesabilitado]}
+          disabled={!podeConcluir}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !podeConcluir, busy: concluirMutation.isPending }}
+          onPress={concluirVisita}
+        >
+          {concluirMutation.isPending ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.botaoEnviarTexto}>Encerrar e enviar</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -561,6 +609,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#17803F",
     justifyContent: "center",
     alignItems: "center",
+  },
+  rodapeDica: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#4A5B73",
+    textAlign: "center",
   },
   botaoDesabilitado: {
     opacity: 0.5,
