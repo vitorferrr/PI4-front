@@ -100,6 +100,7 @@ export default function DocumentoVisitaScreen() {
   const observacoesLivres = useVisitaEmAndamentoStore((state) => state.observacoesLivres);
   const assinaturas = useVisitaEmAndamentoStore((state) => state.assinaturasColetadas);
   const registrarAssinatura = useVisitaEmAndamentoStore((state) => state.registrarAssinatura);
+  const limparVisitaStore = useVisitaEmAndamentoStore((state) => state.limparVisitaStore);
   const documentoIdStore = useVisitaEmAndamentoStore((state) => state.documentoId);
   const definirDocumentoId = useVisitaEmAndamentoStore((state) => state.definirDocumentoId);
 
@@ -192,6 +193,28 @@ export default function DocumentoVisitaScreen() {
     onSuccess: (visitaAtualizada) => {
       queryClient.setQueryData(["visita", id], visitaAtualizada);
       queryClient.invalidateQueries({ queryKey: ["visitas"] });
+
+      Alert.alert(
+        "Visita concluída",
+        "As assinaturas foram enviadas e a visita foi encerrada com sucesso.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              router.dismissTo("/");
+              limparVisitaStore();
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    },
+    onError: (erro) => {
+      if (erro instanceof SessaoExpiradaError) return;
+      Alert.alert(
+        "Não foi possível concluir a visita",
+        `${mensagemDoErro(erro)}\n\nOs dados continuam salvos no aparelho. Tente novamente.`
+      );
     },
     onSettled: () => {
       concluindoRef.current = false;
