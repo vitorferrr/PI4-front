@@ -1,8 +1,24 @@
 import { useState } from "react";
-import { View, Text, TextInput, Image, Pressable, Alert, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { SignaturePad } from "@/components/SignaturePad";
 import { formatarHora } from "@/lib/formatadores";
 import type { AssinaturaColetada } from "@/store/visitaEmAndamentoStore";
+
+const EMAIL_VALIDO = /^[^\s@<>,;:"()[\]\\]+@[^\s@<>,;:"()[\]\\]+\.[^\s@<>,;:"()[\]\\]+$/;
+
+interface DadosAssinante {
+  nome: string;
+  email?: string;
+}
 
 interface CartaoAssinanteProps {
   rotulo: string;
@@ -11,9 +27,12 @@ interface CartaoAssinanteProps {
   nomeFixo?: string;
   rotuloCampoNome?: string;
   permitirRecusa?: boolean;
-  onConfirmar: (dados: { nome: string; imagem: string }) => void;
-  onRecusar?: (nome: string) => void;
-  onRefazer: () => void;
+  pedirEmail?: boolean;
+  onConfirmar: (dados: DadosAssinante & { imagem: string }) => void;
+  onRecusar?: (dados: DadosAssinante) => void;
+  onRefazer?: () => void;
+  enviando?: boolean;
+  aviso?: string;
   onInicioDesenho?: () => void;
   onFimDesenho?: () => void;
 }
@@ -25,16 +44,22 @@ export function CartaoAssinante({
   nomeFixo,
   rotuloCampoNome,
   permitirRecusa = false,
+  pedirEmail = false,
   onConfirmar,
   onRecusar,
   onRefazer,
+  enviando = false,
+  aviso,
   onInicioDesenho,
   onFimDesenho,
 }: CartaoAssinanteProps) {
   const [nomeDigitado, setNomeDigitado] = useState("");
   const [avisoNome, setAvisoNome] = useState(false);
+  const [emailDigitado, setEmailDigitado] = useState("");
+  const [avisoEmail, setAvisoEmail] = useState(false);
 
   const nome = (nomeFixo ?? nomeDigitado).trim();
+  const email = emailDigitado.trim();
 
   if (assinatura) {
     const hora = formatarHora(assinatura.assinadoEm);
@@ -59,9 +84,11 @@ export function CartaoAssinante({
               {assinatura.recusou ? `Recusou-se a assinar · ${hora}` : `Assinado às ${hora}`}
             </Text>
           </View>
-          <Pressable accessibilityRole="button" onPress={onRefazer}>
-            <Text style={styles.link}>Refazer</Text>
-          </Pressable>
+          {onRefazer && (
+            <Pressable accessibilityRole="button" onPress={onRefazer}>
+              <Text style={styles.link}>Refazer</Text>
+            </Pressable>
+          )}
         </View>
         {assinatura.imagemUri && (
           <Image
@@ -84,22 +111,34 @@ export function CartaoAssinante({
     );
   }
 
+  function dadosValidos() {
+    const nomeOk = Boolean(nome);
+    const emailOk = !pedirEmail || email === "" || EMAIL_VALIDO.test(email);
+    setAvisoNome(!nomeOk);
+    setAvisoEmail(!emailOk);
+    return nomeOk && emailOk;
+  }
+
+  function dadosDoAssinante(): DadosAssinante {
+    return pedirEmail && email ? { nome, email } : { nome };
+  }
+
   function confirmar(imagem: string) {
-    if (!nome) {
-      setAvisoNome(true);
-      return;
-    }
-    onConfirmar({ nome, imagem });
+    if (enviando) return;
+    if (!dadosValidos()) return;
+    onConfirmar({ ...dadosDoAssinante(), imagem });
   }
 
   function recusar() {
-    if (!nome) {
-      setAvisoNome(true);
-      return;
-    }
+    if (enviando) return;
+    if (!dadosValidos()) return;
     Alert.alert("Registrar recusa", `Confirmar que ${nome} se recusou a assinar o documento?`, [
       { text: "Cancelar", style: "cancel" },
-      { text: "Confirmar recusa", style: "destructive", onPress: () => onRecusar?.(nome) },
+      {
+        text: "Confirmar recusa",
+        style: "destructive",
+        onPress: () => onRecusar?.(dadosDoAssinante()),
+      },
     ]);
   }
 
@@ -123,16 +162,50 @@ export function CartaoAssinante({
             placeholderTextColor="#8A9AB0"
           />
           {avisoNome && <Text style={styles.aviso}>Informe o nome antes de continuar.</Text>}
+
+          {pedirEmail && (
+            <>
+              <Text style={styles.rotuloAtivo}>
+                E-mail <Text style={styles.opcional}>(opcional, para receber o documento)</Text>
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={emailDigitado}
+                onChangeText={(texto) => {
+                  setEmailDigitado(texto);
+                  setAvisoEmail(false);
+                }}
+                placeholder="email@exemplo.com"
+                placeholderTextColor="#8A9AB0"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+              />
+              {avisoEmail && <Text style={styles.aviso}>Informe um e-mail válido.</Text>}
+            </>
+          )}
         </View>
       )}
 
-      <SignaturePad
-        onConfirmar={confirmar}
-        onInicioDesenho={onInicioDesenho}
-        onFimDesenho={onFimDesenho}
-      />
+      {aviso && <Text style={styles.avisoCartao}>{aviso}</Text>}
 
-      {permitirRecusa && (
+      <View pointerEvents={enviando ? "none" : "auto"} style={enviando && styles.bloqueado}>
+        <SignaturePad
+          onConfirmar={confirmar}
+          onInicioDesenho={onInicioDesenho}
+          onFimDesenho={onFimDesenho}
+        />
+      </View>
+
+      {enviando && (
+        <View style={styles.enviando}>
+          <ActivityIndicator color="#1D3F94" />
+          <Text style={styles.detalhe}>Enviando assinatura...</Text>
+        </View>
+      )}
+
+      {permitirRecusa && !enviando && (
         <Pressable style={styles.botaoRecusa} accessibilityRole="button" onPress={recusar}>
           <Text style={styles.link}>{rotulo} se recusou a assinar</Text>
         </Pressable>
@@ -142,6 +215,24 @@ export function CartaoAssinante({
 }
 
 const styles = StyleSheet.create({
+  opcional: {
+    fontFamily: "Inter_400Regular",
+    color: "#4A5B73",
+  },
+  avisoCartao: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#5C3F00",
+  },
+  bloqueado: {
+    opacity: 0.5,
+  },
+  enviando: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   cartao: {
     gap: 10,
     padding: 14,

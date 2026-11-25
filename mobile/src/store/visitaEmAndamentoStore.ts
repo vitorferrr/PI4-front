@@ -7,6 +7,7 @@ import { apagarImagemAssinatura } from "../lib/arquivosAssinatura";
 export type TipoAssinante = "fiscalizador" | "denunciado";
 
 export interface AssinaturaColetada {
+  idServidor: number;
   tipo: TipoAssinante;
   nome: string;
   usuarioId: number | null;
@@ -21,15 +22,15 @@ interface VisitaEmAndamentoState {
   respostas: Record<number, string>;
   observacoesLivres: string;
   assinaturasColetadas: AssinaturaColetada[];
-  // respostas do último POST /visitas/:id/respostas que deu certo, para não reenviar sem mudança
   respostasEnviadas: string | null;
+  documentoId: number | null;
+  definirDocumentoId: (documentoId: number) => void;
   iniciarVisitaStore: (visitaId: number, localizacao?: Coordenadas | null) => void;
   definirResposta: (perguntaId: number, valor: string) => void;
   definirObservacoesLivres: (texto: string) => void;
   definirRespostasEnviadas: (conteudo: string) => void;
   registrarAssinatura: (assinatura: AssinaturaColetada) => void;
   removerAssinatura: (tipo: TipoAssinante) => void;
-  descartarAssinaturas: () => void;
   limparVisitaStore: () => void;
 }
 
@@ -41,6 +42,7 @@ type EstadoSalvo = Pick<
   | "observacoesLivres"
   | "assinaturasColetadas"
   | "respostasEnviadas"
+  | "documentoId"
 >;
 
 function apagarArquivos(assinaturas: AssinaturaColetada[]) {
@@ -56,6 +58,9 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
       observacoesLivres: "",
       assinaturasColetadas: [],
       respostasEnviadas: null,
+      documentoId: null,
+
+      definirDocumentoId: (documentoId) => set({ documentoId }),
 
       iniciarVisitaStore: (visitaId, localizacao = null) => {
         const state = get();
@@ -71,20 +76,19 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
           observacoesLivres: "",
           assinaturasColetadas: [],
           respostasEnviadas: null,
+          documentoId: null,
         });
       },
 
       definirResposta: (perguntaId, valor) => {
         const state = get();
         if (state.respostas[perguntaId] === valor) return;
-        if (state.assinaturasColetadas.length > 0) get().descartarAssinaturas();
         set({ respostas: { ...state.respostas, [perguntaId]: valor } });
       },
 
       definirObservacoesLivres: (texto) => {
         const state = get();
         if (state.observacoesLivres === texto) return;
-        if (state.assinaturasColetadas.length > 0) get().descartarAssinaturas();
         set({ observacoesLivres: texto });
       },
 
@@ -109,11 +113,6 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
         });
       },
 
-      descartarAssinaturas: () => {
-        apagarArquivos(get().assinaturasColetadas);
-        set({ assinaturasColetadas: [] });
-      },
-
       limparVisitaStore: () => {
         apagarArquivos(get().assinaturasColetadas);
         set({
@@ -123,18 +122,24 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
           observacoesLivres: "",
           assinaturasColetadas: [],
           respostasEnviadas: null,
+          documentoId: null,
         });
       },
     }),
     {
       name: "visita-em-andamento-storage",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4,
+      version: 5,
       migrate: (estadoSalvo, versaoSalva) => {
         const estado = { ...(estadoSalvo as EstadoSalvo) };
         if (versaoSalva < 1) estado.respostas = {};
         if (versaoSalva < 3) estado.assinaturasColetadas = [];
         if (versaoSalva < 4) estado.respostasEnviadas = null;
+        if (versaoSalva < 5) {
+          apagarArquivos(estado.assinaturasColetadas ?? []);
+          estado.assinaturasColetadas = [];
+          estado.documentoId = null;
+        }
         return estado;
       },
       partialize: (state) => ({
@@ -144,6 +149,7 @@ export const useVisitaEmAndamentoStore = create<VisitaEmAndamentoState>()(
         observacoesLivres: state.observacoesLivres,
         assinaturasColetadas: state.assinaturasColetadas,
         respostasEnviadas: state.respostasEnviadas,
+        documentoId: state.documentoId,
       }),
     }
   )

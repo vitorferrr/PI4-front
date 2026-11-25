@@ -7,13 +7,14 @@ export class SessaoExpiradaError extends Error {
   sessaoExpirada = true;
 }
 
-// erros[] traz o motivo de cada falha de validação devolvida pelo back (400)
 export class ApiError extends Error {
   erros: string[];
+  status?: number;
 
-  constructor(mensagem: string, erros: string[] = []) {
+  constructor(mensagem: string, erros: string[] = [], status?: number) {
     super(mensagem);
     this.erros = erros;
+    this.status = status;
   }
 }
 
@@ -58,8 +59,14 @@ export async function apiFetch<T>(
     const erros = Array.isArray(erro?.erros)
       ? erro.erros.filter((item: unknown): item is string => typeof item === "string")
       : [];
-    throw new ApiError(erro?.erro?.mensagem || erro?.mensagem || mensagemErroPadrao, erros);
+    throw new ApiError(
+      erro?.erro?.mensagem || erro?.mensagem || mensagemErroPadrao,
+      erros,
+      response.status
+    );
   }
+
+  if (response.status === 204) return undefined as T;
 
   return response.json() as Promise<T>;
 }
