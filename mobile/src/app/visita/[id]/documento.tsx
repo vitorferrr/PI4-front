@@ -73,13 +73,15 @@ async function gerarDocumentoRequest(visitaId: string): Promise<DocumentoCriado>
   );
 }
 
+const TIMEOUT_GERACAO_PDF = 90000;
+
 async function enviarAssinaturaRequest(
   documentoId: number,
   corpo: CorpoAssinatura
 ): Promise<AssinaturaRegistrada> {
   return apiFetch<AssinaturaRegistrada>(
     `/documentos/${documentoId}/assinaturas`,
-    { method: "POST", body: JSON.stringify(corpo) },
+    { method: "POST", body: JSON.stringify(corpo), timeout: TIMEOUT_GERACAO_PDF },
     "Não foi possível enviar a assinatura."
   );
 }
@@ -95,7 +97,7 @@ async function removerAssinaturaRequest(documentoId: number, assinaturaId: numbe
 async function finalizarDocumentoRequest(documentoId: number): Promise<Finalizacao> {
   return apiFetch<Finalizacao>(
     `/documentos/${documentoId}/finalizar`,
-    { method: "POST" },
+    { method: "POST", timeout: TIMEOUT_GERACAO_PDF },
     "Não foi possível gerar o documento da visita."
   );
 }

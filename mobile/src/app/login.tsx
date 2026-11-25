@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 import { useSessaoStore, type UsuarioLogado } from "@/store/sessaoStore";
-import { API_URL } from "../lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 
 interface RespostaLogin {
   token: string;
@@ -10,17 +10,19 @@ interface RespostaLogin {
 }
 
 async function fazerLogin(email: string, senha: string): Promise<RespostaLogin> {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, senha }),
-  });
-
-  if (!response.ok) {
-    throw new Error("E-mail ou senha inválidos");
+  let data: RespostaLogin;
+  try {
+    data = await apiFetch<RespostaLogin>(
+      "/auth/login",
+      { method: "POST", body: JSON.stringify({ email, senha }) },
+      "Não foi possível entrar. Tente novamente."
+    );
+  } catch (erro) {
+    if (erro instanceof ApiError && erro.status === 401) {
+      throw new Error("E-mail ou senha inválidos");
+    }
+    throw erro;
   }
-
-  const data = await response.json();
 
   if (data.usuario?.role !== "fiscalizador") {
     throw new Error("Este aplicativo é exclusivo para fiscalizadores.");

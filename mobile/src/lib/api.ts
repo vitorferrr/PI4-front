@@ -1,3 +1,4 @@
+import axios from "axios";
 import { queryClient } from "./queryClient";
 import { useSessaoStore } from "@/store/sessaoStore";
 
@@ -23,50 +24,77 @@ export async function sair() {
   queryClient.clear();
 }
 
-export async function apiFetch<T>(
-  path: string,
-  init: RequestInit = {},
-  mensagemErroPadrao = "Erro na comunicação com o servidor."
-): Promise<T> {
+export const api = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+  timeout: 30000,
+});
+
+const ROTAS_SEM_SESSAO = ["/auth/login"];
+
+api.interceptors.request.use((config) => {
   const token = useSessaoStore.getState().token;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(init.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+api.interceptors.response.use(
+  (resposta) => resposta,
+  async (erro) => {
+    const rotaSemSessao = ROTAS_SEM_SESSAO.includes(erro.config?.url ?? "");
+    if (axios.isAxiosError(erro) && erro.response?.status === 401 && !rotaSemSessao) {
+      await sair();
+      return Promise.reject(new SessaoExpiradaError("Sessão expirada. Faça login novamente."));
+    }
+    return Promise.reject(erro);
   }
+);
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      ...init,
-      headers,
-    });
-  } catch {
-    throw new ApiError("Sem conexão. Verifique a internet e tente novamente.");
-  }
+interface CorpoDeErro {
+  mensagem?: string;
+  erro?: { mensagem?: string };
+  erros?: unknown;
+}
 
-  if (response.status === 401) {
-    await sair();
-    throw new SessaoExpiradaError("Sessão expirada. Faça login novamente.");
-  }
+function converterErro(erro: unknown, mensagemPadrao: string): Error {
+  if (erro instanceof SessaoExpiradaError) return erro;
 
-  if (!response.ok) {
-    const erro = await response.json().catch(() => null);
-    const erros = Array.isArray(erro?.erros)
-      ? erro.erros.filter((item: unknown): item is string => typeof item === "string")
+  if (axios.isAxiosError(erro)) {
+    if (erro.code === "ECONNABORTED") {
+      return new ApiError("O servidor demorou para responder. Tente novamente em instantes.");
+    }
+    if (!erro.response) {
+      return new ApiError("Sem conexão. Verifique a internet e tente novamente.");
+    }
+    const dados = erro.response.data as CorpoDeErro | undefined;
+    const erros = Array.isArray(dados?.erros)
+      ? dados.erros.filter((item): item is string => typeof item === "string")
       : [];
-    throw new ApiError(
-      erro?.erro?.mensagem || erro?.mensagem || mensagemErroPadrao,
+    return new ApiError(
+      dados?.erro?.mensagem || dados?.mensagem || mensagemPadrao,
       erros,
-      response.status
+      erro.response.status
     );
   }
 
-  if (response.status === 204) return undefined as T;
+  return erro instanceof Error ? erro : new ApiError(mensagemPadrao);
+}
 
-  return response.json() as Promise<T>;
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit & { timeout?: number } = {},
+  mensagemErroPadrao = "Erro na comunicação com o servidor."
+): Promise<T> {
+  try {
+    const resposta = await api.request<T>({
+      url: path,
+      method: init.method ?? "GET",
+      data: init.body ?? undefined,
+      headers: init.headers as Record<string, string> | undefined,
+      timeout: init.timeout,
+    });
+    return (resposta.status === 204 ? undefined : resposta.data) as T;
+  } catch (erro) {
+    throw converterErro(erro, mensagemErroPadrao);
+  }
 }
