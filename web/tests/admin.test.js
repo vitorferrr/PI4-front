@@ -150,7 +150,7 @@ test('painel usa GET /admin/dados-gerais e rejeita resposta fora do formato', as
 test('painel mostra indicadores e barras com os dados reais', () => {
   queryClient.setQueryData(['admin', 'dados-gerais'], dadosGerais);
   const html = render(h(Dashboard));
-  for (const texto of ['Visitas cadastradas', '4 agendadas', 'Em andamento', '20% do total de visitas', '5 assinaturas coletadas',
+  for (const texto of ['Visitas cadastradas', '4 agendadas', 'Em andamento', 'Concluídas', '5 assinaturas coletadas',
     'Visitas por status', 'Cancelada', 'Usuários por perfil', 'Fiscalizadores', '7 usuários cadastrados']) {
     assert.ok(html.includes(texto), texto);
   }
@@ -160,7 +160,7 @@ test('painel mostra indicadores e barras com os dados reais', () => {
   assert.ok(html.includes('href="/admin/visitas"'));
 });
 
-test('painel com tudo zerado não divide por zero', () => {
+test('painel com tudo zerado mostra zeros sem quebrar as barras', () => {
   const zerado = {
     visitas: { total: 0, por_status: { agendada: 0, em_andamento: 0, concluida: 0, cancelada: 0 } },
     usuarios: { total: 0, por_role: { admin: 0, gestor: 0, fiscalizador: 0 } },
@@ -168,7 +168,7 @@ test('painel com tudo zerado não divide por zero', () => {
   };
   queryClient.setQueryData(['admin', 'dados-gerais'], zerado);
   const html = render(h(Dashboard));
-  assert.ok(html.includes('0% do total de visitas'));
+  assert.ok(html.includes('0 agendadas'));
   assert.ok(!html.includes('NaN'));
   assert.ok(html.includes('width:0%'));
 });
@@ -197,7 +197,7 @@ test('listagem do admin usa GET /visitas e exige um array direto', async () => {
 test('listagem mostra gestor, fiscalizadores e links de detalhes de todas as equipes', () => {
   queryClient.setQueryData(['visitas'], visitasListagem);
   const html = renderVisitas();
-  for (const texto of ['Mercado São José', 'Gestor B', 'Ana Fiscal, Bruno Fiscal', 'Nenhum atribuído', 'Não informado', 'Exibindo 3 de 3 visitas']) {
+  for (const texto of ['Mercado São José', 'Gestor B', 'Ana Fiscal, Bruno Fiscal', 'Nenhum fiscalizador', 'Gestor não informado', 'Exibindo 3 de 3 visitas']) {
     assert.ok(html.includes(texto), texto);
   }
   for (const idVisita of [71, 72, 73]) assert.ok(html.includes(`href="/gestor/visitas/${idVisita}"`));

@@ -11,7 +11,6 @@ const PERFIS_USUARIO = {
   fiscalizador: 'Fiscalizadores',
 };
 
-const formatadorMes = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
 const formatadorNumero = new Intl.NumberFormat('pt-BR');
 
 function ehContagem(valor) {
@@ -37,18 +36,14 @@ async function buscarDadosGerais(signal) {
   return data;
 }
 
-function percentual(parte, total) {
-  return total > 0 ? Math.round((parte / total) * 100) : 0;
-}
-
 function montarIndicadores(dados) {
   const { visitas, documentos, assinaturas } = dados;
   const { agendada, em_andamento: emAndamento, concluida } = visitas.por_status;
 
   return [
     { titulo: 'Visitas cadastradas', valor: visitas.total, nota: `${formatadorNumero.format(agendada)} agendadas` },
-    { titulo: 'Em andamento', valor: emAndamento, nota: 'Fiscalizações em campo' },
-    { titulo: 'Concluídas', valor: concluida, nota: `${percentual(concluida, visitas.total)}% do total de visitas`, tom: 'sucesso' },
+    { titulo: 'Em andamento', valor: emAndamento },
+    { titulo: 'Concluídas', valor: concluida },
     { titulo: 'Documentos gerados', valor: documentos.total, nota: `${formatadorNumero.format(assinaturas.total)} assinaturas coletadas` },
   ];
 }
@@ -84,10 +79,7 @@ export default function AdminDashboardPage() {
   return (
     <article className={styles.page} aria-labelledby="painel-titulo">
       <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>{formatadorMes.format(new Date())}</p>
-          <h1 id="painel-titulo" className={styles.title}>Painel administrativo</h1>
-        </div>
+        <h1 id="painel-titulo" className={styles.title}>Painel administrativo</h1>
         <div className={styles.actions}>
           <Link to="/admin/usuarios" className={styles.button}>Usuários</Link>
           <Link to="/admin/visitas" className={`${styles.button} ${styles.primaryButton}`}>Ver visitas</Link>
@@ -114,7 +106,7 @@ export default function AdminDashboardPage() {
               <div key={indicador.titulo} className={styles.indicador}>
                 <h2 className={styles.indicadorTitulo}>{indicador.titulo}</h2>
                 <p className={styles.indicadorValor}>{formatadorNumero.format(indicador.valor)}</p>
-                <p className={`${styles.indicadorNota} ${indicador.tom === 'sucesso' ? styles.notaSucesso : ''}`}>{indicador.nota}</p>
+                {indicador.nota && <p className={styles.indicadorNota}>{indicador.nota}</p>}
               </div>
             ))}
           </section>

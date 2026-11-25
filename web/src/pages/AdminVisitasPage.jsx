@@ -48,7 +48,7 @@ function listarPessoas(visitas, obterPessoas) {
 
 function nomesFiscalizadores(visita) {
   const nomes = (visita.fiscalizadores ?? []).map((fiscalizador) => fiscalizador.nome).filter(Boolean);
-  return nomes.length > 0 ? nomes.join(', ') : 'Nenhum atribuído';
+  return nomes.length > 0 ? nomes.join(', ') : 'Nenhum fiscalizador';
 }
 
 export default function AdminVisitasPage() {
@@ -83,10 +83,7 @@ export default function AdminVisitasPage() {
   return (
     <article className={styles.page} aria-labelledby="admin-visitas-titulo">
       <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Todas as equipes</p>
-          <h1 id="admin-visitas-titulo" className={styles.title}>Visitas</h1>
-        </div>
+        <h1 id="admin-visitas-titulo" className={styles.title}>Visitas</h1>
         <button
           type="button"
           className={`${styles.button} ${styles.primaryButton}`}
@@ -178,8 +175,7 @@ export default function AdminVisitasPage() {
                       <th scope="col">ID</th>
                       <th scope="col">Estabelecimento</th>
                       <th scope="col">Data agendada</th>
-                      <th scope="col">Gestor</th>
-                      <th scope="col">Fiscalizadores</th>
+                      <th scope="col">Equipe</th>
                       <th scope="col">Status</th>
                       <th scope="col">Ações</th>
                     </tr>
@@ -190,13 +186,15 @@ export default function AdminVisitasPage() {
                         <td>{visita.id}</td>
                         <th scope="row">{visita.denunciado || 'Não informado'}</th>
                         <td>{formatarDataVisita(visita.data_agendada)}</td>
-                        <td>{visita.gestor?.nome || 'Não informado'}</td>
-                        <td>{nomesFiscalizadores(visita)}</td>
-                        <td><VisitaStatus status={visita.status} /></td>
+                        <td>
+                          <span className={styles.gestor}>{visita.gestor?.nome || 'Gestor não informado'}</span>
+                          <span className={styles.fiscalizadores}>{nomesFiscalizadores(visita)}</span>
+                        </td>
+                        <td className={styles.nowrap}><VisitaStatus status={visita.status} /></td>
                         <td>
                           <Link to={`/gestor/visitas/${visita.id}`} className={styles.detailsLink}
                             aria-label={`Ver detalhes da visita ${visita.id}: ${visita.denunciado}`}>
-                            Ver detalhes
+                            Abrir
                           </Link>
                         </td>
                       </tr>

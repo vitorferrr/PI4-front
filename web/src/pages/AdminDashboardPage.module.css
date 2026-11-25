@@ -13,20 +13,9 @@
 .header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-}
-
-.eyebrow {
-  margin: 0 0 0.25rem;
-  color: #2f7a4d;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.eyebrow::first-letter {
-  text-transform: uppercase;
 }
 
 .title {
@@ -137,10 +126,6 @@
   color: #606b75;
   font-size: 0.8125rem;
   font-weight: 600;
-}
-
-.notaSucesso {
-  color: #21623e;
 }
 
 .graficos {
