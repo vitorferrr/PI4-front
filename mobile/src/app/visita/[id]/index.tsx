@@ -11,21 +11,15 @@ import {
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import { apiFetch } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useVisita } from "@/hooks/use-visita";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { VisitaDetalhe, Coordenadas } from "@/types/visita";
 import { formatarData, formatarStatus } from "@/lib/formatadores";
 
 async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<VisitaDetalhe> {
-  return apiFetch<VisitaDetalhe>(
-    `/visitas/${id}/iniciar`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(coords),
-    },
-    "Erro ao iniciar a visita."
-  );
+  const response = await api.patch<VisitaDetalhe>(`/visitas/${id}/iniciar`, coords);
+  return response.data;
 }
 
 export default function VisitaDetalheScreen() {
