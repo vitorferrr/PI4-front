@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useMutation } from "@tanstack/react-query";
-import axios from "axios";
 import { useSessaoStore, type UsuarioLogado } from "@/store/sessaoStore";
-import { api } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 
 interface RespostaLogin {
   token: string;
@@ -13,12 +12,16 @@ interface RespostaLogin {
 async function fazerLogin(email: string, senha: string): Promise<RespostaLogin> {
   let data: RespostaLogin;
   try {
-    ({ data } = await api.post<RespostaLogin>("/auth/login", { email, senha }));
+    data = await apiFetch<RespostaLogin>(
+      "/auth/login",
+      { method: "POST", body: JSON.stringify({ email, senha }) },
+      "Não foi possível entrar. Tente novamente."
+    );
   } catch (erro) {
-    if (axios.isAxiosError(erro) && !erro.response) {
-      throw new Error("Sem conexão. Verifique a internet e tente novamente.");
+    if (erro instanceof ApiError && erro.status === 401) {
+      throw new Error("E-mail ou senha inválidos");
     }
-    throw new Error("E-mail ou senha inválidos");
+    throw erro;
   }
 
   if (data.usuario?.role !== "fiscalizador") {

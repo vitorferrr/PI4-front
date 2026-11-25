@@ -27,6 +27,7 @@ export async function sair() {
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
+  timeout: 30000,
 });
 
 const ROTAS_SEM_SESSAO = ["/auth/login"];
@@ -59,6 +60,9 @@ function converterErro(erro: unknown, mensagemPadrao: string): Error {
   if (erro instanceof SessaoExpiradaError) return erro;
 
   if (axios.isAxiosError(erro)) {
+    if (erro.code === "ECONNABORTED") {
+      return new ApiError("O servidor demorou para responder. Tente novamente em instantes.");
+    }
     if (!erro.response) {
       return new ApiError("Sem conexão. Verifique a internet e tente novamente.");
     }
