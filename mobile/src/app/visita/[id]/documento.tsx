@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { apiFetch, ApiError, SessaoExpiradaError } from "@/lib/api";
+import { api, ApiError, SessaoExpiradaError } from "@/lib/api";
 import { formatarData } from "@/lib/formatadores";
 import { salvarImagemAssinatura } from "@/lib/arquivosAssinatura";
 import { useVisita } from "@/hooks/use-visita";
@@ -66,11 +66,8 @@ interface NovaAssinatura {
 }
 
 async function gerarDocumentoRequest(visitaId: string): Promise<DocumentoCriado> {
-  return apiFetch<DocumentoCriado>(
-    `/visitas/${visitaId}/documento`,
-    { method: "POST" },
-    "Não foi possível preparar o documento da visita."
-  );
+  const response = await api.post<DocumentoCriado>(`/visitas/${visitaId}/documento`);
+  return response.data;
 }
 
 const TIMEOUT_GERACAO_PDF = 90000;
@@ -79,35 +76,28 @@ async function enviarAssinaturaRequest(
   documentoId: number,
   corpo: CorpoAssinatura
 ): Promise<AssinaturaRegistrada> {
-  return apiFetch<AssinaturaRegistrada>(
+  const response = await api.post<AssinaturaRegistrada>(
     `/documentos/${documentoId}/assinaturas`,
-    { method: "POST", body: JSON.stringify(corpo), timeout: TIMEOUT_GERACAO_PDF },
-    "Não foi possível enviar a assinatura."
+    corpo,
+    { timeout: TIMEOUT_GERACAO_PDF }
   );
+  return response.data;
 }
 
 async function removerAssinaturaRequest(documentoId: number, assinaturaId: number) {
-  return apiFetch<void>(
-    `/documentos/${documentoId}/assinaturas/${assinaturaId}`,
-    { method: "DELETE" },
-    "Não foi possível refazer a assinatura."
-  );
+  await api.delete(`/documentos/${documentoId}/assinaturas/${assinaturaId}`);
 }
 
 async function finalizarDocumentoRequest(documentoId: number): Promise<Finalizacao> {
-  return apiFetch<Finalizacao>(
-    `/documentos/${documentoId}/finalizar`,
-    { method: "POST", timeout: TIMEOUT_GERACAO_PDF },
-    "Não foi possível gerar o documento da visita."
-  );
+  const response = await api.post<Finalizacao>(`/documentos/${documentoId}/finalizar`, undefined, {
+    timeout: TIMEOUT_GERACAO_PDF,
+  });
+  return response.data;
 }
 
 async function concluirVisitaRequest(visitaId: string): Promise<VisitaDetalhe> {
-  return apiFetch<VisitaDetalhe>(
-    `/visitas/${visitaId}/concluir`,
-    { method: "PATCH" },
-    "Não foi possível concluir a visita."
-  );
+  const response = await api.patch<VisitaDetalhe>(`/visitas/${visitaId}/concluir`);
+  return response.data;
 }
 
 function mensagemDoErro(erro: Error) {
@@ -258,7 +248,6 @@ export default function DocumentoVisitaScreen() {
       try {
         await removerAssinaturaRequest(documentoId, assinatura.idServidor);
       } catch (erro) {
-        // 404: o back já apagou numa tentativa anterior cuja resposta se perdeu
         if (erro instanceof ApiError && erro.status === 404) return;
         throw erro;
       }

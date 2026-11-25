@@ -46,7 +46,7 @@ api.interceptors.response.use(
       await sair();
       return Promise.reject(new SessaoExpiradaError("Sessão expirada. Faça login novamente."));
     }
-    return Promise.reject(erro);
+    return Promise.reject(converterErro(erro));
   }
 );
 
@@ -56,7 +56,9 @@ interface CorpoDeErro {
   erros?: unknown;
 }
 
-function converterErro(erro: unknown, mensagemPadrao: string): Error {
+const MENSAGEM_ERRO_PADRAO = "Erro na comunicação com o servidor.";
+
+function converterErro(erro: unknown): Error {
   if (erro instanceof SessaoExpiradaError) return erro;
 
   if (axios.isAxiosError(erro)) {
@@ -71,30 +73,11 @@ function converterErro(erro: unknown, mensagemPadrao: string): Error {
       ? dados.erros.filter((item): item is string => typeof item === "string")
       : [];
     return new ApiError(
-      dados?.erro?.mensagem || dados?.mensagem || mensagemPadrao,
+      dados?.erro?.mensagem || dados?.mensagem || MENSAGEM_ERRO_PADRAO,
       erros,
       erro.response.status
     );
   }
 
-  return erro instanceof Error ? erro : new ApiError(mensagemPadrao);
-}
-
-export async function apiFetch<T>(
-  path: string,
-  init: RequestInit & { timeout?: number } = {},
-  mensagemErroPadrao = "Erro na comunicação com o servidor."
-): Promise<T> {
-  try {
-    const resposta = await api.request<T>({
-      url: path,
-      method: init.method ?? "GET",
-      data: init.body ?? undefined,
-      headers: init.headers as Record<string, string> | undefined,
-      timeout: init.timeout,
-    });
-    return (resposta.status === 204 ? undefined : resposta.data) as T;
-  } catch (erro) {
-    throw converterErro(erro, mensagemErroPadrao);
-  }
+  return erro instanceof Error ? erro : new ApiError(MENSAGEM_ERRO_PADRAO);
 }
