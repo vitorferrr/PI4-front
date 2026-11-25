@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { useSessaoStore } from "@/store/sessaoStore";
 
-// o apiFetch transforma o 401 do back em SessaoExpiradaError (com a flag sessaoExpirada)
+// o interceptor do axios (lib/api.ts) transforma o 401 do back em SessaoExpiradaError
 export function ehSessaoExpirada(erro: unknown) {
   return (erro as { sessaoExpirada?: boolean } | null)?.sessaoExpirada === true;
 }

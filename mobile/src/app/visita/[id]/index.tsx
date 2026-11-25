@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, SessaoExpiradaError } from "@/lib/api";
+import { api, SessaoExpiradaError } from "@/lib/api";
 import { capturarLocalizacao, ErroLocalizacao } from "@/lib/localizacao";
 import { useVisita } from "@/hooks/use-visita";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
@@ -21,14 +21,8 @@ import { VisitaDetalhe, Coordenadas } from "@/types/visita";
 import { formatarData, formatarStatus } from "@/lib/formatadores";
 
 async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<VisitaDetalhe> {
-  return apiFetch<VisitaDetalhe>(
-    `/visitas/${id}/iniciar`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(coords),
-    },
-    "Erro ao iniciar a visita."
-  );
+  const response = await api.patch<VisitaDetalhe>(`/visitas/${id}/iniciar`, coords);
+  return response.data;
 }
 
 function abrirConfiguracoesLocalizacao() {
