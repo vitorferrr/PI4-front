@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { View, Text, TextInput, Image, Pressable, Alert, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { SignaturePad } from "@/components/SignaturePad";
 import { formatarHora } from "@/lib/formatadores";
 import type { AssinaturaColetada } from "@/store/visitaEmAndamentoStore";
@@ -13,7 +22,8 @@ interface CartaoAssinanteProps {
   permitirRecusa?: boolean;
   onConfirmar: (dados: { nome: string; imagem: string }) => void;
   onRecusar?: (nome: string) => void;
-  onRefazer: () => void;
+  onRefazer?: () => void;
+  enviando?: boolean;
   onInicioDesenho?: () => void;
   onFimDesenho?: () => void;
 }
@@ -28,6 +38,7 @@ export function CartaoAssinante({
   onConfirmar,
   onRecusar,
   onRefazer,
+  enviando = false,
   onInicioDesenho,
   onFimDesenho,
 }: CartaoAssinanteProps) {
@@ -59,9 +70,11 @@ export function CartaoAssinante({
               {assinatura.recusou ? `Recusou-se a assinar · ${hora}` : `Assinado às ${hora}`}
             </Text>
           </View>
-          <Pressable accessibilityRole="button" onPress={onRefazer}>
-            <Text style={styles.link}>Refazer</Text>
-          </Pressable>
+          {onRefazer && (
+            <Pressable accessibilityRole="button" onPress={onRefazer}>
+              <Text style={styles.link}>Refazer</Text>
+            </Pressable>
+          )}
         </View>
         {assinatura.imagemUri && (
           <Image
@@ -85,6 +98,7 @@ export function CartaoAssinante({
   }
 
   function confirmar(imagem: string) {
+    if (enviando) return;
     if (!nome) {
       setAvisoNome(true);
       return;
@@ -93,6 +107,7 @@ export function CartaoAssinante({
   }
 
   function recusar() {
+    if (enviando) return;
     if (!nome) {
       setAvisoNome(true);
       return;
@@ -126,13 +141,23 @@ export function CartaoAssinante({
         </View>
       )}
 
-      <SignaturePad
-        onConfirmar={confirmar}
-        onInicioDesenho={onInicioDesenho}
-        onFimDesenho={onFimDesenho}
-      />
+      {/* enquanto envia, a área fica apagada e não aceita toques */}
+      <View pointerEvents={enviando ? "none" : "auto"} style={enviando && styles.bloqueado}>
+        <SignaturePad
+          onConfirmar={confirmar}
+          onInicioDesenho={onInicioDesenho}
+          onFimDesenho={onFimDesenho}
+        />
+      </View>
 
-      {permitirRecusa && (
+      {enviando && (
+        <View style={styles.enviando}>
+          <ActivityIndicator color="#1D3F94" />
+          <Text style={styles.detalhe}>Enviando assinatura...</Text>
+        </View>
+      )}
+
+      {permitirRecusa && !enviando && (
         <Pressable style={styles.botaoRecusa} accessibilityRole="button" onPress={recusar}>
           <Text style={styles.link}>{rotulo} se recusou a assinar</Text>
         </Pressable>
@@ -142,6 +167,14 @@ export function CartaoAssinante({
 }
 
 const styles = StyleSheet.create({
+  bloqueado: {
+    opacity: 0.5,
+  },
+  enviando: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   cartao: {
     gap: 10,
     padding: 14,
