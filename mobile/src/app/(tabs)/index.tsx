@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { View, Text, FlatList, Pressable, Alert, StyleSheet } from "react-native";
-import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator, Avatar, Button, Chip } from "react-native-paper";
@@ -33,7 +32,6 @@ function dataDeHoje() {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-// o usuário salvo no aparelho só tem o id validado, então o nome pode faltar
 function iniciais(nome?: string) {
   const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
   const primeira = partes[0]?.charAt(0) ?? "";
@@ -77,7 +75,6 @@ export default function VisitasScreen() {
 
   return (
     <View style={styles.tela}>
-      <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="light" />
 
       <View style={styles.cabecalho}>
