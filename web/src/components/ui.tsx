@@ -1,6 +1,14 @@
-import type { ReactNode } from "react";
-import { View, Text, Image, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
-import { Button, Icon, TextInput, type TextInputProps } from "react-native-paper";
+import { useState, type ReactNode } from "react";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import { Button, Icon, Menu, TextInput, type TextInputProps } from "react-native-paper";
 import { PERFIL_ROTULO } from "@/lib/rotulos";
 import { STATUS_VISITA } from "@/lib/visitas";
 import { cores } from "@/theme";
@@ -172,6 +180,67 @@ export function Campo({
       />
       {erro ? <Text style={styles.campoErro}>{erro}</Text> : null}
     </View>
+  );
+}
+
+export interface OpcaoSelecao {
+  valor: string;
+  rotulo: string;
+}
+
+// Substitui o <select> do HTML: um campo que abre o Menu do Paper com as opções
+export function Selecao({
+  rotulo,
+  valor,
+  opcoes,
+  onChange,
+}: {
+  rotulo: string;
+  valor: string;
+  opcoes: OpcaoSelecao[];
+  onChange: (valor: string) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const escolhida = opcoes.find((opcao) => opcao.valor === valor) ?? opcoes[0];
+
+  return (
+    <Menu
+      visible={aberto}
+      onDismiss={() => setAberto(false)}
+      anchorPosition="bottom"
+      contentStyle={styles.selecaoMenu}
+      anchor={
+        <Pressable
+          onPress={() => setAberto(true)}
+          accessibilityRole="combobox"
+          accessibilityLabel={rotulo}
+          accessibilityValue={{ text: escolhida?.rotulo }}
+          style={({ pressed }) => [styles.selecao, (pressed || aberto) && styles.selecaoAberta]}
+        >
+          <Text style={styles.selecaoTexto} numberOfLines={1}>
+            {escolhida?.rotulo}
+          </Text>
+          <Icon
+            source={aberto ? "chevron-up" : "chevron-down"}
+            size={20}
+            color={cores.textoMedio}
+          />
+        </Pressable>
+      }
+    >
+      {opcoes.map((opcao) => (
+        <Menu.Item
+          key={opcao.valor}
+          title={opcao.rotulo}
+          titleStyle={opcao.valor === valor ? styles.selecaoItemAtivo : styles.selecaoItem}
+          leadingIcon={opcao.valor === valor ? "check" : undefined}
+          onPress={() => {
+            setAberto(false);
+            onChange(opcao.valor);
+          }}
+        />
+      ))}
+    </Menu>
   );
 }
 
@@ -352,6 +421,39 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     color: cores.erroForte,
+  },
+  selecao: {
+    height: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: cores.bordaCampo,
+    backgroundColor: cores.branco,
+  },
+  selecaoAberta: {
+    borderColor: cores.azul,
+  },
+  selecaoTexto: {
+    flex: 1,
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: cores.texto,
+  },
+  selecaoMenu: {
+    backgroundColor: cores.branco,
+  },
+  selecaoItem: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: cores.texto,
+  },
+  selecaoItemAtivo: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    color: cores.azulEscuro,
   },
   botao: {
     borderRadius: 10,

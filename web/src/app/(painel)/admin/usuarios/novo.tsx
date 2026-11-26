@@ -1,5 +1,5 @@
-import { EmConversao } from "@/components/EmConversao";
+import { FormularioUsuario } from "@/components/FormularioUsuario";
 
-export default function Tela() {
-  return <EmConversao titulo="Novo usuário" />;
+export default function NovoUsuarioScreen() {
+  return <FormularioUsuario />;
 }
