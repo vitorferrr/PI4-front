@@ -242,7 +242,6 @@ export default function DocumentoVisitaScreen() {
       try {
         await removerAssinaturaRequest(documentoId, assinatura.idServidor);
       } catch (erro) {
-        // 404: o back já apagou numa tentativa anterior cuja resposta se perdeu
         if (erro instanceof ApiError && erro.status === 404) return;
         throw erro;
       }

@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, Alert, StyleSheet } from "react-native
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActivityIndicator, Avatar, Button, Chip } from "react-native-paper";
+import { ActivityIndicator, Avatar, Button, Chip, Icon } from "react-native-paper";
 import { useVisitas } from "@/hooks/use-visitas";
 import { sair } from "@/lib/api";
 import { useSessaoStore } from "@/store/sessaoStore";
@@ -40,10 +40,24 @@ function iniciais(nome: string) {
   return (primeira + ultima).toUpperCase();
 }
 
-function confirmarSaida() {
+function confirmarSaida(temVisitaNoAparelho: boolean) {
+  const sairAgora = () => sair().catch(() => {});
+
+  if (temVisitaNoAparelho) {
+    Alert.alert(
+      "Visita em andamento",
+      "Você tem uma visita em andamento salva neste aparelho. Se sair agora, as respostas e assinaturas que ainda não foram enviadas serão apagadas.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Sair e apagar", style: "destructive", onPress: sairAgora },
+      ]
+    );
+    return;
+  }
+
   Alert.alert("Sair da conta", "Deseja sair do aplicativo?", [
     { text: "Cancelar", style: "cancel" },
-    { text: "Sair", style: "destructive", onPress: () => sair().catch(() => {}) },
+    { text: "Sair", style: "destructive", onPress: sairAgora },
   ]);
 }
 
@@ -75,10 +89,11 @@ export default function VisitasScreen() {
             </Text>
           </View>
           <Pressable
-            onPress={confirmarSaida}
+            onPress={() => confirmarSaida(visitaNoAparelho !== null)}
             accessibilityRole="button"
-            accessibilityLabel="Perfil e sair"
+            accessibilityLabel="Sair da conta"
             hitSlop={8}
+            style={styles.botaoSair}
           >
             <Avatar.Text
               size={48}
@@ -87,6 +102,10 @@ export default function VisitasScreen() {
               labelStyle={styles.avatarTexto}
               color={cores.azulEscuro}
             />
+            <View style={styles.sairLinha}>
+              <Icon source="logout" size={14} color={cores.branco} />
+              <Text style={styles.sairTexto}>Sair</Text>
+            </View>
           </Pressable>
         </View>
       </View>
@@ -148,15 +167,15 @@ export default function VisitasScreen() {
       <View style={[styles.rodape, { paddingBottom: 24 + insets.bottom }]}>
         <Button
           mode="outlined"
-          icon="sync"
+          icon="refresh"
           onPress={() => refetch()}
           loading={isRefetching}
           disabled={isPending || isRefetching}
-          style={styles.botaoSincronizar}
-          contentStyle={styles.botaoSincronizarConteudo}
-          labelStyle={styles.botaoSincronizarTexto}
+          style={styles.botaoAtualizar}
+          contentStyle={styles.botaoAtualizarConteudo}
+          labelStyle={styles.botaoAtualizarTexto}
         >
-          Sincronizar agora
+          Atualizar lista
         </Button>
       </View>
     </View>
@@ -201,6 +220,20 @@ const styles = StyleSheet.create({
   avatarTexto: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 16,
+  },
+  botaoSair: {
+    alignItems: "center",
+    gap: 4,
+  },
+  sairLinha: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  sairTexto: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    color: cores.branco,
   },
   filtros: {
     flexDirection: "row",
@@ -255,16 +288,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: cores.bordaClara,
   },
-  botaoSincronizar: {
+  botaoAtualizar: {
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: cores.azul,
     backgroundColor: cores.branco,
   },
-  botaoSincronizarConteudo: {
+  botaoAtualizarConteudo: {
     height: 52,
   },
-  botaoSincronizarTexto: {
+  botaoAtualizarTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 16,
   },

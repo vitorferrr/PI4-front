@@ -41,7 +41,7 @@ export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps)
         <SeloStatus status={visita.status} />
         {diaMes && (
           <Text style={[styles.prazo, atrasada && styles.prazoAtrasado]}>
-            {atrasada ? `Venceu ${diaMes}` : `Até ${diaMes}`}
+            {atrasada ? `Atrasada · ${diaMes}` : `Agendada para ${diaMes}`}
           </Text>
         )}
       </View>
@@ -51,7 +51,8 @@ export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps)
         {endereco !== "" && <Text style={styles.detalhe}>{endereco}</Text>}
       </View>
 
-      {salvaNoAparelho && (
+      {/* o back conclui a visita na última assinatura, antes de o store ser limpo */}
+      {salvaNoAparelho && visita.status === "em_andamento" && (
         <View style={styles.linhaAparelho}>
           <View style={styles.bolinha} />
           <Text style={styles.aparelhoTexto}>Em andamento · salva no aparelho</Text>

@@ -85,8 +85,8 @@ export default function LoginScreen() {
             </View>
 
             <Text style={styles.subtitulo}>
-              Suas visitas ficam no celular e funcionam{" "}
-              <Text style={styles.subtituloNegrito}>sem internet</Text>.
+              Suas respostas ficam <Text style={styles.subtituloNegrito}>salvas no celular</Text>{" "}
+              até você concluir a visita.
             </Text>
           </View>
         </View>

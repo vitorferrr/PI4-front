@@ -29,7 +29,6 @@ async function iniciarVisitaRequest(id: string, coords: Coordenadas): Promise<Vi
 }
 
 function abrirConfiguracoesLocalizacao() {
-  // no Android dá para abrir direto a tela de localização; no iOS só as configurações do app
   if (Platform.OS === "android") {
     Linking.sendIntent("android.settings.LOCATION_SOURCE_SETTINGS").catch(() =>
       Linking.openSettings()
@@ -94,9 +93,6 @@ function MapaIlustrativo() {
       <View style={[styles.rua, styles.ruaHorizontal]} />
       <View style={[styles.rua, styles.ruaInclinada]} />
       <View style={[styles.rua, styles.ruaVertical]} />
-      <View style={styles.pino}>
-        <Icon source="map-marker" size={48} color="#C8372D" />
-      </View>
     </View>
   );
 }
@@ -119,7 +115,6 @@ export default function VisitaDetalheScreen() {
       router.push(`/visita/${id}/questionario`);
     },
     onError: (err) => {
-      // o handler global do queryClient já avisa e leva para o login
       if (err instanceof SessaoExpiradaError) return;
       Alert.alert(
         "Erro ao iniciar visita",
@@ -320,11 +315,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: "20%",
     width: 8,
-  },
-  pino: {
-    position: "absolute",
-    top: 66,
-    alignSelf: "center",
   },
   voltar: {
     position: "absolute",
