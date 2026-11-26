@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator, Button, TextInput } from "react-native-paper";
 import { cores } from "@/theme";
 import { useMutation } from "@tanstack/react-query";
-import { apiFetch, ApiError, SessaoExpiradaError } from "@/lib/api";
+import { api, ApiError, SessaoExpiradaError } from "@/lib/api";
 import { formatarHora } from "@/lib/formatadores";
 import { useVisita } from "@/hooks/use-visita";
 import {
@@ -23,14 +23,8 @@ interface RespostaEnviada {
 }
 
 async function enviarRespostas(visitaId: string, respostas: RespostaEnviada[]) {
-  return apiFetch<unknown>(
-    `/visitas/${visitaId}/respostas`,
-    {
-      method: "POST",
-      body: JSON.stringify({ respostas }),
-    },
-    "Não foi possível enviar as respostas do questionário."
-  );
+  const response = await api.post(`/visitas/${visitaId}/respostas`, { respostas });
+  return response.data;
 }
 
 export default function QuestionarioScreen() {
@@ -39,6 +33,8 @@ export default function QuestionarioScreen() {
   const insets = useSafeAreaInsets();
 
   const [indiceAtual, setIndiceAtual] = useState(0);
+  // trava síncrona: o isPending só muda no próximo render, então um toque duplo enviaria duas vezes
+  // ou abriria o documento duas vezes. É liberada em erro ou quando o fiscal volta para esta tela.
   const concluindoRef = useRef(false);
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
@@ -77,6 +73,7 @@ export default function QuestionarioScreen() {
     },
     onError: (erro) => {
       concluindoRef.current = false;
+      // o handler global do queryClient já leva o fiscal para o login
       if (erro instanceof SessaoExpiradaError) return;
       const detalhes =
         erro instanceof ApiError && erro.erros.length > 0 ? `\n\n${erro.erros.join("\n")}` : "";
@@ -85,9 +82,11 @@ export default function QuestionarioScreen() {
   });
 
   const enviando = enviarRespostasMutation.isPending;
+  // depois do POST /visitas/:id/documento o back não aceita mais alterar as respostas
   const documentoGerado = (visita?.documentos?.length ?? 0) > 0;
   const bloqueado = enviando || documentoGerado;
 
+  // durante o envio, impede sair da tela (voltar do cabeçalho, botão do Android e gesto do iOS)
   usePreventRemove(enviando, () => {});
 
   useFocusEffect(

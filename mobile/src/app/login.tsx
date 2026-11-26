@@ -8,7 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { cores } from "@/theme";
 import { FaixaTopo } from "@/components/FaixaTopo";
 import { useSessaoStore, type UsuarioLogado } from "@/store/sessaoStore";
-import { apiFetch, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
 interface RespostaLogin {
   token: string;
@@ -18,11 +18,8 @@ interface RespostaLogin {
 async function fazerLogin(email: string, senha: string): Promise<RespostaLogin> {
   let data: RespostaLogin;
   try {
-    data = await apiFetch<RespostaLogin>(
-      "/auth/login",
-      { method: "POST", body: JSON.stringify({ email, senha }) },
-      "Não foi possível entrar. Tente novamente."
-    );
+    const response = await api.post<RespostaLogin>("/auth/login", { email, senha });
+    data = response.data;
   } catch (erro) {
     if (erro instanceof ApiError && erro.status === 401) {
       throw new Error("E-mail ou senha inválidos");
