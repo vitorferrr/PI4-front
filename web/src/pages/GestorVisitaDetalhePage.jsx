@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isCancel } from 'axios';
 import SectionCard from '../components/SectionCard';
@@ -25,6 +25,16 @@ const ERROS_CONCLUSAO = {
   404: 'A visita não foi encontrada ou não está disponível para seu usuário.',
   500: 'O servidor não conseguiu confirmar a conclusão. Atualize os dados antes de tentar novamente.',
 };
+
+// Quem abre a visita pode informar para onde voltar (ex.: a lista do admin com os filtros).
+// Só aceita caminhos internos; sem informação, volta para o início como antes.
+function obterDestinoVoltar(state) {
+  const destino = state?.voltarPara;
+  if (typeof destino !== 'string' || !destino.startsWith('/') || destino.startsWith('//')) {
+    return { para: '/', rotulo: 'Voltar ao início' };
+  }
+  return { para: destino, rotulo: typeof state.rotuloVoltar === 'string' ? state.rotuloVoltar : 'Voltar' };
+}
 
 function textoOuAusente(valor) {
   return valor == null || String(valor).trim() === '' ? 'Não informado' : String(valor);
@@ -314,6 +324,7 @@ function DadosVisita({ visita }) {
 
 export default function GestorVisitaDetalhePage() {
   const { id } = useParams();
+  const voltar = obterDestinoVoltar(useLocation().state);
   const idValido = /^\d+$/.test(id ?? '') && Number.isSafeInteger(Number(id)) && Number(id) > 0;
   const visitaQuery = useQuery({
     queryKey: ['visita', id],
@@ -336,7 +347,7 @@ export default function GestorVisitaDetalhePage() {
         </div>
         <div className={styles.headerActions}>
           {idValido && visita && !acessoIndisponivel && <StatusVisita status={visita.status} />}
-          <Link to="/" className={styles.button}>Voltar ao início</Link>
+          <Link to={voltar.para} className={styles.button}>{voltar.rotulo}</Link>
         </div>
       </header>
 

@@ -18,12 +18,15 @@ export default function AppLayout() {
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
           {userRole === 'ADMIN' && (
             <>
-              <div style={{ cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}>
+              <Link to="/admin" style={{ color: 'inherit', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>
+                Painel
+              </Link>
+              <Link to="/admin/usuarios" style={{ color: 'inherit', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>
                 Usuários
-              </div>
-              <div style={{ cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }}>
+              </Link>
+              <Link to="/admin/visitas" style={{ color: 'inherit', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>
                 Visitas
-              </div>
+              </Link>
             </>
           )}
 
