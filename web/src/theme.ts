@@ -1,12 +1,10 @@
 import { MD3LightTheme, configureFonts, type MD3Theme } from "react-native-paper";
 
-// Cores do protótipo do painel (as mesmas do tailwind.config.js antigo, com nomes em português)
 export const cores = {
   azul: "#1D3F94",
   azulEscuro: "#172F6E",
   azulMenu: "#24479B",
   azulMenuTexto: "#BFD6F2",
-  azulCeu: "#2F5FC4",
   azulClaro: "#D6E6F8",
   amarelo: "#FFCC00",
   fundo: "#F3F7FB",
@@ -16,7 +14,6 @@ export const cores = {
   selecionado: "#F2F7FD",
   branco: "#FFFFFF",
   texto: "#0F1E33",
-  textoDocumento: "#1E2B3D",
   textoSecundario: "#4A5B73",
   textoMedio: "#33435A",
   borda: "#C5D0E3",
@@ -24,7 +21,6 @@ export const cores = {
   bordaClara: "#DCE5EF",
   verdeTitulo: "#2F7A4D",
   sucesso: "#17803F",
-  sucessoForte: "#1E8F3E",
   sucessoFundo: "#E2F5EA",
   aviso: "#7A5300",
   avisoFundo: "#FFF4D6",
@@ -39,11 +35,18 @@ export const cores = {
   atribuidaFundo: "#E6F0FB",
   enviada: "#4B2E9E",
   enviadaFundo: "#EEE9FB",
-  neutro: "#33435A",
   neutroFundo: "#EDEFF3",
+  graficoAzul: "#1677D2",
+  graficoCeu: "#3AB0E6",
+  graficoVerde: "#2F9E5B",
+  graficoAmarelo: "#D9A400",
+  graficoCinza: "#7B8799",
+  graficoRoxo: "#6A4FC9",
+  etapaAtual: "#F5C518",
+  etapaPendente: "#DFE6EF",
+  sombra: "rgba(23, 47, 110, 0.1)",
 };
 
-// Com fonte carregada pelo expo-font, o fontWeight fica "normal": o peso já vem no nome da fonte
 const fontesBase = configureFonts({
   config: { fontFamily: "Inter_400Regular", fontWeight: "normal" },
 });
@@ -63,7 +66,7 @@ export const tema: MD3Theme = {
     onSecondary: cores.branco,
     tertiary: cores.amarelo,
     onTertiary: cores.texto,
-    error: cores.erro,
+    error: cores.erroForte,
     onError: cores.branco,
     errorContainer: cores.erroFundo,
     onErrorContainer: cores.erro,
@@ -73,7 +76,7 @@ export const tema: MD3Theme = {
     onSurface: cores.texto,
     surfaceVariant: cores.trilha,
     onSurfaceVariant: cores.textoSecundario,
-    outline: cores.bordaCampo,
+    outline: cores.bordaClara,
     outlineVariant: cores.bordaClara,
   },
   fonts: {

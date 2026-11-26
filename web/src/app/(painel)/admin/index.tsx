@@ -1,372 +1,199 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { Icon } from "react-native-paper";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  BotaoContorno,
-  BotaoPrimario,
-  Cartao,
-  ErroCarga,
-  Mensagem,
-  PageHeader,
-  TituloCartao,
-} from "@/components/ui";
-import { STATUS_COR_BARRA } from "@/lib/rotulos";
-import { api } from "@/lib/api";
-import { buscarVisitas } from "@/lib/consultas";
-import { statusDoErro } from "@/lib/erros";
+import { ActivityIndicator, Button, Card } from "react-native-paper";
+import { useMutation } from "@tanstack/react-query";
+import { useDadosGerais } from "@/hooks/use-dados-gerais";
+import { useVisitas } from "@/hooks/use-visitas";
 import { baixarArquivo, exportarVisitas } from "@/lib/exportar";
-import { useSession } from "@/lib/session";
-import { estaAtrasada, STATUS_VISITA, venceHoje } from "@/lib/visitas";
+import { formatarNumero, PERFIS, plural, primeiroNome, STATUS_VISITA } from "@/lib/formatadores";
+import { estaAtrasada, venceHoje } from "@/lib/visitas";
+import { useSessaoStore } from "@/store/sessaoStore";
+import { AvisoPainel } from "@/components/AvisoPainel";
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
+import { CartaoSecao } from "@/components/CartaoSecao";
+import { GraficoBarras } from "@/components/GraficoBarras";
+import { GraficoColunas } from "@/components/GraficoColunas";
+import { MensagemErro } from "@/components/MensagemErro";
 import { cores } from "@/theme";
-import type { DadosGerais, Role, StatusVisita, Visita } from "@/types";
+import type { Role } from "@/types/usuario";
+import type { DadosGerais, StatusVisita, Visita } from "@/types/visita";
 
-const PERFIS_USUARIO: Record<Role, string> = {
-  admin: "Administradores",
-  gestor: "Gestores",
-  fiscalizador: "Fiscalizadores",
+const COR_STATUS: Record<StatusVisita, string> = {
+  agendada: cores.graficoAzul,
+  em_andamento: cores.graficoCeu,
+  concluida: cores.graficoVerde,
+  cancelada: cores.graficoCinza,
 };
 
-const formatadorNumero = new Intl.NumberFormat("pt-BR");
-const formatadorMes = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" });
-
-function ehContagem(valor: unknown) {
-  return Number.isInteger(valor) && (valor as number) >= 0;
-}
-
-function contagensValidas(objeto: unknown, chaves: string[]) {
-  return (
-    objeto !== null &&
-    typeof objeto === "object" &&
-    chaves.every((chave) => ehContagem((objeto as Record<string, unknown>)[chave]))
-  );
-}
-
-async function buscarDadosGerais(signal?: AbortSignal) {
-  const { data } = await api.get<DadosGerais>("/admin/dados-gerais", { signal });
-  const valido =
-    ehContagem(data?.visitas?.total) &&
-    contagensValidas(data.visitas.por_status, Object.keys(STATUS_VISITA)) &&
-    ehContagem(data?.usuarios?.total) &&
-    contagensValidas(data.usuarios.por_role, Object.keys(PERFIS_USUARIO)) &&
-    ehContagem(data?.documentos?.total) &&
-    ehContagem(data?.assinaturas?.total);
-
-  if (!valido) {
-    throw new Error("Não foi possível interpretar os dados gerais.");
-  }
-  return data;
-}
-
-function saudacao(agora = new Date()) {
-  const hora = agora.getHours();
+function saudacao() {
+  const hora = new Date().getHours();
   if (hora < 12) return "Bom dia";
   if (hora < 18) return "Boa tarde";
   return "Boa noite";
 }
 
-function montarIndicadores(dados: DadosGerais) {
-  const { visitas, documentos, assinaturas } = dados;
-  const { agendada, em_andamento: emAndamento, concluida } = visitas.por_status;
+function mesAtual() {
+  const texto = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
 
+function montarIndicadores({ visitas, documentos, assinaturas }: DadosGerais) {
   return [
     {
       titulo: "Visitas cadastradas",
       valor: visitas.total,
-      nota: `${formatadorNumero.format(agendada)} agendadas`,
+      nota: plural(visitas.por_status.agendada, "agendada", "agendadas"),
     },
-    { titulo: "Em andamento", valor: emAndamento, nota: "Fiscais em campo agora" },
-    { titulo: "Concluídas", valor: concluida, nota: "Com documento assinado" },
+    {
+      titulo: "Em andamento",
+      valor: visitas.por_status.em_andamento,
+      nota: "Fiscais em campo agora",
+    },
+    { titulo: "Concluídas", valor: visitas.por_status.concluida, nota: "Com documento assinado" },
     {
       titulo: "Documentos gerados",
       valor: documentos.total,
-      nota: `${formatadorNumero.format(assinaturas.total)} assinaturas coletadas`,
+      nota: plural(assinaturas.total, "assinatura coletada", "assinaturas coletadas"),
     },
   ];
 }
 
-function BarrasHorizontais({
-  itens,
-  rotulo,
-}: {
-  itens: { chave: string; rotulo: string; total: number; cor: string }[];
-  rotulo: string;
-}) {
-  const maior = Math.max(0, ...itens.map((item) => item.total));
-
-  return (
-    <View style={styles.barras} accessibilityLabel={rotulo}>
-      {itens.map((item) => (
-        <View key={item.chave} style={styles.barraLinha}>
-          <Text style={styles.barraRotulo}>{item.rotulo}</Text>
-          <View style={styles.barraTrilha}>
-            <View
-              style={[
-                styles.barraPreenchida,
-                {
-                  width: `${maior > 0 ? (item.total / maior) * 100 : 0}%`,
-                  backgroundColor: item.cor,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.barraValor}>{formatadorNumero.format(item.total)}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 function visitasPorFiscal(visitas: Visita[]) {
-  const totais = new Map<number, { nome: string; total: number }>();
+  const totais = new Map<number, { rotulo: string; total: number }>();
   for (const visita of visitas) {
     for (const fiscal of visita.fiscalizadores ?? []) {
-      const atual = totais.get(fiscal.id) ?? {
-        nome: fiscal.nome?.split(" ")[0] || `#${fiscal.id}`,
-        total: 0,
-      };
-      atual.total += 1;
-      totais.set(fiscal.id, atual);
+      const atual = totais.get(fiscal.id) ?? { rotulo: primeiroNome(fiscal.nome), total: 0 };
+      totais.set(fiscal.id, { ...atual, total: atual.total + 1 });
     }
   }
   return [...totais.values()].sort((a, b) => b.total - a.total).slice(0, 8);
 }
 
-const ALTURA_MAXIMA_COLUNA = 171;
-
-function ColunasPorFiscal({ visitas }: { visitas: Visita[] }) {
-  const colunas = visitasPorFiscal(visitas);
-  if (colunas.length === 0) {
-    return (
-      <Text style={styles.textoApagado}>Nenhuma visita atribuída a fiscalizadores ainda.</Text>
-    );
-  }
-  const maior = Math.max(...colunas.map((coluna) => coluna.total));
-
-  return (
-    <View accessibilityLabel="Visitas por fiscalizador">
-      <View style={styles.colunas}>
-        {colunas.map((coluna, indice) => (
-          <View key={indice} style={styles.coluna}>
-            <Text style={styles.colunaValor}>{coluna.total}</Text>
-            <View
-              style={[
-                styles.colunaBarra,
-                { height: (coluna.total / maior) * ALTURA_MAXIMA_COLUNA },
-              ]}
-            />
-          </View>
-        ))}
-      </View>
-      <View style={styles.colunasNomes}>
-        {colunas.map((coluna, indice) => (
-          <Text key={indice} style={styles.colunaNome} numberOfLines={1}>
-            {coluna.nome}
-          </Text>
-        ))}
-      </View>
-    </View>
-  );
+function abrirVisitas(status: StatusVisita) {
+  router.push({ pathname: "/admin/visitas", params: { status } });
 }
 
-// Um aviso clicável: ícone num círculo colorido, título, explicação e "Ver" à direita
-function Aviso({
-  icone,
-  corIcone,
-  fundoIcone,
-  titulo,
-  descricao,
-  onPress,
-}: {
-  icone: string;
-  corIcone: string;
-  fundoIcone: string;
-  titulo: string;
-  descricao: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="link"
-      accessibilityLabel={`${titulo}. ${descricao}`}
-      style={({ pressed }) => [styles.aviso, pressed && styles.avisoPressionado]}
-    >
-      <View style={[styles.avisoIcone, { backgroundColor: fundoIcone }]}>
-        <Icon source={icone} size={22} color={corIcone} />
-      </View>
-      <View style={styles.avisoTextos}>
-        <Text style={styles.avisoTitulo}>{titulo}</Text>
-        <Text style={styles.avisoDescricao}>{descricao}</Text>
-      </View>
-      <View style={styles.avisoVer}>
-        <Text style={styles.avisoVerTexto}>Ver</Text>
-        <Icon source="chevron-right" size={20} color={cores.azul} />
-      </View>
-    </Pressable>
-  );
-}
-
-function Alertas({ visitas }: { visitas: Visita[] }) {
-  const atrasadas = visitas.filter((visita) => estaAtrasada(visita)).length;
-  const hoje = visitas.filter((visita) => venceHoje(visita)).length;
-  const emCampo = visitas.filter((visita) => visita.status === "em_andamento").length;
-  if (atrasadas === 0 && hoje === 0 && emCampo === 0) return null;
-
-  return (
-    <View style={styles.alertas} accessibilityLabel="Alertas">
-      {atrasadas > 0 || hoje > 0 ? (
-        <Aviso
-          icone="clock-alert-outline"
-          corIcone={cores.erroForte}
-          fundoIcone={cores.erroFundo}
-          titulo={`${atrasadas} ${atrasadas === 1 ? "visita atrasada" : "visitas atrasadas"}`}
-          descricao={`${hoje} ${hoje === 1 ? "agendada" : "agendadas"} para hoje`}
-          onPress={() =>
-            router.push({ pathname: "/admin/visitas", params: { status: "agendada" } })
-          }
-        />
-      ) : null}
-      {emCampo > 0 ? (
-        <Aviso
-          icone="progress-clock"
-          corIcone={cores.aviso}
-          fundoIcone={cores.avisoFundo}
-          titulo={`${emCampo} ${emCampo === 1 ? "visita em andamento" : "visitas em andamento"}`}
-          descricao={`${emCampo === 1 ? "Aguarda" : "Aguardam"} assinaturas e conclusão`}
-          onPress={() =>
-            router.push({ pathname: "/admin/visitas", params: { status: "em_andamento" } })
-          }
-        />
-      ) : null}
-    </View>
-  );
-}
-
-export default function AdminDashboard() {
-  const nome = useSession((state) => state.usuario?.nome);
-  const dadosQuery = useQuery({
-    queryKey: ["admin", "dados-gerais"],
-    queryFn: ({ signal }) => buscarDadosGerais(signal),
-  });
-  const visitasQuery = useQuery({
-    queryKey: ["visitas"],
-    queryFn: ({ signal }) => buscarVisitas(signal),
-  });
+export default function PainelAdminScreen() {
+  const usuario = useSessaoStore((state) => state.usuario);
+  const { data: dados, isPending, isError, error, refetch, isFetching } = useDadosGerais();
+  const { data: visitas = [] } = useVisitas();
   const exportarMutation = useMutation({
     mutationFn: () => exportarVisitas(),
     onSuccess: ({ arquivo }) => baixarArquivo(arquivo, "visitas.csv"),
   });
-  const dados = dadosQuery.data;
-  const primeiroNome = nome?.trim().split(/\s+/)[0];
-  const mes = formatadorMes.format(new Date());
+
+  const atrasadas = visitas.filter((visita) => estaAtrasada(visita)).length;
+  const paraHoje = visitas.filter((visita) => venceHoje(visita)).length;
+  const emAndamento = visitas.filter((visita) => visita.status === "em_andamento").length;
+  const porFiscal = visitasPorFiscal(visitas);
 
   return (
     <View style={styles.pagina}>
-      <PageHeader
-        eyebrow={`Painel administrativo · ${mes.charAt(0).toUpperCase()}${mes.slice(1)}`}
-        title={primeiroNome ? `${saudacao()}, ${primeiroNome}` : "Painel administrativo"}
-        actions={
+      <CabecalhoPagina
+        sobretitulo={`Painel administrativo · ${mesAtual()}`}
+        titulo={`${saudacao()}, ${primeiroNome(usuario?.nome)}`}
+        acoes={
           <>
-            <BotaoContorno
+            <Button
+              mode="outlined"
               onPress={() => exportarMutation.mutate()}
+              loading={exportarMutation.isPending}
               disabled={exportarMutation.isPending}
+              style={styles.botaoContorno}
             >
-              {exportarMutation.isPending ? "Exportando…" : "Exportar CSV"}
-            </BotaoContorno>
-            <BotaoPrimario icon="plus" onPress={() => router.push("/gestor/visitas/nova")}>
+              Exportar CSV
+            </Button>
+            <Button
+              mode="contained"
+              icon="plus"
+              onPress={() => router.push("/gestor/visitas/nova")}
+            >
               Nova visita
-            </BotaoPrimario>
+            </Button>
           </>
         }
       />
 
-      {exportarMutation.isError ? (
-        <ErroCarga
-          mensagem={
-            statusDoErro(exportarMutation.error) === 403
-              ? "Você não tem permissão para exportar as visitas."
-              : "Não foi possível exportar as visitas. Tente novamente."
-          }
-        />
-      ) : null}
+      {exportarMutation.isError && <MensagemErro erro={exportarMutation.error} />}
 
-      {visitasQuery.data ? <Alertas visitas={visitasQuery.data} /> : null}
+      <View style={styles.grade}>
+        {(atrasadas > 0 || paraHoje > 0) && (
+          <AvisoPainel
+            icone="clock-alert-outline"
+            cor={cores.erroForte}
+            fundo={cores.erroFundo}
+            titulo={plural(atrasadas, "visita atrasada", "visitas atrasadas")}
+            descricao={`${plural(paraHoje, "agendada", "agendadas")} para hoje`}
+            onPress={() => abrirVisitas("agendada")}
+          />
+        )}
+        {emAndamento > 0 && (
+          <AvisoPainel
+            icone="progress-clock"
+            cor={cores.aviso}
+            fundo={cores.avisoFundo}
+            titulo={plural(emAndamento, "visita em andamento", "visitas em andamento")}
+            descricao="Aguardando assinaturas e conclusão"
+            onPress={() => abrirVisitas("em_andamento")}
+          />
+        )}
+      </View>
 
-      {dadosQuery.isPending ? (
-        <Mensagem>
-          {dadosQuery.fetchStatus === "paused"
-            ? "Aguardando conexão para carregar o painel…"
-            : "Carregando painel…"}
-        </Mensagem>
-      ) : dadosQuery.isError || !dados ? (
-        <ErroCarga
-          mensagem={
-            statusDoErro(dadosQuery.error) === 403
-              ? "Você não tem permissão para consultar os dados gerais."
-              : "Não foi possível carregar o painel. Verifique sua conexão e tente novamente."
-          }
-          onTentar={() => dadosQuery.refetch()}
-          tentando={dadosQuery.isFetching}
-        />
+      {isPending ? (
+        <ActivityIndicator size="large" style={styles.carregando} />
+      ) : isError ? (
+        <MensagemErro erro={error} onTentar={() => refetch()} tentando={isFetching} />
       ) : (
         <>
-          <View style={styles.grade} accessibilityLabel="Indicadores gerais">
+          <View style={styles.grade}>
             {montarIndicadores(dados).map((indicador) => (
-              <Cartao key={indicador.titulo} style={styles.indicador}>
+              <Card
+                key={indicador.titulo}
+                mode="outlined"
+                style={styles.indicador}
+                contentStyle={styles.indicadorConteudo}
+              >
                 <Text style={styles.indicadorTitulo}>{indicador.titulo}</Text>
-                <Text style={styles.indicadorValor}>
-                  {formatadorNumero.format(indicador.valor)}
-                </Text>
+                <Text style={styles.indicadorValor}>{formatarNumero(indicador.valor)}</Text>
                 <Text style={styles.indicadorNota}>{indicador.nota}</Text>
-              </Cartao>
+              </Card>
             ))}
           </View>
 
           <View style={styles.grade}>
-            <Cartao style={styles.grafico}>
-              <TituloCartao>Visitas por status</TituloCartao>
-              <BarrasHorizontais
-                rotulo="Quantidade de visitas por status"
-                itens={(Object.entries(STATUS_VISITA) as [StatusVisita, string][]).map(
-                  ([chave, rotulo]) => ({
-                    chave,
-                    rotulo,
-                    total: dados.visitas.por_status[chave],
-                    cor: STATUS_COR_BARRA[chave],
-                  })
-                )}
+            <CartaoSecao titulo="Visitas por status" style={styles.grafico}>
+              <GraficoBarras
+                itens={(Object.keys(STATUS_VISITA) as StatusVisita[]).map((status) => ({
+                  rotulo: STATUS_VISITA[status],
+                  total: dados.visitas.por_status[status],
+                  cor: COR_STATUS[status],
+                }))}
               />
-            </Cartao>
+            </CartaoSecao>
 
-            <Cartao style={styles.grafico}>
-              <TituloCartao>Visitas por fiscalizador</TituloCartao>
-              {visitasQuery.isPending ? (
-                <Text style={styles.textoApagado}>Carregando visitas…</Text>
-              ) : visitasQuery.isError ? (
-                <Text style={styles.textoErro}>Não foi possível carregar as visitas.</Text>
+            <CartaoSecao titulo="Visitas por fiscalizador" style={styles.grafico}>
+              {porFiscal.length > 0 ? (
+                <GraficoColunas colunas={porFiscal} />
               ) : (
-                <ColunasPorFiscal visitas={visitasQuery.data} />
+                <Text style={styles.textoApagado}>
+                  Nenhuma visita atribuída a fiscalizadores ainda.
+                </Text>
               )}
-            </Cartao>
+            </CartaoSecao>
 
-            <Cartao style={[styles.grafico, styles.graficoLargo]}>
-              <TituloCartao>Usuários por perfil</TituloCartao>
-              <BarrasHorizontais
-                rotulo="Quantidade de usuários por perfil"
-                itens={(Object.entries(PERFIS_USUARIO) as [Role, string][]).map(
-                  ([chave, rotulo]) => ({
-                    chave,
-                    rotulo,
-                    total: dados.usuarios.por_role[chave],
-                    cor: "#6A4FC9",
-                  })
-                )}
+            <CartaoSecao titulo="Usuários por perfil" style={styles.graficoLargo}>
+              <GraficoBarras
+                itens={(Object.keys(PERFIS) as Role[]).map((role) => ({
+                  rotulo: PERFIS[role],
+                  total: dados.usuarios.por_role[role],
+                  cor: cores.graficoRoxo,
+                }))}
               />
               <Text style={styles.textoApagado}>
-                {formatadorNumero.format(dados.usuarios.total)} usuários cadastrados no total.
+                {plural(dados.usuarios.total, "usuário cadastrado", "usuários cadastrados")} no
+                total.
               </Text>
-            </Cartao>
+            </CartaoSecao>
           </View>
         </>
       )}
@@ -378,16 +205,24 @@ const styles = StyleSheet.create({
   pagina: {
     gap: 28,
   },
-  // flexWrap + flexBasis fazem o papel do grid responsivo do Tailwind: cada cartão tem uma
-  // largura mínima e, quando não cabe, desce para a linha de baixo
+  botaoContorno: {
+    borderColor: cores.azul,
+  },
   grade: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 14,
   },
+  carregando: {
+    marginTop: 40,
+  },
   indicador: {
     flexGrow: 1,
     flexBasis: 230,
+    borderRadius: 16,
+    backgroundColor: cores.branco,
+  },
+  indicadorConteudo: {
     padding: 20,
   },
   indicadorTitulo: {
@@ -411,145 +246,13 @@ const styles = StyleSheet.create({
   grafico: {
     flexGrow: 1,
     flexBasis: 420,
-    padding: 24,
-    gap: 16,
   },
   graficoLargo: {
     flexBasis: "100%",
-  },
-  barras: {
-    gap: 19,
-  },
-  barraLinha: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 24,
-  },
-  barraRotulo: {
-    width: 118,
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: cores.textoMedio,
-  },
-  barraTrilha: {
-    flex: 1,
-    height: 12,
-    borderRadius: 6,
-    overflow: "hidden",
-    backgroundColor: cores.trilha,
-  },
-  barraPreenchida: {
-    height: 12,
-    borderRadius: 6,
-  },
-  barraValor: {
-    width: 36,
-    textAlign: "right",
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: cores.texto,
-  },
-  colunas: {
-    height: 229,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-around",
-    gap: 16,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: cores.bordaClara,
-  },
-  coluna: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  colunaValor: {
-    marginBottom: 6,
-    fontFamily: "Inter_700Bold",
-    fontSize: 13,
-    color: cores.texto,
-  },
-  colunaBarra: {
-    width: "100%",
-    maxWidth: 64,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    backgroundColor: "#1677D2",
-  },
-  colunasNomes: {
-    marginTop: 12,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    gap: 16,
-    paddingHorizontal: 12,
-  },
-  colunaNome: {
-    flex: 1,
-    textAlign: "center",
-    fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: cores.textoSecundario,
-  },
-  alertas: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 14,
-  },
-  aviso: {
-    flexGrow: 1,
-    flexBasis: 380,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: cores.bordaClara,
-    backgroundColor: cores.branco,
-  },
-  avisoPressionado: {
-    backgroundColor: cores.selecionado,
-  },
-  avisoIcone: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avisoTextos: {
-    flex: 1,
-    gap: 2,
-  },
-  avisoTitulo: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 16,
-    color: cores.texto,
-  },
-  avisoDescricao: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: cores.textoSecundario,
-  },
-  avisoVer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avisoVerTexto: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: cores.azul,
   },
   textoApagado: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     color: cores.textoSecundario,
-  },
-  textoErro: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: cores.erro,
   },
 });

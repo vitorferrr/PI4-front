@@ -1,11 +1,11 @@
 import { Redirect, Slot } from "expo-router";
-import { useSession } from "@/lib/session";
-import type { Role } from "@/types";
+import { useSessaoStore } from "@/store/sessaoStore";
+import type { Role } from "@/types/usuario";
 
 export function ExigePerfil({ perfis }: { perfis: Role[] }) {
-  const role = useSession((state) => state.claims?.role);
+  const role = useSessaoStore((state) => state.usuario?.role);
 
-  if (!perfis.includes(role as Role)) return <Redirect href="/" />;
+  if (!role || !perfis.includes(role)) return <Redirect href="/" />;
 
   return <Slot />;
 }

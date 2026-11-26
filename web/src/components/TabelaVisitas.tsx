@@ -1,187 +1,115 @@
-import type { ReactNode } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { router, useGlobalSearchParams, usePathname } from "expo-router";
-import { Cartao, StatusBadge } from "@/components/ui";
+import { Button, DataTable } from "react-native-paper";
+import { formatarData } from "@/lib/formatadores";
 import {
   detalheEstabelecimento,
   estaAtrasada,
-  formatarDataVisita,
   nomeEstabelecimento,
   nomesFiscalizadores,
 } from "@/lib/visitas";
+import { Mensagem } from "@/components/Mensagem";
+import { SeloStatus } from "@/components/SeloStatus";
 import { cores } from "@/theme";
-import type { Visita } from "@/types";
+import type { Visita } from "@/types/visita";
 
-// Rótulo em cima de cada filtro (o <label> do HTML)
-export function Filtro({ rotulo, children }: { rotulo: string; children: ReactNode }) {
-  return (
-    <View style={styles.filtro}>
-      <Text style={styles.filtroRotulo}>{rotulo}</Text>
-      {children}
-    </View>
-  );
+function enderecoComFiltros(caminho: string, params: Record<string, unknown>) {
+  const filtros = Object.entries(params).filter(([, valor]) => typeof valor === "string" && valor);
+  const busca = new URLSearchParams(filtros as [string, string][]).toString();
+  return busca ? `${caminho}?${busca}` : caminho;
 }
 
-const COLUNAS = [
-  { titulo: "Estabelecimento", flex: 2.6 },
-  { titulo: "Gestor", flex: 1.4 },
-  { titulo: "Fiscalizador", flex: 1.8 },
-  { titulo: "Data agendada", flex: 1.7 },
-  { titulo: "Status", flex: 1.3 },
-  { titulo: "Ações", flex: 0.8, direita: true },
-];
-
-// Endereço atual com os filtros (?status=...), para o detalhe saber para onde voltar
-function enderecoAtual(caminho: string, params: Record<string, string | string[] | undefined>) {
-  const busca = new URLSearchParams();
-  for (const [chave, valor] of Object.entries(params)) {
-    if (typeof valor === "string" && valor) busca.set(chave, valor);
-  }
-  const texto = busca.toString();
-  return texto ? `${caminho}?${texto}` : caminho;
-}
-
-export default function TabelaVisitas({
-  visitas,
-  rotuloVoltar,
-  carregando,
-}: {
-  visitas: Visita[];
-  rotuloVoltar: string;
-  carregando?: boolean;
-}) {
+export function TabelaVisitas({ visitas }: { visitas: Visita[] }) {
   const caminho = usePathname();
   const params = useGlobalSearchParams();
 
   function abrir(visita: Visita) {
-    // no lugar do "state" do react-router, o destino de volta vai como parâmetro da rota
     router.push({
       pathname: "/gestor/visitas/[id]",
-      params: {
-        id: String(visita.id),
-        voltarPara: enderecoAtual(caminho, params),
-        rotuloVoltar,
-      },
+      params: { id: visita.id, voltarPara: enderecoComFiltros(caminho, params) },
     });
   }
 
   return (
-    <Cartao style={styles.cartao}>
-      <ScrollView horizontal contentContainerStyle={styles.rolagem}>
-        <View style={styles.tabela} aria-label="Tabela de visitas" aria-busy={carregando}>
-          <View style={[styles.linha, styles.linhaCabecalho]}>
-            {COLUNAS.map((coluna) => (
-              <Text
-                key={coluna.titulo}
-                style={[
-                  styles.celula,
-                  styles.cabecalhoTexto,
-                  { flex: coluna.flex },
-                  coluna.direita && styles.direita,
-                ]}
-              >
-                {coluna.titulo}
-              </Text>
-            ))}
-          </View>
+    <ScrollView horizontal contentContainerStyle={styles.rolagem}>
+      <DataTable style={styles.tabela}>
+        <DataTable.Header style={styles.cabecalho}>
+          <DataTable.Title style={styles.colunaEstabelecimento}>Estabelecimento</DataTable.Title>
+          <DataTable.Title>Gestor</DataTable.Title>
+          <DataTable.Title style={styles.colunaLarga}>Fiscalizador</DataTable.Title>
+          <DataTable.Title style={styles.colunaLarga}>Data agendada</DataTable.Title>
+          <DataTable.Title>Status</DataTable.Title>
+          <DataTable.Title numeric>Ações</DataTable.Title>
+        </DataTable.Header>
 
-          {visitas.map((visita) => {
-            const atrasada = estaAtrasada(visita);
-            const detalhe = detalheEstabelecimento(visita);
-            return (
-              <View key={visita.id} style={[styles.linha, styles.linhaDados]}>
-                <View style={[styles.celula, { flex: COLUNAS[0].flex }]}>
-                  <Text style={styles.estabelecimento}>{nomeEstabelecimento(visita)}</Text>
+        {visitas.map((visita) => {
+          const atrasada = estaAtrasada(visita);
+          const detalhe = detalheEstabelecimento(visita);
+          return (
+            <DataTable.Row key={visita.id} style={styles.linha} onPress={() => abrir(visita)}>
+              <DataTable.Cell style={styles.colunaEstabelecimento}>
+                <View>
+                  <Text style={styles.nome}>{nomeEstabelecimento(visita)}</Text>
                   <Text style={styles.detalhe} numberOfLines={1}>
                     #{visita.id}
-                    {detalhe ? ` · ${detalhe}` : ""}
+                    {detalhe && ` · ${detalhe}`}
                   </Text>
                 </View>
-                <Text style={[styles.celula, styles.textoMedio, { flex: COLUNAS[1].flex }]}>
-                  {visita.gestor?.nome || "Gestor não informado"}
+              </DataTable.Cell>
+              <DataTable.Cell>{visita.gestor?.nome ?? "Não informado"}</DataTable.Cell>
+              <DataTable.Cell style={styles.colunaLarga}>
+                {nomesFiscalizadores(visita)}
+              </DataTable.Cell>
+              <DataTable.Cell style={styles.colunaLarga}>
+                <Text style={[styles.data, atrasada && styles.dataAtrasada]}>
+                  {formatarData(visita.data_agendada)}
+                  {atrasada && " · atrasada"}
                 </Text>
-                <Text style={[styles.celula, styles.texto, { flex: COLUNAS[2].flex }]}>
-                  {nomesFiscalizadores(visita)}
-                </Text>
-                <Text
-                  style={[
-                    styles.celula,
-                    styles.data,
-                    atrasada && styles.dataAtrasada,
-                    { flex: COLUNAS[3].flex },
-                  ]}
-                >
-                  {formatarDataVisita(visita.data_agendada)}
-                  {atrasada ? " · atrasada" : ""}
-                </Text>
-                <View style={[styles.celula, { flex: COLUNAS[4].flex }]}>
-                  <StatusBadge status={visita.status} />
-                </View>
-                <View style={[styles.celula, styles.acoes, { flex: COLUNAS[5].flex }]}>
-                  <Pressable
-                    onPress={() => abrir(visita)}
-                    accessibilityRole="link"
-                    accessibilityLabel={`Ver detalhes da visita ${visita.id}: ${visita.denunciado}`}
-                  >
-                    <Text style={styles.link}>Abrir</Text>
-                  </Pressable>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      </ScrollView>
-    </Cartao>
+              </DataTable.Cell>
+              <DataTable.Cell>
+                <SeloStatus status={visita.status} />
+              </DataTable.Cell>
+              <DataTable.Cell numeric>
+                <Button compact onPress={() => abrir(visita)}>
+                  Abrir
+                </Button>
+              </DataTable.Cell>
+            </DataTable.Row>
+          );
+        })}
+
+        {visitas.length === 0 && <Mensagem>Nenhuma visita corresponde aos filtros.</Mensagem>}
+      </DataTable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  filtro: {
-    flexGrow: 1,
-    flexBasis: 220,
-    gap: 6,
-  },
-  filtroRotulo: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    color: cores.texto,
-  },
-  cartao: {
-    marginTop: 24,
-    overflow: "hidden",
-  },
   rolagem: {
     flexGrow: 1,
   },
   tabela: {
-    flex: 1,
     minWidth: 980,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: cores.bordaClara,
+    overflow: "hidden",
+    backgroundColor: cores.branco,
   },
-  linha: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  linhaCabecalho: {
+  cabecalho: {
     backgroundColor: cores.fundoTabela,
   },
-  linhaDados: {
-    borderTopWidth: 1,
-    borderTopColor: cores.linhaTabela,
+  linha: {
+    minHeight: 64,
+    borderBottomColor: cores.linhaTabela,
   },
-  celula: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  colunaEstabelecimento: {
+    flex: 2.4,
   },
-  cabecalhoTexto: {
-    paddingVertical: 14,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-    color: cores.textoSecundario,
+  colunaLarga: {
+    flex: 1.6,
   },
-  direita: {
-    textAlign: "right",
-  },
-  estabelecimento: {
+  nome: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
     color: cores.texto,
@@ -191,16 +119,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: cores.textoSecundario,
   },
-  texto: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: cores.texto,
-  },
-  textoMedio: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: cores.textoMedio,
-  },
   data: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
@@ -208,14 +126,5 @@ const styles = StyleSheet.create({
   },
   dataAtrasada: {
     color: cores.erroForte,
-  },
-  acoes: {
-    alignItems: "flex-end",
-  },
-  link: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: cores.azul,
-    textDecorationLine: "underline",
   },
 });

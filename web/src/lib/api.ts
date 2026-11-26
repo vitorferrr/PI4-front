@@ -1,65 +1,79 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { endSession, getSessionRequest, getSessionVersion } from './session';
+import axios from "axios";
+import { encerrarSessao } from "./queryClient";
+import { useSessaoStore } from "@/store/sessaoStore";
 
-declare module 'axios' {
-  interface AxiosRequestConfig {
-    skipAuth?: boolean;
-    _session?: { version: number; authenticated: boolean };
-  }
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+
+export class SessaoExpiradaError extends Error {
+  sessaoExpirada = true;
 }
 
-const configuredApiUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').trim();
-if (!configuredApiUrl && !__DEV__) {
-  throw new Error('Configure EXPO_PUBLIC_API_URL com a URL da API antes de publicar a aplicação.');
+export class ApiError extends Error {
+  erros: string[];
+  status?: number;
+
+  constructor(mensagem: string, erros: string[] = [], status?: number) {
+    super(mensagem);
+    this.erros = erros;
+    this.status = status;
+  }
 }
 
 export const api = axios.create({
-  baseURL: configuredApiUrl || 'http://localhost:3000',
+  baseURL: API_URL,
+  timeout: 30000,
 });
 
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const session = getSessionRequest();
-  config._session = { version: session.version, authenticated: !config.skipAuth && Boolean(session.token) };
+const ROTAS_SEM_SESSAO = ["/auth/login", "/auth/logout"];
 
-  if (config.skipAuth) {
-    config.headers.delete('Authorization');
-  } else {
-    if (!session.token) throw new axios.CanceledError('Sessão indisponível. Faça login novamente.');
-    config.headers.set('Authorization', `Bearer ${session.token}`);
-  }
-
-  config.signal = config.signal
-    ? AbortSignal.any([config.signal as AbortSignal, session.signal])
-    : session.signal;
+api.interceptors.request.use((config) => {
+  const token = useSessaoStore.getState().token;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => {
-    if (response.config._session?.version !== getSessionVersion()) {
-      throw new axios.CanceledError('A sessão desta requisição foi encerrada.');
+  (resposta) => resposta,
+  (erro) => {
+    const rotaSemSessao = ROTAS_SEM_SESSAO.includes(erro.config?.url ?? "");
+    if (axios.isAxiosError(erro) && erro.response?.status === 401 && !rotaSemSessao) {
+      return Promise.reject(new SessaoExpiradaError("Sessão expirada. Faça login novamente."));
     }
-    return response;
-  },
-  (error: AxiosError) => {
-    const session = error.config?._session;
-    if (session && session.version !== getSessionVersion()) {
-      return Promise.reject(new axios.CanceledError('A sessão desta requisição foi encerrada.'));
-    }
-    if (error.response?.status === 401 && session?.authenticated) {
-      endSession();
-    }
-    return Promise.reject(error);
-  },
+    return Promise.reject(converterErro(erro));
+  }
 );
 
-// O logout encerra o token no back; a sessão local termina mesmo se a chamada falhar.
 export async function sair() {
-  try {
-    await api.post('/auth/logout');
-  } catch {
-    // Sem rede, token vencido ou sessão já encerrada: não há o que fazer além de sair.
-  } finally {
-    endSession();
+  await api.post("/auth/logout", undefined, { timeout: 10000 }).catch(() => {});
+  encerrarSessao();
+}
+
+interface CorpoDeErro {
+  mensagem?: string;
+  erro?: { mensagem?: string };
+  erros?: unknown;
+}
+
+const MENSAGEM_ERRO_PADRAO = "Erro na comunicação com o servidor.";
+
+function converterErro(erro: unknown): Error {
+  if (axios.isAxiosError(erro)) {
+    if (erro.code === "ECONNABORTED") {
+      return new ApiError("O servidor demorou para responder. Tente novamente em instantes.");
+    }
+    if (!erro.response) {
+      return new ApiError("Sem conexão. Verifique a internet e tente novamente.");
+    }
+    const dados = erro.response.data as CorpoDeErro | undefined;
+    const erros = Array.isArray(dados?.erros)
+      ? dados.erros.filter((item): item is string => typeof item === "string")
+      : [];
+    return new ApiError(
+      dados?.erro?.mensagem || dados?.mensagem || MENSAGEM_ERRO_PADRAO,
+      erros,
+      erro.response.status
+    );
   }
+
+  return erro instanceof Error ? erro : new ApiError(MENSAGEM_ERRO_PADRAO);
 }

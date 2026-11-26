@@ -21,11 +21,9 @@ npm run dev            # abre o painel no navegador (expo start --web)
 EXPO_PUBLIC_API_URL=http://localhost:3000
 ```
 
-Em desenvolvimento, sem a variável, a API usada é `http://localhost:3000`. No
-build de produção a variável é obrigatória: sem ela, o painel não inicia, para
-não mandar requisições para o endereço errado. Variáveis `EXPO_PUBLIC_` vão para
-o código do navegador e são públicas: não coloque tokens nem senhas. Depois de
-mudar o `.env`, reinicie o `npm run dev`. O `.env` não é versionado.
+Sem a variável, a API usada é `http://localhost:3000`. Variáveis `EXPO_PUBLIC_`
+vão para o código do navegador e são públicas: não coloque tokens nem senhas.
+Depois de mudar o `.env`, reinicie o `npm run dev`. O `.env` não é versionado.
 
 ## Telas
 
@@ -58,14 +56,17 @@ O fiscalizador usa o app mobile; no painel ele vê só um aviso para usar o celu
 
 ## Estrutura
 
+A organização é a mesma do app mobile:
+
 - `src/app/`: as telas. O nome do arquivo é a rota (`login.tsx` → `/login`).
-  O grupo `(painel)` tem o menu lateral e exige sessão; `admin/` e `gestor/`
-  conferem o perfil.
-- `src/components/`: componentes reaproveitados (`ui.tsx`, `TabelaVisitas.tsx`,
-  `FormularioUsuario.tsx`, `ExigePerfil.tsx`).
-- `src/lib/`: API, sessão, consultas, exportação e funções de visitas.
-- `src/store/`: estado global com Zustand.
-- `src/theme.ts`: cores e tema do Paper.
+  O `_layout.tsx` usa o `Stack.Protected` para separar o login do painel; o
+  grupo `(painel)` tem o menu lateral; `admin/` e `gestor/` conferem o perfil.
+- `src/components/`: um componente por arquivo.
+- `src/hooks/`: as consultas à API (`useVisitas`, `useUsuarios`...).
+- `src/lib/`: Axios, React Query, formatadores, exportação e regras de visitas.
+- `src/store/`: a sessão, com Zustand, salva no `localStorage`.
+- `src/types/`: os tipos de usuário e de visita.
+- `src/theme.ts`: todas as cores e o tema do Paper.
 
 ## Validação
 

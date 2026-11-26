@@ -1,21 +1,15 @@
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { TextInput } from "react-native-paper";
-import { useQuery } from "@tanstack/react-query";
-import TabelaVisitas, { Filtro } from "@/components/TabelaVisitas";
-import {
-  BotaoPrimario,
-  Cartao,
-  ErroCarga,
-  Mensagem,
-  PageHeader,
-  Selecao,
-  type OpcaoSelecao,
-} from "@/components/ui";
-import { buscarVisitas } from "@/lib/consultas";
-import { statusDoErro } from "@/lib/erros";
-import { normalizarPesquisa, STATUS_VISITA } from "@/lib/visitas";
+import { ActivityIndicator, Button, Card } from "react-native-paper";
+import { useVisitas } from "@/hooks/use-visitas";
+import { normalizarPesquisa, STATUS_VISITA } from "@/lib/formatadores";
+import { textoDaVisita } from "@/lib/visitas";
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
+import { Campo } from "@/components/Campo";
+import { MensagemErro } from "@/components/MensagemErro";
+import { Selecao, type OpcaoSelecao } from "@/components/Selecao";
+import { TabelaVisitas } from "@/components/TabelaVisitas";
 import { cores } from "@/theme";
 
 const OPCOES_STATUS: OpcaoSelecao[] = [
@@ -23,94 +17,58 @@ const OPCOES_STATUS: OpcaoSelecao[] = [
   ...Object.entries(STATUS_VISITA).map(([valor, rotulo]) => ({ valor, rotulo })),
 ];
 
-export default function GestorVisitasScreen() {
+export default function VisitasGestorScreen() {
   const [pesquisa, setPesquisa] = useState("");
   const [status, setStatus] = useState("");
-  const visitasQuery = useQuery({
-    queryKey: ["visitas"],
-    queryFn: ({ signal }) => buscarVisitas(signal),
-  });
-  const visitas = visitasQuery.data ?? [];
+  const { data, isPending, isError, error, refetch, isFetching } = useVisitas();
+
+  const visitas = data ?? [];
   const termo = normalizarPesquisa(pesquisa);
-  const visitasFiltradas = visitas.filter(
+  const filtradas = visitas.filter(
     (visita) =>
-      normalizarPesquisa(
-        [visita.denunciado, visita.razao_social, visita.nome_fantasia, visita.cnpj_cpf]
-          .filter(Boolean)
-          .join(" ")
-      ).includes(termo) &&
+      normalizarPesquisa(textoDaVisita(visita)).includes(termo) &&
       (!status || visita.status === status)
   );
 
   return (
-    <View>
-      <PageHeader
-        eyebrow="Acompanhamento"
-        title="Visitas"
-        actions={
-          <BotaoPrimario icon="plus" onPress={() => router.push("/gestor/visitas/nova")}>
+    <View style={styles.pagina}>
+      <CabecalhoPagina
+        sobretitulo="Acompanhamento"
+        titulo="Visitas"
+        acoes={
+          <Button mode="contained" icon="plus" onPress={() => router.push("/gestor/visitas/nova")}>
             Nova visita
-          </BotaoPrimario>
+          </Button>
         }
       />
 
-      <Cartao style={styles.filtrosCartao}>
-        <View style={styles.filtros} accessibilityRole="search" aria-label="Filtrar visitas">
-          <Filtro rotulo="Pesquisar por estabelecimento">
-            <TextInput
-              mode="outlined"
-              dense
-              value={pesquisa}
-              onChangeText={setPesquisa}
-              placeholder="Nome, razão social ou CNPJ"
-              accessibilityLabel="Pesquisar por estabelecimento"
-              outlineColor={cores.bordaCampo}
-              outlineStyle={styles.campoBorda}
-              style={styles.campo}
-              placeholderTextColor="#757575"
-            />
-          </Filtro>
-          <Filtro rotulo="Status">
-            <Selecao rotulo="Status" valor={status} opcoes={OPCOES_STATUS} onChange={setStatus} />
-          </Filtro>
-        </View>
-      </Cartao>
+      <Card mode="outlined" style={styles.filtrosCartao} contentStyle={styles.filtros}>
+        <Campo
+          rotulo="Pesquisar por estabelecimento"
+          value={pesquisa}
+          onChangeText={setPesquisa}
+          placeholder="Nome, razão social ou CNPJ"
+          style={styles.filtro}
+        />
+        <Selecao
+          rotulo="Status"
+          valor={status}
+          opcoes={OPCOES_STATUS}
+          onChange={setStatus}
+          style={styles.filtro}
+        />
+      </Card>
 
-      {visitasQuery.isPending ? (
-        <Mensagem>
-          {visitasQuery.fetchStatus === "paused"
-            ? "Aguardando conexão para carregar as visitas…"
-            : "Carregando visitas…"}
-        </Mensagem>
-      ) : visitasQuery.isError ? (
-        <View style={styles.erro}>
-          <ErroCarga
-            mensagem={
-              statusDoErro(visitasQuery.error) === 403
-                ? "Você não tem permissão para consultar as visitas."
-                : "Não foi possível carregar as visitas. Verifique sua conexão e tente novamente."
-            }
-            onTentar={() => visitasQuery.refetch()}
-            tentando={visitasQuery.isFetching}
-          />
-        </View>
-      ) : visitas.length === 0 ? (
-        <Mensagem>Nenhuma visita disponível.</Mensagem>
+      {isPending ? (
+        <ActivityIndicator size="large" style={styles.carregando} />
+      ) : isError ? (
+        <MensagemErro erro={error} onTentar={() => refetch()} tentando={isFetching} />
       ) : (
         <>
-          <Text style={styles.contagem} accessibilityRole="text">
-            Exibindo {visitasFiltradas.length} de {visitas.length} visitas.
-            {visitasQuery.isFetching ? " Atualizando visitas…" : ""}
+          <Text style={styles.contagem}>
+            Exibindo {filtradas.length} de {visitas.length} visitas.
           </Text>
-          {visitasFiltradas.length === 0 ? (
-            <Mensagem>Nenhuma visita corresponde aos filtros informados.</Mensagem>
-          ) : (
-            <TabelaVisitas
-              visitas={visitasFiltradas}
-              rotuloVoltar="Voltar para visitas"
-              carregando={visitasQuery.isFetching}
-            />
-          )}
+          <TabelaVisitas visitas={filtradas} />
         </>
       )}
     </View>
@@ -118,28 +76,27 @@ export default function GestorVisitasScreen() {
 }
 
 const styles = StyleSheet.create({
+  pagina: {
+    gap: 24,
+  },
   filtrosCartao: {
-    marginTop: 24,
-    padding: 18,
+    borderRadius: 16,
+    backgroundColor: cores.branco,
   },
   filtros: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 14,
+    padding: 18,
   },
-  campo: {
-    height: 44,
-    backgroundColor: cores.branco,
-    fontSize: 14,
+  filtro: {
+    flexGrow: 1,
+    flexBasis: 260,
   },
-  campoBorda: {
-    borderRadius: 12,
-  },
-  erro: {
-    marginTop: 24,
+  carregando: {
+    marginTop: 40,
   },
   contagem: {
-    marginTop: 24,
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     color: cores.textoSecundario,

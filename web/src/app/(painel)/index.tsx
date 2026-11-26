@@ -1,43 +1,40 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Redirect } from "expo-router";
 import { Icon } from "react-native-paper";
-import { useSession } from "@/lib/session";
-import { Cartao, PageHeader } from "@/components/ui";
+import { useSessaoStore } from "@/store/sessaoStore";
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
+import { CartaoSecao } from "@/components/CartaoSecao";
 import { cores } from "@/theme";
 
-// Cada perfil entra na sua primeira tela; o fiscalizador usa o app no celular
-export default function PaginaInicial() {
-  const role = useSession((state) =>
-    typeof state.claims?.role === "string" ? state.claims.role : null
-  );
+export default function InicioScreen() {
+  const role = useSessaoStore((state) => state.usuario?.role);
 
   if (role === "admin") return <Redirect href="/admin" />;
   if (role === "gestor") return <Redirect href="/gestor/fiscalizadores" />;
 
   return (
-    <View style={styles.conteudo}>
-      <PageHeader eyebrow="Bem-vindo ao Constata" title="Use o app no celular" />
-      <Cartao style={styles.cartao}>
-        <Icon source="cellphone" size={28} color={cores.azul} />
-        <Text style={styles.texto}>
-          O painel web é usado por administradores e gestores. As visitas do seu perfil ficam no app
-          do Constata.
-        </Text>
-      </Cartao>
+    <View style={styles.pagina}>
+      <CabecalhoPagina sobretitulo="Bem-vindo ao Constata" titulo="Use o app no celular" />
+      <CartaoSecao>
+        <View style={styles.aviso}>
+          <Icon source="cellphone" size={28} color={cores.azul} />
+          <Text style={styles.texto}>
+            O painel web é usado por administradores e gestores. As visitas do seu perfil ficam no
+            app do Constata.
+          </Text>
+        </View>
+      </CartaoSecao>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  conteudo: {
-    maxWidth: 780,
+  pagina: {
     gap: 24,
   },
-  cartao: {
+  aviso: {
     flexDirection: "row",
-    alignItems: "flex-start",
     gap: 16,
-    padding: 28,
   },
   texto: {
     flex: 1,

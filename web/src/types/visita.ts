@@ -1,30 +1,15 @@
-export type Role = 'admin' | 'gestor' | 'fiscalizador';
+import type { Role, UsuarioResumo } from "./usuario";
 
-export type StatusVisita = 'agendada' | 'em_andamento' | 'concluida' | 'cancelada';
-
-export interface Usuario {
-  id: number;
-  nome: string;
-  email: string;
-  role: Role;
-  matricula?: string | null;
-  aprovado?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export type UsuarioResumo = Pick<Usuario, 'id' | 'nome'> & Partial<Usuario>;
+export type StatusVisita = "agendada" | "em_andamento" | "concluida" | "cancelada";
 
 export interface Pergunta {
   id: number;
   texto: string;
-  tipo_resposta?: string;
   ordem?: number;
 }
 
 export interface Resposta {
   id: number;
-  visita_id?: number;
   pergunta_id: number;
   resposta: string | null;
   pergunta?: Pergunta;
@@ -32,7 +17,6 @@ export interface Resposta {
 
 export interface Documento {
   id: number;
-  visita_id?: number;
   url_arquivo_pdf?: string | null;
   data_geracao?: string | null;
   enviado_email?: boolean | null;
@@ -60,7 +44,6 @@ export interface Visita {
   fiscalizadores?: UsuarioResumo[];
   respostas?: Resposta[];
   documentos?: Documento[];
-  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -69,9 +52,4 @@ export interface DadosGerais {
   usuarios: { total: number; por_role: Record<Role, number> };
   documentos: { total: number };
   assinaturas: { total: number };
-}
-
-export interface ErroApi {
-  mensagem?: string;
-  erros?: string[];
 }
