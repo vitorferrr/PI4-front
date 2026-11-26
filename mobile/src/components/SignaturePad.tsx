@@ -15,7 +15,7 @@ const ESTILO_WEB = `
   .m-signature-pad { box-shadow: none; border: none; }
   .m-signature-pad--body { border: none; }
   .m-signature-pad--footer { display: none; margin: 0; }
-  body, html { background-color: #F7FAFD; }
+  body, html { background-color: ${cores.fundoAssinatura}; }
 `;
 
 export function SignaturePad({
@@ -59,7 +59,7 @@ export function SignaturePad({
           ref={canvasRef}
           style={styles.canvas}
           webStyle={ESTILO_WEB}
-          penColor="#0F1E33"
+          penColor={cores.texto}
           imageType="image/png"
           trimWhitespace
           onBegin={() => {
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   area: {
     borderRadius: 12,
-    backgroundColor: "#F7FAFD",
+    backgroundColor: cores.fundoAssinatura,
     overflow: "hidden",
   },
   canvas: {
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: "#8A9AB0",
+    borderColor: cores.textoApagado,
   },
   linhaBase: {
     position: "absolute",
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     right: 20,
     bottom: 30,
     height: 1.5,
-    backgroundColor: "#C5D3E3",
+    backgroundColor: cores.borda,
   },
   dica: {
     position: "absolute",
@@ -149,12 +149,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   aviso: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#A12A20",
+    color: cores.erro,
   },
   botoes: {
     flexDirection: "row",

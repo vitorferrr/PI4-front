@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   mapa: {
     height: 230,
-    backgroundColor: "#D7E6F5",
+    backgroundColor: cores.mapaFundo,
     overflow: "hidden",
   },
   rua: {
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     elevation: 4,
-    shadowColor: "#0A3D7A",
+    shadowColor: cores.sombra,
     shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
@@ -353,12 +353,12 @@ const styles = StyleSheet.create({
   endereco: {
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   prazo: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   secao: {
     backgroundColor: cores.branco,
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   botaoPrincipal: {
     borderRadius: 16,

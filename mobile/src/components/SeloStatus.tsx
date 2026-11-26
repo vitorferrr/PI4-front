@@ -4,10 +4,10 @@ import { formatarStatus } from "@/lib/formatadores";
 import { cores } from "@/theme";
 
 const CORES_STATUS: Record<StatusVisita, { fundo: string; texto: string }> = {
-  agendada: { fundo: "#E6F0FB", texto: "#0B4F96" },
-  em_andamento: { fundo: "#E3F4FB", texto: "#0A5C7A" },
+  agendada: { fundo: cores.agendadaFundo, texto: cores.agendadaTexto },
+  em_andamento: { fundo: cores.emAndamentoFundo, texto: cores.emAndamentoTexto },
   concluida: { fundo: cores.sucessoFundo, texto: cores.sucesso },
-  cancelada: { fundo: "#EEF1F5", texto: cores.textoSecundario },
+  cancelada: { fundo: cores.canceladaFundo, texto: cores.textoSecundario },
 };
 
 export function SeloStatus({ status }: { status: StatusVisita }) {

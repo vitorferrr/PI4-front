@@ -17,6 +17,19 @@ export const cores = {
   sucessoFundo: "#E2F5EA",
   avisoTexto: "#5C3F00",
   avisoFundo: "#FFF4D6",
+  avisoForte: "#7A5300",
+  textoMedio: "#33435A",
+  textoDocumento: "#1E2B3D",
+  azulClaro: "#D6E6F8",
+  mapaFundo: "#D7E6F5",
+  sombra: "#0A3D7A",
+  sucessoEscuro: "#0E4F27",
+  fundoAssinatura: "#F7FAFD",
+  agendadaFundo: "#E6F0FB",
+  agendadaTexto: "#0B4F96",
+  emAndamentoFundo: "#E3F4FB",
+  emAndamentoTexto: "#0A5C7A",
+  canceladaFundo: "#EEF1F5",
 };
 
 const fontesBase = configureFonts({
@@ -32,7 +45,7 @@ export const tema: MD3Theme = {
     ...MD3LightTheme.colors,
     primary: cores.azul,
     onPrimary: cores.branco,
-    primaryContainer: "#D6E6F8",
+    primaryContainer: cores.azulClaro,
     onPrimaryContainer: cores.azulEscuro,
     secondary: cores.azulEscuro,
     onSecondary: cores.branco,

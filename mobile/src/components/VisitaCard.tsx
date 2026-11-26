@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   prazo: {
     fontFamily: "Inter_700Bold",
     fontSize: 13,
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   prazoAtrasado: {
     color: cores.erro,
@@ -108,11 +108,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#7A5300",
+    backgroundColor: cores.avisoForte,
   },
   aparelhoTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#7A5300",
+    color: cores.avisoForte,
   },
 });

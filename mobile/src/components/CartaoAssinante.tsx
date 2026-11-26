@@ -234,13 +234,13 @@ export function CartaoAssinante({
 const styles = StyleSheet.create({
   opcional: {
     fontFamily: "Inter_400Regular",
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   avisoCartao: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
     lineHeight: 17,
-    color: "#5C3F00",
+    color: cores.avisoTexto,
   },
   bloqueado: {
     opacity: 0.5,
@@ -254,13 +254,13 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderWidth: 1,
-    borderColor: "#DCE5EF",
+    borderColor: cores.bordaClara,
   },
   cartaoAtivo: {
     borderWidth: 2,
-    borderColor: "#1D3F94",
+    borderColor: cores.azul,
   },
   cartaoAguardando: {
     gap: 2,
@@ -279,20 +279,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconeOk: {
-    backgroundColor: "#E2F5EA",
+    backgroundColor: cores.sucessoFundo,
   },
   iconeRecusa: {
-    backgroundColor: "#FDE8E6",
+    backgroundColor: cores.erroFundo,
   },
   iconeTexto: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 16,
   },
   iconeTextoOk: {
-    color: "#17803F",
+    color: cores.sucesso,
   },
   iconeTextoRecusa: {
-    color: "#A12A20",
+    color: cores.erro,
   },
   textos: {
     flex: 1,
@@ -300,12 +300,12 @@ const styles = StyleSheet.create({
   nome: {
     fontFamily: "Inter_700Bold",
     fontSize: 15,
-    color: "#0F1E33",
+    color: cores.texto,
   },
   detalhe: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   link: {
     fontFamily: "Inter_700Bold",
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   rotuloAtivo: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    color: "#0F1E33",
+    color: cores.texto,
   },
   campoNome: {
     gap: 6,

@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 27,
     lineHeight: 34,
-    color: "#172F6E",
+    color: cores.azulEscuro,
     marginBottom: 4,
   },
 
@@ -127,33 +127,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderColor: "#C5D3E3",
-    backgroundColor: "#FFFFFF",
+    borderColor: cores.borda,
+    backgroundColor: cores.branco,
   },
   opcaoSelecionada: {
     borderWidth: 2,
-    borderColor: "#1D3F94",
-    backgroundColor: "#1D3F94",
+    borderColor: cores.azul,
+    backgroundColor: cores.azul,
   },
   bolinha: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "#8A9AB0",
+    borderColor: cores.textoApagado,
   },
   bolinhaSelecionada: {
     borderWidth: 6,
-    borderColor: "#FFCC00",
-    backgroundColor: "#FFFFFF",
+    borderColor: cores.amarelo,
+    backgroundColor: cores.branco,
   },
   opcaoTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 17,
-    color: "#0F1E33",
+    color: cores.texto,
   },
   opcaoTextoSelecionado: {
-    color: "#FFFFFF",
+    color: cores.branco,
   },
 
   input: {

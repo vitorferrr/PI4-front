@@ -84,7 +84,7 @@ export function CabecalhoVisita({
 
 const styles = StyleSheet.create({
   cabecalho: {
-    backgroundColor: "#1D3F94",
+    backgroundColor: cores.azul,
     paddingHorizontal: 16,
     paddingBottom: 16,
     gap: 14,
@@ -107,12 +107,12 @@ const styles = StyleSheet.create({
     fontSize: 23,
     lineHeight: 25,
     textTransform: "uppercase",
-    color: "#FFFFFF",
+    color: cores.branco,
   },
   subtitulo: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: "#D6E6F8",
+    color: cores.azulClaro,
   },
   selo: {
     flexDirection: "row",
@@ -121,28 +121,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "#172F6E",
+    backgroundColor: cores.azulEscuro,
   },
   seloIcone: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 13,
-    color: "#FFCC00",
+    color: cores.amarelo,
   },
   seloTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 12,
-    color: "#FFFFFF",
+    color: cores.branco,
   },
   checkIn: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#E2F5EA",
+    backgroundColor: cores.sucessoFundo,
   },
   checkInTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#0E4F27",
+    color: cores.sucessoEscuro,
   },
   progresso: {
     gap: 6,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   progressoTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#FFFFFF",
+    color: cores.branco,
   },
   barra: {
     height: 8,

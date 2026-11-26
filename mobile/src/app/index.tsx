@@ -33,11 +33,12 @@ function dataDeHoje() {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-function iniciais(nome: string) {
-  const partes = nome.trim().split(/\s+/);
+// o usuário salvo no aparelho só tem o id validado, então o nome pode faltar
+function iniciais(nome?: string) {
+  const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
   const primeira = partes[0]?.charAt(0) ?? "";
   const ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : "";
-  return (primeira + ultima).toUpperCase();
+  return (primeira + ultima).toUpperCase() || "?";
 }
 
 function confirmarSaida(temVisitaNoAparelho: boolean) {
@@ -72,7 +73,7 @@ export default function VisitasScreen() {
   const pendentes = filtrarVisitas(visitas, "pendentes");
   const finalizadas = filtrarVisitas(visitas, "finalizadas");
   const visiveis = filtro === "pendentes" ? pendentes : finalizadas;
-  const primeiroNome = usuario?.nome.trim().split(/\s+/)[0] ?? "";
+  const primeiroNome = usuario?.nome?.trim().split(/\s+/)[0] ?? "";
 
   return (
     <View style={styles.tela}>
@@ -96,7 +97,7 @@ export default function VisitasScreen() {
           >
             <Avatar.Text
               size={48}
-              label={usuario ? iniciais(usuario.nome) : "?"}
+              label={iniciais(usuario?.nome)}
               style={styles.avatar}
               labelStyle={styles.avatarTexto}
               color={cores.azulEscuro}
@@ -113,6 +114,7 @@ export default function VisitasScreen() {
           style={[styles.filtro, filtro === "pendentes" && styles.filtroAtivo]}
           textStyle={[styles.filtroTexto, filtro === "pendentes" && styles.filtroTextoAtivo]}
           accessibilityRole="tab"
+          accessibilityState={{ selected: filtro === "pendentes" }}
         >
           {`Pendentes · ${pendentes.length}`}
         </Chip>
@@ -123,6 +125,7 @@ export default function VisitasScreen() {
           style={[styles.filtro, filtro === "finalizadas" && styles.filtroAtivo]}
           textStyle={[styles.filtroTexto, filtro === "finalizadas" && styles.filtroTextoAtivo]}
           accessibilityRole="tab"
+          accessibilityState={{ selected: filtro === "finalizadas" }}
         >
           {`Finalizadas · ${finalizadas.length}`}
         </Chip>
@@ -200,7 +203,7 @@ const styles = StyleSheet.create({
   data: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: "#D6E6F8",
+    color: cores.azulClaro,
   },
   ola: {
     fontFamily: "BarlowCondensed_800ExtraBold",
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
   filtroTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   filtroTextoAtivo: {
     fontFamily: "Inter_700Bold",

@@ -546,7 +546,7 @@ export default function DocumentoVisitaScreen() {
 const styles = StyleSheet.create({
   tela: {
     flex: 1,
-    backgroundColor: "#F3F7FB",
+    backgroundColor: cores.fundo,
   },
   centralizado: {
     flex: 1,
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 15,
     lineHeight: 22,
-    color: "#33435A",
+    color: cores.textoMedio,
     textAlign: "center",
   },
   botaoArredondado: {
@@ -577,13 +577,13 @@ const styles = StyleSheet.create({
   },
 
   previa: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderRadius: 6,
     paddingTop: 18,
     paddingHorizontal: 18,
     paddingBottom: 14,
     gap: 10,
-    shadowColor: "#0A3D7A",
+    shadowColor: cores.sombra,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.14,
     shadowRadius: 9,
@@ -595,39 +595,39 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 8,
     borderBottomWidth: 2,
-    borderBottomColor: "#1D3F94",
+    borderBottomColor: cores.azul,
   },
   previaIcone: {
     width: 26,
     height: 26,
     borderRadius: 7,
-    backgroundColor: "#1D3F94",
+    backgroundColor: cores.azul,
     justifyContent: "center",
     alignItems: "center",
   },
   previaIconeTexto: {
     fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
+    color: cores.branco,
     fontSize: 14,
   },
   previaTitulo: {
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 14,
-    color: "#172F6E",
+    color: cores.azulEscuro,
   },
   previaSubtitulo: {
     fontFamily: "Inter_400Regular",
     fontSize: 10.5,
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   previaTexto: {
     fontFamily: "Inter_400Regular",
     fontSize: 11.5,
     lineHeight: 17,
-    color: "#1E2B3D",
+    color: cores.textoDocumento,
   },
   previaRodape: {
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   negrito: {
     fontFamily: "Inter_700Bold",
@@ -636,20 +636,20 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#DCE5EF",
+    borderTopColor: cores.bordaClara,
   },
   respostasTitulo: {
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 13,
     textTransform: "uppercase",
-    color: "#172F6E",
+    color: cores.azulEscuro,
   },
   itemResposta: {
     gap: 2,
   },
   semResposta: {
     fontFamily: "Inter_600SemiBold",
-    color: "#A12A20",
+    color: cores.erro,
   },
 
   assinaturas: {
@@ -659,45 +659,45 @@ const styles = StyleSheet.create({
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 23,
     textTransform: "uppercase",
-    color: "#172F6E",
+    color: cores.azulEscuro,
   },
   cartaoAviso: {
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderWidth: 1,
-    borderColor: "#DCE5EF",
+    borderColor: cores.bordaClara,
   },
   cartaoAvisoTexto: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   avisoAmarelo: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#FFF4D6",
+    backgroundColor: cores.avisoFundo,
   },
   avisoAmareloTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     lineHeight: 18,
-    color: "#5C3F00",
+    color: cores.avisoTexto,
   },
 
   rodapeTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#33435A",
+    color: cores.textoMedio,
     textAlign: "center",
   },
   rodape: {
     paddingTop: 14,
     paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderTopWidth: 1,
-    borderTopColor: "#DCE5EF",
+    borderTopColor: cores.bordaClara,
     gap: 10,
   },
   botaoEnviar: {
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
   rodapeDica: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
     textAlign: "center",
   },
   botaoEnviarTexto: {
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
 
   erro: {
     fontFamily: "Inter_600SemiBold",
-    color: "#A12A20",
+    color: cores.erro,
     textAlign: "center",
     fontSize: 16,
   },

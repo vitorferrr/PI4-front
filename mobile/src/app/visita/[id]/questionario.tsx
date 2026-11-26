@@ -33,8 +33,6 @@ export default function QuestionarioScreen() {
   const insets = useSafeAreaInsets();
 
   const [indiceAtual, setIndiceAtual] = useState(0);
-  // trava síncrona: o isPending só muda no próximo render, então um toque duplo enviaria duas vezes
-  // ou abriria o documento duas vezes. É liberada em erro ou quando o fiscal volta para esta tela.
   const concluindoRef = useRef(false);
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
@@ -73,7 +71,6 @@ export default function QuestionarioScreen() {
     },
     onError: (erro) => {
       concluindoRef.current = false;
-      // o handler global do queryClient já leva o fiscal para o login
       if (erro instanceof SessaoExpiradaError) return;
       const detalhes =
         erro instanceof ApiError && erro.erros.length > 0 ? `\n\n${erro.erros.join("\n")}` : "";
@@ -82,11 +79,9 @@ export default function QuestionarioScreen() {
   });
 
   const enviando = enviarRespostasMutation.isPending;
-  // depois do POST /visitas/:id/documento o back não aceita mais alterar as respostas
   const documentoGerado = (visita?.documentos?.length ?? 0) > 0;
   const bloqueado = enviando || documentoGerado;
 
-  // durante o envio, impede sair da tela (voltar do cabeçalho, botão do Android e gesto do iOS)
   usePreventRemove(enviando, () => {});
 
   useFocusEffect(
@@ -293,7 +288,7 @@ export default function QuestionarioScreen() {
 const styles = StyleSheet.create({
   tela: {
     flex: 1,
-    backgroundColor: "#F3F7FB",
+    backgroundColor: cores.fundo,
   },
   centralizado: {
     flex: 1,
@@ -305,7 +300,7 @@ const styles = StyleSheet.create({
   mensagem: {
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
     textAlign: "center",
   },
   botaoArredondado: {
@@ -323,8 +318,8 @@ const styles = StyleSheet.create({
   avisoSomenteLeitura: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    color: "#7A5A00",
-    backgroundColor: "#FFF4CC",
+    color: cores.avisoForte,
+    backgroundColor: cores.avisoFundo,
     borderRadius: 12,
     padding: 12,
   },
@@ -334,11 +329,11 @@ const styles = StyleSheet.create({
   rotuloObservacoes: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 15,
-    color: "#0F1E33",
+    color: cores.texto,
   },
   opcional: {
     fontFamily: "Inter_400Regular",
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   inputObservacoes: {
     minHeight: 96,
@@ -354,9 +349,9 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingTop: 14,
     paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderTopWidth: 1,
-    borderTopColor: "#DCE5EF",
+    borderTopColor: cores.bordaClara,
   },
   botaoRodape: {
     flex: 1,
