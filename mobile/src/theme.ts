@@ -1,0 +1,75 @@
+import { MD3LightTheme, configureFonts, type MD3Theme } from "react-native-paper";
+
+export const cores = {
+  azul: "#1D3F94",
+  azulEscuro: "#172F6E",
+  amarelo: "#FFCC00",
+  fundo: "#F3F7FB",
+  branco: "#FFFFFF",
+  texto: "#0F1E33",
+  textoSecundario: "#4A5B73",
+  textoApagado: "#8A9AB0",
+  borda: "#C5D3E3",
+  bordaClara: "#DCE5EF",
+  erro: "#A12A20",
+  erroFundo: "#FDE8E6",
+  sucesso: "#17803F",
+  sucessoFundo: "#E2F5EA",
+  avisoTexto: "#5C3F00",
+  avisoFundo: "#FFF4D6",
+  avisoForte: "#7A5300",
+  textoMedio: "#33435A",
+  textoDocumento: "#1E2B3D",
+  azulClaro: "#D6E6F8",
+  mapaFundo: "#D7E6F5",
+  sombra: "#0A3D7A",
+  sucessoEscuro: "#0E4F27",
+  fundoAssinatura: "#F7FAFD",
+  agendadaFundo: "#E6F0FB",
+  agendadaTexto: "#0B4F96",
+  emAndamentoFundo: "#E3F4FB",
+  emAndamentoTexto: "#0A5C7A",
+  canceladaFundo: "#EEF1F5",
+};
+
+const fontesBase = configureFonts({
+  config: { fontFamily: "Inter_400Regular", fontWeight: "normal" },
+});
+
+const negrito = { fontFamily: "Inter_700Bold", fontWeight: "normal" } as const;
+
+export const tema: MD3Theme = {
+  ...MD3LightTheme,
+  roundness: 3,
+  colors: {
+    ...MD3LightTheme.colors,
+    primary: cores.azul,
+    onPrimary: cores.branco,
+    primaryContainer: cores.azulClaro,
+    onPrimaryContainer: cores.azulEscuro,
+    secondary: cores.azulEscuro,
+    onSecondary: cores.branco,
+    tertiary: cores.amarelo,
+    onTertiary: cores.texto,
+    error: cores.erro,
+    onError: cores.branco,
+    errorContainer: cores.erroFundo,
+    onErrorContainer: cores.erro,
+    background: cores.fundo,
+    onBackground: cores.texto,
+    surface: cores.branco,
+    onSurface: cores.texto,
+    surfaceVariant: "#E8EEF7",
+    onSurfaceVariant: cores.textoSecundario,
+    outline: cores.borda,
+    outlineVariant: cores.bordaClara,
+  },
+  fonts: {
+    ...fontesBase,
+    titleLarge: { ...fontesBase.titleLarge, ...negrito },
+    titleMedium: { ...fontesBase.titleMedium, ...negrito },
+    titleSmall: { ...fontesBase.titleSmall, ...negrito },
+    labelLarge: { ...fontesBase.labelLarge, ...negrito },
+    labelMedium: { ...fontesBase.labelMedium, ...negrito },
+  },
+};

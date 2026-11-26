@@ -1,6 +1,8 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { IconButton, ProgressBar } from "react-native-paper";
+import { cores } from "@/theme";
 
 interface CabecalhoVisitaProps {
   titulo: string;
@@ -28,14 +30,14 @@ export function CabecalhoVisita({
   return (
     <View style={[styles.cabecalho, { paddingTop: insets.top + 8 }]}>
       <View style={styles.linha}>
-        <Pressable
+        <IconButton
+          icon="chevron-left"
+          size={32}
+          iconColor={cores.branco}
           style={styles.botaoVoltar}
-          accessibilityRole="button"
           accessibilityLabel={rotuloVoltar}
           onPress={() => router.back()}
-        >
-          <Text style={styles.botaoVoltarTexto}>‹</Text>
-        </Pressable>
+        />
 
         <View style={styles.textos}>
           <Text style={styles.titulo} numberOfLines={2}>
@@ -68,9 +70,12 @@ export function CabecalhoVisita({
               {progresso.respondidas} de {progresso.total} respondidas
             </Text>
           </View>
-          <View style={styles.barraFundo}>
-            <View style={[styles.barraPreenchida, { width: `${porcentagemRespondida}%` }]} />
-          </View>
+          <ProgressBar
+            progress={porcentagemRespondida / 100}
+            color={cores.amarelo}
+            style={styles.barra}
+            accessibilityLabel={`${porcentagemRespondida}% respondido`}
+          />
         </View>
       ) : null}
     </View>
@@ -79,7 +84,7 @@ export function CabecalhoVisita({
 
 const styles = StyleSheet.create({
   cabecalho: {
-    backgroundColor: "#1D3F94",
+    backgroundColor: cores.azul,
     paddingHorizontal: 16,
     paddingBottom: 16,
     gap: 14,
@@ -92,14 +97,7 @@ const styles = StyleSheet.create({
   botaoVoltar: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  botaoVoltarTexto: {
-    color: "#FFFFFF",
-    fontSize: 36,
-    lineHeight: 38,
+    margin: 0,
   },
   textos: {
     flex: 1,
@@ -109,12 +107,12 @@ const styles = StyleSheet.create({
     fontSize: 23,
     lineHeight: 25,
     textTransform: "uppercase",
-    color: "#FFFFFF",
+    color: cores.branco,
   },
   subtitulo: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: "#D6E6F8",
+    color: cores.azulClaro,
   },
   selo: {
     flexDirection: "row",
@@ -123,28 +121,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "#172F6E",
+    backgroundColor: cores.azulEscuro,
   },
   seloIcone: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 13,
-    color: "#FFCC00",
+    color: cores.amarelo,
   },
   seloTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 12,
-    color: "#FFFFFF",
+    color: cores.branco,
   },
   checkIn: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#E2F5EA",
+    backgroundColor: cores.sucessoFundo,
   },
   checkInTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#0E4F27",
+    color: cores.sucessoEscuro,
   },
   progresso: {
     gap: 6,
@@ -156,17 +154,11 @@ const styles = StyleSheet.create({
   progressoTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#FFFFFF",
+    color: cores.branco,
   },
-  barraFundo: {
+  barra: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#172F6E",
-    overflow: "hidden",
-  },
-  barraPreenchida: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FFCC00",
+    backgroundColor: cores.azulEscuro,
   },
 });

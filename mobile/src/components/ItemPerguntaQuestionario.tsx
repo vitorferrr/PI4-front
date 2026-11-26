@@ -1,5 +1,7 @@
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import { TextInput } from "react-native-paper";
 import { PerguntaQuestionario } from "@/types/visita";
+import { cores } from "@/theme";
 
 const OPCOES_SIM_NAO = ["Sim", "Não", "Não se aplica"];
 
@@ -55,38 +57,50 @@ export function ItemPerguntaQuestionario({
 
       {pergunta.tipo_resposta === "numero" && (
         <TextInput
-          style={styles.input}
+          mode="outlined"
           placeholder="Digite um número"
-          placeholderTextColor="#8A9AB0"
+          placeholderTextColor={cores.textoApagado}
           keyboardType="numeric"
           value={valorAtual}
           editable={!desabilitado}
           onChangeText={onResponder}
+          accessibilityLabel={pergunta.texto}
+          outlineColor={cores.borda}
+          outlineStyle={styles.campoBorda}
+          style={styles.input}
         />
       )}
 
       {pergunta.tipo_resposta === "data" && (
         <TextInput
-          style={styles.input}
+          mode="outlined"
           placeholder="DD/MM/AAAA"
-          placeholderTextColor="#8A9AB0"
+          placeholderTextColor={cores.textoApagado}
           keyboardType="numbers-and-punctuation"
           value={valorAtual}
           editable={!desabilitado}
           onChangeText={onResponder}
+          accessibilityLabel={pergunta.texto}
+          outlineColor={cores.borda}
+          outlineStyle={styles.campoBorda}
+          style={styles.input}
         />
       )}
 
       {pergunta.tipo_resposta === "texto" && (
         <TextInput
-          style={[styles.input, styles.inputMultilinha]}
+          mode="outlined"
           placeholder="Digite a resposta"
-          placeholderTextColor="#8A9AB0"
+          placeholderTextColor={cores.textoApagado}
           multiline
           textAlignVertical="top"
           value={valorAtual}
           editable={!desabilitado}
           onChangeText={onResponder}
+          accessibilityLabel={pergunta.texto}
+          outlineColor={cores.borda}
+          outlineStyle={styles.campoBorda}
+          style={[styles.input, styles.inputMultilinha]}
         />
       )}
     </View>
@@ -101,7 +115,7 @@ const styles = StyleSheet.create({
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 27,
     lineHeight: 34,
-    color: "#172F6E",
+    color: cores.azulEscuro,
     marginBottom: 4,
   },
 
@@ -113,49 +127,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderColor: "#C5D3E3",
-    backgroundColor: "#FFFFFF",
+    borderColor: cores.borda,
+    backgroundColor: cores.branco,
   },
   opcaoSelecionada: {
     borderWidth: 2,
-    borderColor: "#1D3F94",
-    backgroundColor: "#1D3F94",
+    borderColor: cores.azul,
+    backgroundColor: cores.azul,
   },
   bolinha: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "#8A9AB0",
+    borderColor: cores.textoApagado,
   },
   bolinhaSelecionada: {
     borderWidth: 6,
-    borderColor: "#FFCC00",
-    backgroundColor: "#FFFFFF",
+    borderColor: cores.amarelo,
+    backgroundColor: cores.branco,
   },
   opcaoTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 17,
-    color: "#0F1E33",
+    color: cores.texto,
   },
   opcaoTextoSelecionado: {
-    color: "#FFFFFF",
+    color: cores.branco,
   },
 
   input: {
-    height: 56,
-    borderWidth: 1.5,
-    borderColor: "#C5D3E3",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    fontFamily: "Inter_400Regular",
-    fontSize: 17,
-    color: "#0F1E33",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
   },
   inputMultilinha: {
-    height: undefined,
     minHeight: 120,
-    paddingVertical: 12,
+  },
+  campoBorda: {
+    borderRadius: 14,
+    borderWidth: 1.5,
   },
 });

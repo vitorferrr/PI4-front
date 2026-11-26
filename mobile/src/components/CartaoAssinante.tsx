@@ -1,15 +1,8 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Image,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
-} from "react-native";
+import { View, Text, Image, Alert, StyleSheet } from "react-native";
+import { ActivityIndicator, Button, HelperText, TextInput } from "react-native-paper";
 import { SignaturePad } from "@/components/SignaturePad";
+import { cores } from "@/theme";
 import { formatarHora } from "@/lib/formatadores";
 import type { AssinaturaColetada } from "@/store/visitaEmAndamentoStore";
 
@@ -85,9 +78,9 @@ export function CartaoAssinante({
             </Text>
           </View>
           {onRefazer && (
-            <Pressable accessibilityRole="button" onPress={onRefazer}>
-              <Text style={styles.link}>Refazer</Text>
-            </Pressable>
+            <Button mode="text" onPress={onRefazer} labelStyle={styles.link}>
+              Refazer
+            </Button>
           )}
         </View>
         {assinatura.imagemUri && (
@@ -152,16 +145,25 @@ export function CartaoAssinante({
         <View style={styles.campoNome}>
           <Text style={styles.rotuloAtivo}>{rotuloCampoNome ?? rotulo}</Text>
           <TextInput
-            style={styles.input}
+            mode="outlined"
             value={nomeDigitado}
             onChangeText={(texto) => {
               setNomeDigitado(texto);
               setAvisoNome(false);
             }}
             placeholder="Nome e cargo"
-            placeholderTextColor="#8A9AB0"
+            placeholderTextColor={cores.textoApagado}
+            accessibilityLabel={rotuloCampoNome ?? rotulo}
+            error={avisoNome}
+            outlineColor={cores.borda}
+            outlineStyle={styles.campoBorda}
+            style={styles.input}
           />
-          {avisoNome && <Text style={styles.aviso}>Informe o nome antes de continuar.</Text>}
+          {avisoNome && (
+            <HelperText type="error" style={styles.aviso}>
+              Informe o nome antes de continuar.
+            </HelperText>
+          )}
 
           {pedirEmail && (
             <>
@@ -169,20 +171,29 @@ export function CartaoAssinante({
                 E-mail <Text style={styles.opcional}>(opcional, para receber o documento)</Text>
               </Text>
               <TextInput
-                style={styles.input}
+                mode="outlined"
                 value={emailDigitado}
                 onChangeText={(texto) => {
                   setEmailDigitado(texto);
                   setAvisoEmail(false);
                 }}
                 placeholder="email@exemplo.com"
-                placeholderTextColor="#8A9AB0"
+                placeholderTextColor={cores.textoApagado}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="email"
+                accessibilityLabel="E-mail do responsável"
+                error={avisoEmail}
+                outlineColor={cores.borda}
+                outlineStyle={styles.campoBorda}
+                style={styles.input}
               />
-              {avisoEmail && <Text style={styles.aviso}>Informe um e-mail válido.</Text>}
+              {avisoEmail && (
+                <HelperText type="error" style={styles.aviso}>
+                  Informe um e-mail válido.
+                </HelperText>
+              )}
             </>
           )}
         </View>
@@ -200,15 +211,21 @@ export function CartaoAssinante({
 
       {enviando && (
         <View style={styles.enviando}>
-          <ActivityIndicator color="#1D3F94" />
+          <ActivityIndicator />
           <Text style={styles.detalhe}>Enviando assinatura...</Text>
         </View>
       )}
 
       {permitirRecusa && !enviando && (
-        <Pressable style={styles.botaoRecusa} accessibilityRole="button" onPress={recusar}>
-          <Text style={styles.link}>{rotulo} se recusou a assinar</Text>
-        </Pressable>
+        <Button
+          mode="text"
+          onPress={recusar}
+          style={styles.botaoRecusa}
+          contentStyle={styles.botaoRecusaConteudo}
+          labelStyle={styles.link}
+        >
+          {rotulo} se recusou a assinar
+        </Button>
       )}
     </View>
   );
@@ -217,13 +234,13 @@ export function CartaoAssinante({
 const styles = StyleSheet.create({
   opcional: {
     fontFamily: "Inter_400Regular",
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   avisoCartao: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
     lineHeight: 17,
-    color: "#5C3F00",
+    color: cores.avisoTexto,
   },
   bloqueado: {
     opacity: 0.5,
@@ -237,13 +254,13 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderWidth: 1,
-    borderColor: "#DCE5EF",
+    borderColor: cores.bordaClara,
   },
   cartaoAtivo: {
     borderWidth: 2,
-    borderColor: "#1D3F94",
+    borderColor: cores.azul,
   },
   cartaoAguardando: {
     gap: 2,
@@ -262,20 +279,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconeOk: {
-    backgroundColor: "#E2F5EA",
+    backgroundColor: cores.sucessoFundo,
   },
   iconeRecusa: {
-    backgroundColor: "#FDE8E6",
+    backgroundColor: cores.erroFundo,
   },
   iconeTexto: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 16,
   },
   iconeTextoOk: {
-    color: "#17803F",
+    color: cores.sucesso,
   },
   iconeTextoRecusa: {
-    color: "#A12A20",
+    color: cores.erro,
   },
   textos: {
     flex: 1,
@@ -283,18 +300,16 @@ const styles = StyleSheet.create({
   nome: {
     fontFamily: "Inter_700Bold",
     fontSize: 15,
-    color: "#0F1E33",
+    color: cores.texto,
   },
   detalhe: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   link: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
-    color: "#1D3F94",
-    padding: 8,
   },
   imagem: {
     height: 60,
@@ -303,29 +318,27 @@ const styles = StyleSheet.create({
   rotuloAtivo: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    color: "#0F1E33",
+    color: cores.texto,
   },
   campoNome: {
     gap: 6,
   },
   input: {
-    height: 48,
-    borderWidth: 1.5,
-    borderColor: "#C5D3E3",
+    backgroundColor: cores.branco,
+  },
+  campoBorda: {
     borderRadius: 12,
-    paddingHorizontal: 14,
-    fontFamily: "Inter_400Regular",
-    fontSize: 16,
-    color: "#0F1E33",
+    borderWidth: 1.5,
   },
   aviso: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#A12A20",
+    paddingHorizontal: 0,
   },
   botaoRecusa: {
     alignSelf: "flex-start",
+  },
+  botaoRecusaConteudo: {
     minHeight: 44,
-    justifyContent: "center",
   },
 });

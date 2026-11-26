@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-} from "react-native";
+import { View, Text, ScrollView, Alert, StyleSheet } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
+import { ActivityIndicator, Button } from "react-native-paper";
+import { cores } from "@/theme";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, ApiError, SessaoExpiradaError } from "@/lib/api";
@@ -301,7 +295,7 @@ export default function DocumentoVisitaScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <CabecalhoVisita titulo={titulo} rotuloVoltar="Voltar ao questionário" />
         <View style={styles.centralizado}>
-          <ActivityIndicator size="large" color="#1D3F94" />
+          <ActivityIndicator size="large" />
         </View>
       </View>
     );
@@ -315,15 +309,17 @@ export default function DocumentoVisitaScreen() {
         <CabecalhoVisita titulo={titulo} rotuloVoltar="Voltar ao questionário" />
         <View style={styles.centralizado}>
           <Text style={styles.erro}>{erro?.message ?? "Erro ao carregar visita."}</Text>
-          <Pressable
-            style={styles.botaoSecundario}
+          <Button
+            mode="outlined"
             onPress={() => {
               visitaQuery.refetch();
               perguntasQuery.refetch();
             }}
+            style={styles.botaoSecundario}
+            labelStyle={styles.botaoTexto}
           >
-            <Text style={styles.botaoSecundarioTexto}>Tentar novamente</Text>
-          </Pressable>
+            Tentar novamente
+          </Button>
         </View>
       </View>
     );
@@ -343,12 +339,14 @@ export default function DocumentoVisitaScreen() {
             As respostas desta visita não estão neste aparelho. Preencha o questionário antes de
             revisar o documento.
           </Text>
-          <Pressable
-            style={styles.botaoPrimario}
+          <Button
+            mode="contained"
             onPress={() => router.replace(`/visita/${id}/questionario`)}
+            style={styles.botaoArredondado}
+            labelStyle={styles.botaoTexto}
           >
-            <Text style={styles.botaoPrimarioTexto}>Ir para o questionário</Text>
-          </Pressable>
+            Ir para o questionário
+          </Button>
         </View>
       </View>
     );
@@ -528,19 +526,18 @@ export default function DocumentoVisitaScreen() {
         {!todasAssinaturasColetadas && (
           <Text style={styles.rodapeDica}>Colete as assinaturas para encerrar a visita.</Text>
         )}
-        <Pressable
-          style={[styles.botaoEnviar, !podeConcluir && styles.botaoDesabilitado]}
+        <Button
+          mode="contained"
+          buttonColor={cores.sucesso}
           disabled={!podeConcluir}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !podeConcluir, busy: concluirMutation.isPending }}
+          loading={concluirMutation.isPending}
           onPress={concluirVisita}
+          style={styles.botaoEnviar}
+          contentStyle={styles.botaoEnviarConteudo}
+          labelStyle={styles.botaoEnviarTexto}
         >
-          {concluirMutation.isPending ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.botaoEnviarTexto}>Encerrar e enviar</Text>
-          )}
-        </Pressable>
+          Encerrar e enviar
+        </Button>
       </View>
     </View>
   );
@@ -549,7 +546,7 @@ export default function DocumentoVisitaScreen() {
 const styles = StyleSheet.create({
   tela: {
     flex: 1,
-    backgroundColor: "#F3F7FB",
+    backgroundColor: cores.fundo,
   },
   centralizado: {
     flex: 1,
@@ -562,18 +559,14 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 15,
     lineHeight: 22,
-    color: "#33435A",
+    color: cores.textoMedio,
     textAlign: "center",
   },
-  botaoPrimario: {
-    backgroundColor: "#1D3F94",
+  botaoArredondado: {
     borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
   },
-  botaoPrimarioTexto: {
+  botaoTexto: {
     fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
     fontSize: 16,
   },
 
@@ -584,13 +577,13 @@ const styles = StyleSheet.create({
   },
 
   previa: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderRadius: 6,
     paddingTop: 18,
     paddingHorizontal: 18,
     paddingBottom: 14,
     gap: 10,
-    shadowColor: "#0A3D7A",
+    shadowColor: cores.sombra,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.14,
     shadowRadius: 9,
@@ -602,39 +595,39 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 8,
     borderBottomWidth: 2,
-    borderBottomColor: "#1D3F94",
+    borderBottomColor: cores.azul,
   },
   previaIcone: {
     width: 26,
     height: 26,
     borderRadius: 7,
-    backgroundColor: "#1D3F94",
+    backgroundColor: cores.azul,
     justifyContent: "center",
     alignItems: "center",
   },
   previaIconeTexto: {
     fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
+    color: cores.branco,
     fontSize: 14,
   },
   previaTitulo: {
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 14,
-    color: "#172F6E",
+    color: cores.azulEscuro,
   },
   previaSubtitulo: {
     fontFamily: "Inter_400Regular",
     fontSize: 10.5,
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   previaTexto: {
     fontFamily: "Inter_400Regular",
     fontSize: 11.5,
     lineHeight: 17,
-    color: "#1E2B3D",
+    color: cores.textoDocumento,
   },
   previaRodape: {
-    color: "#33435A",
+    color: cores.textoMedio,
   },
   negrito: {
     fontFamily: "Inter_700Bold",
@@ -643,20 +636,20 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#DCE5EF",
+    borderTopColor: cores.bordaClara,
   },
   respostasTitulo: {
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 13,
     textTransform: "uppercase",
-    color: "#172F6E",
+    color: cores.azulEscuro,
   },
   itemResposta: {
     gap: 2,
   },
   semResposta: {
     fontFamily: "Inter_600SemiBold",
-    color: "#A12A20",
+    color: cores.erro,
   },
 
   assinaturas: {
@@ -666,84 +659,73 @@ const styles = StyleSheet.create({
     fontFamily: "BarlowCondensed_800ExtraBold",
     fontSize: 23,
     textTransform: "uppercase",
-    color: "#172F6E",
+    color: cores.azulEscuro,
   },
   cartaoAviso: {
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderWidth: 1,
-    borderColor: "#DCE5EF",
+    borderColor: cores.bordaClara,
   },
   cartaoAvisoTexto: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   avisoAmarelo: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#FFF4D6",
+    backgroundColor: cores.avisoFundo,
   },
   avisoAmareloTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     lineHeight: 18,
-    color: "#5C3F00",
+    color: cores.avisoTexto,
   },
 
   rodapeTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#33435A",
+    color: cores.textoMedio,
     textAlign: "center",
   },
   rodape: {
     paddingTop: 14,
     paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: cores.branco,
     borderTopWidth: 1,
-    borderTopColor: "#DCE5EF",
+    borderTopColor: cores.bordaClara,
     gap: 10,
   },
   botaoEnviar: {
-    height: 60,
     borderRadius: 16,
-    backgroundColor: "#17803F",
-    justifyContent: "center",
-    alignItems: "center",
+  },
+  botaoEnviarConteudo: {
+    height: 60,
   },
   rodapeDica: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
     textAlign: "center",
-  },
-  botaoDesabilitado: {
-    opacity: 0.5,
   },
   botaoEnviarTexto: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 18,
-    color: "#FFFFFF",
   },
 
   erro: {
     fontFamily: "Inter_600SemiBold",
-    color: "#A12A20",
+    color: cores.erro,
     textAlign: "center",
     fontSize: 16,
   },
   botaoSecundario: {
     borderWidth: 1.5,
-    borderColor: "#1D3F94",
+    borderColor: cores.azul,
     borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  botaoSecundarioTexto: {
-    fontFamily: "Inter_700Bold",
-    color: "#1D3F94",
   },
 });

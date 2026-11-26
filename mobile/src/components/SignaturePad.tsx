@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Button } from "react-native-paper";
 import SignatureCanvas, { type SignatureViewRef } from "react-native-signature-canvas";
+import { cores } from "@/theme";
 
 interface SignaturePadProps {
   onConfirmar: (imagemBase64: string) => void;
@@ -13,7 +15,7 @@ const ESTILO_WEB = `
   .m-signature-pad { box-shadow: none; border: none; }
   .m-signature-pad--body { border: none; }
   .m-signature-pad--footer { display: none; margin: 0; }
-  body, html { background-color: #F7FAFD; }
+  body, html { background-color: ${cores.fundoAssinatura}; }
 `;
 
 export function SignaturePad({
@@ -57,7 +59,7 @@ export function SignaturePad({
           ref={canvasRef}
           style={styles.canvas}
           webStyle={ESTILO_WEB}
-          penColor="#0F1E33"
+          penColor={cores.texto}
           imageType="image/png"
           trimWhitespace
           onBegin={() => {
@@ -83,20 +85,25 @@ export function SignaturePad({
       {avisoVazio && <Text style={styles.aviso}>Faça a assinatura antes de confirmar.</Text>}
 
       <View style={styles.botoes}>
-        <Pressable
-          style={[styles.botao, styles.botaoLimpar]}
-          accessibilityRole="button"
+        <Button
+          mode="outlined"
           onPress={limpar}
+          textColor={cores.texto}
+          style={[styles.botao, styles.botaoLimpar]}
+          contentStyle={styles.botaoConteudo}
+          labelStyle={styles.botaoTexto}
         >
-          <Text style={styles.botaoLimparTexto}>Limpar</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.botao, styles.botaoConfirmar]}
-          accessibilityRole="button"
+          Limpar
+        </Button>
+        <Button
+          mode="contained"
           onPress={confirmar}
+          style={styles.botao}
+          contentStyle={styles.botaoConteudo}
+          labelStyle={styles.botaoTexto}
         >
-          <Text style={styles.botaoConfirmarTexto}>Confirmar assinatura</Text>
-        </Pressable>
+          Confirmar assinatura
+        </Button>
       </View>
     </View>
   );
@@ -108,7 +115,7 @@ const styles = StyleSheet.create({
   },
   area: {
     borderRadius: 12,
-    backgroundColor: "#F7FAFD",
+    backgroundColor: cores.fundoAssinatura,
     overflow: "hidden",
   },
   canvas: {
@@ -124,7 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: "#8A9AB0",
+    borderColor: cores.textoApagado,
   },
   linhaBase: {
     position: "absolute",
@@ -132,7 +139,7 @@ const styles = StyleSheet.create({
     right: 20,
     bottom: 30,
     height: 1.5,
-    backgroundColor: "#C5D3E3",
+    backgroundColor: cores.borda,
   },
   dica: {
     position: "absolute",
@@ -142,12 +149,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#4A5B73",
+    color: cores.textoSecundario,
   },
   aviso: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    color: "#A12A20",
+    color: cores.erro,
   },
   botoes: {
     flexDirection: "row",
@@ -155,26 +162,18 @@ const styles = StyleSheet.create({
   },
   botao: {
     flex: 1,
-    height: 44,
     borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+  },
+  botaoConteudo: {
+    height: 44,
   },
   botaoLimpar: {
     borderWidth: 1.5,
-    borderColor: "#C5D3E3",
+    borderColor: cores.borda,
   },
-  botaoLimparTexto: {
+  botaoTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
-    color: "#0F1E33",
-  },
-  botaoConfirmar: {
-    backgroundColor: "#1D3F94",
-  },
-  botaoConfirmarTexto: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: "#FFFFFF",
+    marginHorizontal: 8,
   },
 });
