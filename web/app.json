@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Constata · Procon Jaboatão",
+    "slug": "procon-constata-web",
+    "version": "1.0.0",
+    "scheme": "procon-constata-web",
+    "web": {
+      "output": "single",
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

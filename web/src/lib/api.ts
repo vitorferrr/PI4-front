@@ -8,9 +8,9 @@ declare module 'axios' {
   }
 }
 
-const configuredApiUrl = (import.meta.env.VITE_API_URL ?? '').trim();
-if (!configuredApiUrl && !import.meta.env.DEV) {
-  throw new Error('Configure VITE_API_URL com a URL da API antes de publicar a aplicação.');
+const configuredApiUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').trim();
+if (!configuredApiUrl && !__DEV__) {
+  throw new Error('Configure EXPO_PUBLIC_API_URL com a URL da API antes de publicar a aplicação.');
 }
 
 export const api = axios.create({

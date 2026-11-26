@@ -1,0 +1,87 @@
+import { MD3LightTheme, configureFonts, type MD3Theme } from "react-native-paper";
+
+// Cores do protótipo do painel (as mesmas do tailwind.config.js antigo, com nomes em português)
+export const cores = {
+  azul: "#1D3F94",
+  azulEscuro: "#172F6E",
+  azulMenu: "#24479B",
+  azulMenuTexto: "#BFD6F2",
+  azulCeu: "#2F5FC4",
+  azulClaro: "#D6E6F8",
+  amarelo: "#FFCC00",
+  fundo: "#F3F7FB",
+  fundoTabela: "#F7FAFD",
+  linhaTabela: "#E8EEF5",
+  trilha: "#EDF2F8",
+  selecionado: "#F2F7FD",
+  branco: "#FFFFFF",
+  texto: "#0F1E33",
+  textoDocumento: "#1E2B3D",
+  textoSecundario: "#4A5B73",
+  textoMedio: "#33435A",
+  borda: "#C5D0E3",
+  bordaCampo: "#C5D3E3",
+  bordaClara: "#DCE5EF",
+  verdeTitulo: "#2F7A4D",
+  sucesso: "#17803F",
+  sucessoForte: "#1E8F3E",
+  sucessoFundo: "#E2F5EA",
+  aviso: "#7A5300",
+  avisoFundo: "#FFF4D6",
+  avisoTexto: "#5C3F00",
+  erro: "#A12A20",
+  erroForte: "#C8372D",
+  erroFundo: "#FDE8E6",
+  erroTexto: "#7E1F17",
+  info: "#0A5C7A",
+  infoFundo: "#E3F4FB",
+  atribuida: "#0B4F96",
+  atribuidaFundo: "#E6F0FB",
+  enviada: "#4B2E9E",
+  enviadaFundo: "#EEE9FB",
+  neutro: "#33435A",
+  neutroFundo: "#EDEFF3",
+};
+
+// Com fonte carregada pelo expo-font, o fontWeight fica "normal": o peso já vem no nome da fonte
+const fontesBase = configureFonts({
+  config: { fontFamily: "Inter_400Regular", fontWeight: "normal" },
+});
+
+const negrito = { fontFamily: "Inter_700Bold", fontWeight: "normal" } as const;
+
+export const tema: MD3Theme = {
+  ...MD3LightTheme,
+  roundness: 3,
+  colors: {
+    ...MD3LightTheme.colors,
+    primary: cores.azul,
+    onPrimary: cores.branco,
+    primaryContainer: cores.azulClaro,
+    onPrimaryContainer: cores.azulEscuro,
+    secondary: cores.azulEscuro,
+    onSecondary: cores.branco,
+    tertiary: cores.amarelo,
+    onTertiary: cores.texto,
+    error: cores.erro,
+    onError: cores.branco,
+    errorContainer: cores.erroFundo,
+    onErrorContainer: cores.erro,
+    background: cores.fundo,
+    onBackground: cores.texto,
+    surface: cores.branco,
+    onSurface: cores.texto,
+    surfaceVariant: cores.trilha,
+    onSurfaceVariant: cores.textoSecundario,
+    outline: cores.bordaCampo,
+    outlineVariant: cores.bordaClara,
+  },
+  fonts: {
+    ...fontesBase,
+    titleLarge: { ...fontesBase.titleLarge, ...negrito },
+    titleMedium: { ...fontesBase.titleMedium, ...negrito },
+    titleSmall: { ...fontesBase.titleSmall, ...negrito },
+    labelLarge: { ...fontesBase.labelLarge, ...negrito },
+    labelMedium: { ...fontesBase.labelMedium, ...negrito },
+  },
+};
