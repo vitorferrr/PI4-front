@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { View, Text, FlatList, Pressable, Alert, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator, Avatar, Button, Chip } from "react-native-paper";
 import { useVisitas } from "@/hooks/use-visitas";
-import { sair } from "@/lib/api";
+import { iniciais } from "@/lib/formatadores";
 import { useSessaoStore } from "@/store/sessaoStore";
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { VisitaCard } from "@/components/VisitaCard";
@@ -30,34 +31,6 @@ function dataDeHoje() {
     month: "long",
   });
   return texto.charAt(0).toUpperCase() + texto.slice(1);
-}
-
-function iniciais(nome?: string) {
-  const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
-  const primeira = partes[0]?.charAt(0) ?? "";
-  const ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : "";
-  return (primeira + ultima).toUpperCase() || "?";
-}
-
-function confirmarSaida(temVisitaNoAparelho: boolean) {
-  const sairAgora = () => sair().catch(() => {});
-
-  if (temVisitaNoAparelho) {
-    Alert.alert(
-      "Visita em andamento",
-      "Você tem uma visita em andamento salva neste aparelho. Se sair agora, as respostas e assinaturas que ainda não foram enviadas serão apagadas.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Sair e apagar", style: "destructive", onPress: sairAgora },
-      ]
-    );
-    return;
-  }
-
-  Alert.alert("Sair da conta", "Deseja sair do aplicativo?", [
-    { text: "Cancelar", style: "cancel" },
-    { text: "Sair", style: "destructive", onPress: sairAgora },
-  ]);
 }
 
 export default function VisitasScreen() {
@@ -87,9 +60,9 @@ export default function VisitasScreen() {
             </Text>
           </View>
           <Pressable
-            onPress={() => confirmarSaida(visitaNoAparelho !== null)}
+            onPress={() => router.navigate("/perfil")}
             accessibilityRole="button"
-            accessibilityLabel="Sair da conta"
+            accessibilityLabel="Abrir meu perfil"
             hitSlop={8}
           >
             <Avatar.Text
