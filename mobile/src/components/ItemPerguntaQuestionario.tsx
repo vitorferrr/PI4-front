@@ -5,6 +5,13 @@ import { cores } from "@/theme";
 
 const OPCOES_SIM_NAO = ["Sim", "Não", "Não se aplica"];
 
+function aplicarMascaraData(valor: string) {
+  const digitos = valor.replace(/\D/g, "").slice(0, 8);
+  if (digitos.length <= 2) return digitos;
+  if (digitos.length <= 4) return `${digitos.slice(0, 2)}/${digitos.slice(2)}`;
+  return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
+}
+
 interface ItemPerguntaProps {
   pergunta: PerguntaQuestionario;
   valorAtual: string;
@@ -76,10 +83,11 @@ export function ItemPerguntaQuestionario({
           mode="outlined"
           placeholder="DD/MM/AAAA"
           placeholderTextColor={cores.textoApagado}
-          keyboardType="numbers-and-punctuation"
+          keyboardType="number-pad"
+          maxLength={10}
           value={valorAtual}
           editable={!desabilitado}
-          onChangeText={onResponder}
+          onChangeText={(texto) => onResponder(aplicarMascaraData(texto))}
           accessibilityLabel={pergunta.texto}
           outlineColor={cores.borda}
           outlineStyle={styles.campoBorda}
