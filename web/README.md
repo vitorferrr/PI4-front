@@ -43,7 +43,10 @@ Nos testes (`npm test`), rode o comando a partir do caminho com a letra do drive
 em maiúscula (`C:\...`) no Windows; com `c:\...` o Node carrega duas cópias do
 React e os testes de renderização falham com "Invalid hook call".
 
-Validação: `npm run lint`, `npm test` e `npm run build`.
+O web é escrito em TypeScript, com Tailwind CSS para o visual do protótipo
+(cores e fontes em `tailwind.config.js` e `src/index.css`) e ícones do `lucide-react`.
+
+Validação: `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
