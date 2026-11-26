@@ -108,7 +108,7 @@ export default function PerfilScreen() {
           >
             Sair da conta
           </Button>
-          <Text style={styles.aviso}>Ao sair, a sessão é encerrada também no servidor.</Text>
+          <Text style={styles.aviso}>Com internet, a sessão também é encerrada no servidor.</Text>
         </View>
       </ScrollView>
     </View>
