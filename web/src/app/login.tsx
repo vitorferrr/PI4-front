@@ -14,6 +14,8 @@ const LARGURA_DUAS_COLUNAS = 1024;
 
 interface RespostaLogin {
   token: string;
+  // DT-38: só vem depois que o back tiver o refresh token
+  refreshToken?: string;
   usuario: UsuarioLogado;
 }
 
@@ -30,7 +32,7 @@ export default function LoginScreen() {
 
   const loginMutation = useMutation({
     mutationFn: () => fazerLogin(email, senha),
-    onSuccess: ({ token, usuario }) => entrar(token, usuario),
+    onSuccess: ({ token, usuario, refreshToken }) => entrar(token, usuario, refreshToken ?? null),
   });
 
   function enviar() {

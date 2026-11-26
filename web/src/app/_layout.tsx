@@ -20,15 +20,19 @@ import { tema } from "@/theme";
 
 export default function RootLayout() {
   const token = useSessaoStore((state) => state.token);
+  const temRefreshToken = useSessaoStore((state) => state.refreshToken !== null);
   const autenticado = token !== null;
 
+  // Sem refresh token (back antes da DT-38), a sessão acaba quando o access token vence.
+  // Com refresh token, a próxima requisição renova a sessão (lib/api.ts).
   useEffect(() => {
+    if (temRefreshToken) return;
     const expiracao = expiracaoDoToken(token);
     if (expiracao === null) return;
     const restante = Math.min(Math.max(expiracao - Date.now(), 0), 2147483647);
     const timer = setTimeout(encerrarSessao, restante);
     return () => clearTimeout(timer);
-  }, [token]);
+  }, [token, temRefreshToken]);
 
   const [fontesCarregadas, erroFontes] = useFonts({
     BarlowCondensed_800ExtraBold,

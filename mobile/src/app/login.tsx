@@ -20,6 +20,8 @@ import { api, ApiError } from "@/lib/api";
 
 interface RespostaLogin {
   token: string;
+  // DT-38: só vem depois que o back tiver o refresh token
+  refreshToken?: string;
   usuario: UsuarioLogado;
 }
 
@@ -52,7 +54,7 @@ export default function LoginScreen() {
   const loginMutation = useMutation({
     mutationFn: () => fazerLogin(email, senha),
     onSuccess: async (data) => {
-      await entrar(data.token, data.usuario);
+      await entrar(data.token, data.usuario, data.refreshToken ?? null);
     },
   });
 
