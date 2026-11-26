@@ -30,3 +30,10 @@ export function formatarHora(dataIso?: string | null) {
   if (Number.isNaN(data.getTime())) return null;
   return data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
+
+export function iniciais(nome?: string) {
+  const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
+  const primeira = partes[0]?.charAt(0) ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : "";
+  return (primeira + ultima).toUpperCase() || "?";
+}
