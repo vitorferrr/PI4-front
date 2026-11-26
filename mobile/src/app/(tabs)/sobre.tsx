@@ -35,7 +35,6 @@ export default function SobreScreen() {
         </View>
       </View>
 
-      {/* no iOS a barra de abas flutua por cima da tela; o insets.bottom inclui a altura dela */}
       <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: 20 + insets.bottom }]}>
         <View style={styles.secao}>
           <Text style={styles.secaoTitulo}>O que é</Text>
