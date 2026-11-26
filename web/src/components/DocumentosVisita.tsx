@@ -1,18 +1,15 @@
-import { View, Text, Linking, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { Card, Icon } from "react-native-paper";
-import { API_URL } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { formatarData } from "@/lib/formatadores";
+import { MensagemErro } from "@/components/MensagemErro";
 import { cores } from "@/theme";
 import type { Documento } from "@/types/visita";
 
-function urlDoPdf(caminho?: string | null) {
-  if (!caminho) return null;
-  try {
-    const url = new URL(caminho, API_URL);
-    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
-  } catch {
-    return null;
-  }
+async function buscarLinkPdf(documentoId: number) {
+  const response = await api.get<{ url: string }>(`/documentos/${documentoId}/pdf`);
+  return response.data.url;
 }
 
 function textoEnvio(documento: Documento) {
@@ -22,26 +19,47 @@ function textoEnvio(documento: Documento) {
 }
 
 function CartaoDocumento({ documento }: { documento: Documento }) {
-  const url = urlDoPdf(documento.url_arquivo_pdf);
+  const temPdf = Boolean(documento.url_arquivo_pdf);
+  const abrirMutation = useMutation({ mutationFn: buscarLinkPdf });
+
+  function abrir() {
+    const aba = window.open("", "_blank");
+    abrirMutation.mutate(documento.id, {
+      onSuccess: (url) => {
+        if (aba) aba.location.href = url;
+        else window.location.assign(url);
+      },
+      onError: () => aba?.close(),
+    });
+  }
+
+  function situacao() {
+    if (!temPdf) return "PDF ainda não gerado";
+    if (abrirMutation.isPending) return "Abrindo PDF…";
+    return textoEnvio(documento);
+  }
 
   return (
-    <Card
-      mode="outlined"
-      style={styles.cartao}
-      contentStyle={styles.conteudo}
-      onPress={url ? () => Linking.openURL(url) : undefined}
-      accessibilityRole={url ? "link" : undefined}
-    >
-      <Icon source="file-document-outline" size={24} color={cores.azul} />
-      <View style={styles.textos}>
-        <Text style={styles.titulo}>Documento #{documento.id}</Text>
-        <Text style={styles.detalhe}>
-          Gerado em {formatarData(documento.data_geracao)} ·{" "}
-          {url ? textoEnvio(documento) : "PDF indisponível"}
-        </Text>
-      </View>
-      {url && <Icon source="open-in-new" size={18} color={cores.azul} />}
-    </Card>
+    <View style={styles.documento}>
+      <Card
+        mode="outlined"
+        style={styles.cartao}
+        contentStyle={styles.conteudo}
+        onPress={temPdf && !abrirMutation.isPending ? abrir : undefined}
+        accessibilityRole={temPdf ? "link" : undefined}
+        accessibilityLabel={temPdf ? `Abrir o PDF do documento ${documento.id}` : undefined}
+      >
+        <Icon source="file-document-outline" size={24} color={cores.azul} />
+        <View style={styles.textos}>
+          <Text style={styles.titulo}>Documento #{documento.id}</Text>
+          <Text style={styles.detalhe}>
+            Gerado em {formatarData(documento.data_geracao)} · {situacao()}
+          </Text>
+        </View>
+        {temPdf && <Icon source="open-in-new" size={18} color={cores.azul} />}
+      </Card>
+      {abrirMutation.isError && <MensagemErro erro={abrirMutation.error} />}
+    </View>
   );
 }
 
@@ -61,6 +79,9 @@ export function DocumentosVisita({ documentos }: { documentos: Documento[] }) {
 }
 
 const styles = StyleSheet.create({
+  documento: {
+    gap: 8,
+  },
   cartao: {
     borderRadius: 16,
     backgroundColor: cores.branco,
