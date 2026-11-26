@@ -1,10 +1,26 @@
 import type { ReactNode } from "react";
-import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import { View, Text, Image, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { Button, Icon, TextInput, type TextInputProps } from "react-native-paper";
 import { PERFIL_ROTULO } from "@/lib/rotulos";
 import { STATUS_VISITA } from "@/lib/visitas";
 import { cores } from "@/theme";
 import type { Role, StatusVisita } from "@/types";
+
+// Faixa colorida do protótipo (topo do login). A imagem tem 1520×112: com altura 56, fica com 760 de largura
+export function DecorativeStrip({ size = 56 }: { size?: number }) {
+  return (
+    <View
+      style={[styles.faixa, { height: size }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Image
+        source={require("../../assets/images/faixa-login.png")}
+        style={{ width: size * (1520 / 112), height: size }}
+      />
+    </View>
+  );
+}
 
 const STATUS_CORES: Record<StatusVisita, { fundo: string; texto: string }> = {
   agendada: { fundo: cores.atribuidaFundo, texto: cores.atribuida },
@@ -260,6 +276,9 @@ export function ListaErros({ mensagens }: { mensagens: string[] }) {
 }
 
 const styles = StyleSheet.create({
+  faixa: {
+    overflow: "hidden",
+  },
   selo: {
     alignSelf: "flex-start",
     paddingHorizontal: 10,
