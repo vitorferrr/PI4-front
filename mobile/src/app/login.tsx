@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -49,7 +57,11 @@ export default function LoginScreen() {
   });
 
   return (
-    <View style={styles.tela}>
+    <KeyboardAvoidingView
+      style={styles.tela}
+      behavior="padding"
+      enabled={Platform.OS === "android"}
+    >
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="light" />
       <ScrollView
@@ -152,7 +164,7 @@ export default function LoginScreen() {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

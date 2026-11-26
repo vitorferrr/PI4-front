@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, Alert, StyleSheet } from "react-native
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActivityIndicator, Avatar, Button, Chip, Icon } from "react-native-paper";
+import { ActivityIndicator, Avatar, Button, Chip } from "react-native-paper";
 import { useVisitas } from "@/hooks/use-visitas";
 import { sair } from "@/lib/api";
 import { useSessaoStore } from "@/store/sessaoStore";
@@ -93,7 +93,6 @@ export default function VisitasScreen() {
             accessibilityRole="button"
             accessibilityLabel="Sair da conta"
             hitSlop={8}
-            style={styles.botaoSair}
           >
             <Avatar.Text
               size={48}
@@ -102,10 +101,6 @@ export default function VisitasScreen() {
               labelStyle={styles.avatarTexto}
               color={cores.azulEscuro}
             />
-            <View style={styles.sairLinha}>
-              <Icon source="logout" size={14} color={cores.branco} />
-              <Text style={styles.sairTexto}>Sair</Text>
-            </View>
           </Pressable>
         </View>
       </View>
@@ -220,20 +215,6 @@ const styles = StyleSheet.create({
   avatarTexto: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 16,
-  },
-  botaoSair: {
-    alignItems: "center",
-    gap: 4,
-  },
-  sairLinha: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  sairTexto: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    color: cores.branco,
   },
   filtros: {
     flexDirection: "row",
