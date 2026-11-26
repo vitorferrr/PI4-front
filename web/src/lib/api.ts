@@ -1,0 +1,84 @@
+import axios from "axios";
+import { encerrarSessao } from "./queryClient";
+import { sinalDaSessao } from "./sessao";
+import { useSessaoStore } from "@/store/sessaoStore";
+
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+
+export class SessaoExpiradaError extends Error {
+  sessaoExpirada = true;
+}
+
+export class ApiError extends Error {
+  erros: string[];
+  status?: number;
+
+  constructor(mensagem: string, erros: string[] = [], status?: number) {
+    super(mensagem);
+    this.erros = erros;
+    this.status = status;
+  }
+}
+
+export const api = axios.create({
+  baseURL: API_URL,
+  timeout: 30000,
+});
+
+const ROTAS_SEM_SESSAO = ["/auth/login", "/auth/logout"];
+
+api.interceptors.request.use((config) => {
+  const token = useSessaoStore.getState().token;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  config.signal = config.signal
+    ? AbortSignal.any([config.signal as AbortSignal, sinalDaSessao()])
+    : sinalDaSessao();
+  return config;
+});
+
+api.interceptors.response.use(
+  (resposta) => resposta,
+  (erro) => {
+    const rotaSemSessao = ROTAS_SEM_SESSAO.includes(erro.config?.url ?? "");
+    if (axios.isAxiosError(erro) && erro.response?.status === 401 && !rotaSemSessao) {
+      return Promise.reject(new SessaoExpiradaError("Sessão expirada. Faça login novamente."));
+    }
+    return Promise.reject(converterErro(erro));
+  }
+);
+
+export async function sair() {
+  await api.post("/auth/logout", undefined, { timeout: 10000 }).catch(() => {});
+  encerrarSessao();
+}
+
+interface CorpoDeErro {
+  mensagem?: string;
+  erro?: { mensagem?: string };
+  erros?: unknown;
+}
+
+const MENSAGEM_ERRO_PADRAO = "Erro na comunicação com o servidor.";
+
+function converterErro(erro: unknown): Error {
+  if (axios.isCancel(erro)) return erro as Error;
+  if (axios.isAxiosError(erro)) {
+    if (erro.code === "ECONNABORTED") {
+      return new ApiError("O servidor demorou para responder. Tente novamente em instantes.");
+    }
+    if (!erro.response) {
+      return new ApiError("Sem conexão. Verifique a internet e tente novamente.");
+    }
+    const dados = erro.response.data as CorpoDeErro | undefined;
+    const erros = Array.isArray(dados?.erros)
+      ? dados.erros.filter((item): item is string => typeof item === "string")
+      : [];
+    return new ApiError(
+      dados?.erro?.mensagem || dados?.mensagem || MENSAGEM_ERRO_PADRAO,
+      erros,
+      erro.response.status
+    );
+  }
+
+  return erro instanceof Error ? erro : new ApiError(MENSAGEM_ERRO_PADRAO);
+}
