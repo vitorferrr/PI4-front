@@ -51,7 +51,7 @@ export default function RootLayout() {
           </Stack.Protected>
 
           <Stack.Protected guard={autenticado}>
-            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="visita/[id]/index" />
             <Stack.Screen name="visita/[id]/questionario" />
             <Stack.Screen name="visita/[id]/documento" />

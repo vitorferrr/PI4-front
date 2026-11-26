@@ -20,6 +20,7 @@ export class ApiError extends Error {
 }
 
 export async function sair() {
+  await api.post("/auth/logout", undefined, { timeout: 10000 }).catch(() => {});
   await encerrarSessao();
 }
 
@@ -29,8 +30,6 @@ export const api = axios.create({
   timeout: 30000,
 });
 
-// 401 nessas rotas não é sessão expirada: no login é senha errada; no logout
-// (DT-03) o token pode já estar vencido e o "Sair" não deve virar o alerta de expiração.
 const ROTAS_SEM_SESSAO = ["/auth/login", "/auth/logout"];
 
 api.interceptors.request.use((config) => {
@@ -39,12 +38,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// aqui só marcamos o erro: quem encerra a sessão e leva para o login é o handler
-// global do React Query (lib/queryClient.ts). Se a sessão fosse limpa aqui, o
-// queryClient.clear() cancelaria as queries antes de o erro chegar até elas.
-// IMPORTANTE: toda chamada à API deve passar por useQuery/useMutation. Uma chamada
-// direta (num useEffect ou botão sem mutation) recebe a SessaoExpiradaError, mas
-// não encerra a sessão nem leva ao login.
 api.interceptors.response.use(
   (resposta) => resposta,
   (erro) => {

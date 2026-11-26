@@ -13,6 +13,7 @@ export const cores = {
   bordaClara: "#DCE5EF",
   erro: "#A12A20",
   erroFundo: "#FDE8E6",
+  erroBorda: "#E7B4AE",
   sucesso: "#17803F",
   sucessoFundo: "#E2F5EA",
   avisoTexto: "#5C3F00",
