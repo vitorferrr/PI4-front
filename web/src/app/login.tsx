@@ -54,7 +54,7 @@ export default function LoginScreen() {
           <DecorativeStrip />
           <View style={styles.vitrineConteudo}>
             <View style={styles.marca}>
-              <LogoMark size={48} variant="navy" />
+              <LogoMark size={48} />
               <View>
                 <Text style={styles.marcaNome}>Constata</Text>
                 <Text style={styles.marcaOrgao}>Procon Jaboatão dos Guararapes</Text>

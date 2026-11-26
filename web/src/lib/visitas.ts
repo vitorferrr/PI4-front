@@ -98,9 +98,9 @@ export const CARGA_VAZIA: CargaFiscal = { abertas: 0, vencemHoje: 0, atrasadas: 
 
 // Faixas da legenda: leve até 3 visitas abertas, normal de 4 a 5, sobrecarga a partir de 6.
 export function corDaCarga(abertas: number) {
-  if (abertas >= 6) return 'bg-[#d9a400]';
-  if (abertas >= 4) return 'bg-[#1677d2]';
-  return 'bg-[#2f9e5b]';
+  if (abertas >= 6) return '#d9a400';
+  if (abertas >= 4) return '#1677d2';
+  return '#2f9e5b';
 }
 
 export const CAPACIDADE_REFERENCIA = 8;

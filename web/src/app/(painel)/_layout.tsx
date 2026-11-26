@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
-import { Link, Redirect, Slot, usePathname, type Href } from "expo-router";
+import { Redirect, Slot, router, usePathname, type Href } from "expo-router";
 import { Icon, IconButton } from "react-native-paper";
 import { sair } from "@/lib/api";
 import { isTokenValid, useSession } from "@/lib/session";
@@ -99,22 +99,22 @@ export default function PainelLayout() {
           {(role ? (MENU[role] ?? []) : []).map((item) => {
             const ativo = estaAtivo(caminho, item);
             return (
-              <Link key={String(item.href)} href={item.href} asChild>
-                <Pressable
-                  style={[styles.item, ativo && styles.itemAtivo]}
-                  accessibilityRole="link"
-                  accessibilityState={{ selected: ativo }}
-                >
-                  <Icon
-                    source={item.icone}
-                    size={20}
-                    color={ativo ? cores.azulEscuro : cores.branco}
-                  />
-                  <Text style={[styles.itemTexto, ativo && styles.itemTextoAtivo]}>
-                    {item.rotulo}
-                  </Text>
-                </Pressable>
-              </Link>
+              <Pressable
+                key={String(item.href)}
+                onPress={() => router.navigate(item.href)}
+                style={[styles.item, ativo && styles.itemAtivo]}
+                accessibilityRole="link"
+                accessibilityState={{ selected: ativo }}
+              >
+                <Icon
+                  source={item.icone}
+                  size={20}
+                  color={ativo ? cores.azulEscuro : cores.branco}
+                />
+                <Text style={[styles.itemTexto, ativo && styles.itemTextoAtivo]}>
+                  {item.rotulo}
+                </Text>
+              </Pressable>
             );
           })}
         </View>

@@ -103,32 +103,15 @@ export function Avatar({
   );
 }
 
-export function LogoMark({
-  size = 36,
-  variant = "accent",
-}: {
-  size?: number;
-  variant?: "accent" | "navy";
-}) {
-  const destaque = variant === "accent";
+// Mesma logo do app mobile (mobile/assets/images/logo-constata.png)
+export function LogoMark({ size = 36 }: { size?: number }) {
   return (
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={[
-        styles.logo,
-        {
-          width: size,
-          height: size,
-          backgroundColor: destaque ? cores.amarelo : cores.azulEscuro,
-        },
-      ]}
+      style={[styles.logo, { width: size, height: size, borderRadius: size / 4 }]}
     >
-      <Icon
-        source="shield-check-outline"
-        size={size * 0.6}
-        color={destaque ? cores.azulEscuro : cores.amarelo}
-      />
+      <Image source={require("../../assets/images/logo-constata.png")} style={styles.logoImagem} />
     </View>
   );
 }
@@ -304,9 +287,11 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
   logo: {
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
+    overflow: "hidden",
+  },
+  logoImagem: {
+    width: "100%",
+    height: "100%",
   },
   cabecalho: {
     flexDirection: "row",
