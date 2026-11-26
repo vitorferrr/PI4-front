@@ -27,6 +27,22 @@ são aplicados localmente ao array autorizado retornado pela API, sem paginaçã
 **Nova Visita** abre o cadastro existente. Ao concluir o cadastro, o ID retornado
 pela API direciona para `/gestor/visitas/:id`.
 
+O admin acessa pelo menu:
+
+- **Painel** (`/admin`): indicadores gerais vindos de `GET /admin/dados-gerais`
+  (total de visitas, em andamento, concluídas, documentos e assinaturas) e
+  gráficos de visitas por status e de usuários por perfil.
+- **Visitas** (`/admin/visitas`): todas as visitas de `GET /visitas`, com pesquisa
+  por estabelecimento e filtros de status, gestor e fiscalizador aplicados
+  localmente. **Exportar CSV** usa `GET /admin/exportar` com os filtros de status,
+  gestor e fiscalizador (a pesquisa por nome não entra no arquivo). Se o back
+  limitar a exportação, a tela avisa o total de visitas.
+- **Usuários** (`/admin/usuarios`): cadastro de gestores e fiscalizadores.
+
+Nos testes (`npm test`), rode o comando a partir do caminho com a letra do drive
+em maiúscula (`C:\...`) no Windows; com `c:\...` o Node carrega duas cópias do
+React e os testes de renderização falham com "Invalid hook call".
+
 Validação: `npm run lint`, `npm test` e `npm run build`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

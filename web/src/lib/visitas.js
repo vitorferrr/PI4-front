@@ -10,6 +10,11 @@ const formatadorData = new Intl.DateTimeFormat('pt-BR', {
   timeStyle: 'short',
 });
 
+// Pesquisa ignorando maiúsculas e acentos ("SAO JOSE" encontra "São José").
+export function normalizarPesquisa(valor) {
+  return String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
+}
+
 export function formatarDataVisita(valor) {
   if (!valor) return 'Não informada';
   const data = new Date(valor);

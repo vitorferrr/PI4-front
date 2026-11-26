@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import SectionCard from '../components/SectionCard';
 import VisitaStatus from '../components/VisitaStatus';
 import { api } from '../lib/api';
-import { formatarDataVisita, STATUS_VISITA } from '../lib/visitas';
+import { formatarDataVisita, normalizarPesquisa, STATUS_VISITA } from '../lib/visitas';
 import styles from './GestorVisitasPage.module.css';
 
 async function buscarVisitas(signal) {
@@ -13,10 +13,6 @@ async function buscarVisitas(signal) {
     throw new Error('Não foi possível interpretar a lista de visitas.');
   }
   return data;
-}
-
-function normalizarPesquisa(valor) {
-  return String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
 }
 
 export default function GestorVisitasPage() {
