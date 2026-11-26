@@ -106,6 +106,7 @@ export default function UsuariosScreen() {
           style={styles.busca}
         />
         <SegmentedButtons
+          style={styles.segmentos}
           value={filtro}
           onValueChange={(valor) => setFiltro(valor as Filtro)}
           buttons={[
@@ -260,6 +261,9 @@ const styles = StyleSheet.create({
   busca: {
     flexGrow: 1,
     flexBasis: 280,
+  },
+  segmentos: {
+    minWidth: 520,
   },
   checagemTexto: {
     fontFamily: "Inter_400Regular",

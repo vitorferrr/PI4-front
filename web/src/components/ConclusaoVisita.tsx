@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Button } from "react-native-paper";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { ehSessaoExpirada } from "@/lib/queryClient";
 import { MensagemErro } from "@/components/MensagemErro";
 import { cores } from "@/theme";
 import type { Visita } from "@/types/visita";
@@ -18,6 +19,11 @@ export function ConclusaoVisita({ visita }: { visita: Visita }) {
     onSuccess: (atualizada) => {
       queryClient.setQueryData(["visita", String(visita.id)], atualizada);
       queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    },
+    onError: (erro) => {
+      if (!ehSessaoExpirada(erro)) {
+        queryClient.invalidateQueries({ queryKey: ["visita", String(visita.id)] });
+      }
     },
   });
 

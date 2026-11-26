@@ -7,7 +7,12 @@ import type { Documento } from "@/types/visita";
 
 function urlDoPdf(caminho?: string | null) {
   if (!caminho) return null;
-  return new URL(caminho, API_URL).href;
+  try {
+    const url = new URL(caminho, API_URL);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 function textoEnvio(documento: Documento) {

@@ -24,7 +24,7 @@ export function SeloStatus({ status, grande = false }: { status: StatusVisita; g
 
 const styles = StyleSheet.create({
   selo: {
-    alignSelf: "flex-start",
+    alignSelf: "center",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,

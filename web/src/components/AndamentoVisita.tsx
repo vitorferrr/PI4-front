@@ -14,6 +14,10 @@ const COR_ESTADO: Record<Estado, string> = {
   pendente: cores.etapaPendente,
 };
 
+function quando(dataIso?: string | null) {
+  return dataIso ? formatarData(dataIso) : "—";
+}
+
 function montarEtapas(visita: Visita) {
   const documento = visita.documentos?.[0];
   const cancelada = visita.status === "cancelada";
@@ -27,16 +31,16 @@ function montarEtapas(visita: Visita) {
   }
 
   return [
-    { rotulo: "Agendada", quando: formatarData(visita.data_agendada), estado: estado(0) },
-    { rotulo: "Em andamento", quando: formatarData(visita.data_realizacao), estado: estado(1) },
+    { rotulo: "Agendada", quando: quando(visita.data_agendada), estado: estado(0) },
+    { rotulo: "Em andamento", quando: quando(visita.data_realizacao), estado: estado(1) },
     {
       rotulo: "Documento gerado",
-      quando: formatarData(documento?.data_geracao),
+      quando: quando(documento?.data_geracao),
       estado: estado(2),
     },
     {
       rotulo: cancelada ? "Cancelada" : "Concluída",
-      quando: visita.status === "concluida" ? formatarData(visita.updatedAt) : "—",
+      quando: visita.status === "concluida" ? quando(visita.updatedAt) : "—",
       estado: cancelada ? "atual" : estado(3),
     },
   ];
