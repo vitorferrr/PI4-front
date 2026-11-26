@@ -48,10 +48,10 @@ before(async () => {
       name: 'admin-test-probe', enforce: 'pre',
       transform(source, id) {
         const path = id.replaceAll('\\', '/');
-        if (path.endsWith('/src/pages/AdminDashboardPage.jsx')) {
+        if (path.endsWith('/src/pages/AdminDashboardPage.tsx')) {
           return source + '\nexport { buscarDadosGerais };';
         }
-        if (path.endsWith('/src/pages/AdminVisitasPage.jsx')) {
+        if (path.endsWith('/src/pages/AdminVisitasPage.tsx')) {
           return source + '\nexport { buscarVisitas, exportarVisitas };';
         }
       },
@@ -63,14 +63,14 @@ before(async () => {
     removeItem: (key) => storage.delete(key),
   } });
   globalThis.document = new EventTarget();
-  session = await server.ssrLoadModule('/src/lib/session.js');
-  ({ queryClient } = await server.ssrLoadModule('/src/lib/queryClient.js'));
-  ({ api } = await server.ssrLoadModule('/src/lib/api.js'));
-  ({ default: AppLayout } = await server.ssrLoadModule('/src/components/AppLayout.jsx'));
-  ({ default: Dashboard, buscarDadosGerais } = await server.ssrLoadModule('/src/pages/AdminDashboardPage.jsx'));
-  ({ default: VisitasPage, buscarVisitas, exportarVisitas } = await server.ssrLoadModule('/src/pages/AdminVisitasPage.jsx'));
-  ({ default: DetalhePage } = await server.ssrLoadModule('/src/pages/GestorVisitaDetalhePage.jsx'));
-  ({ default: PaginaInicial } = await server.ssrLoadModule('/src/components/PaginaInicial.jsx'));
+  session = await server.ssrLoadModule('/src/lib/session.ts');
+  ({ queryClient } = await server.ssrLoadModule('/src/lib/queryClient.ts'));
+  ({ api } = await server.ssrLoadModule('/src/lib/api.ts'));
+  ({ default: AppLayout } = await server.ssrLoadModule('/src/components/AppLayout.tsx'));
+  ({ default: Dashboard, buscarDadosGerais } = await server.ssrLoadModule('/src/pages/AdminDashboardPage.tsx'));
+  ({ default: VisitasPage, buscarVisitas, exportarVisitas } = await server.ssrLoadModule('/src/pages/AdminVisitasPage.tsx'));
+  ({ default: DetalhePage } = await server.ssrLoadModule('/src/pages/GestorVisitaDetalhePage.tsx'));
+  ({ default: PaginaInicial } = await server.ssrLoadModule('/src/components/PaginaInicial.tsx'));
   defaults = queryClient.getDefaultOptions();
   disposeSession = session.initializeSession();
 });
@@ -283,11 +283,15 @@ test('detalhe volta para a lista do admin com os filtros, ou para o início se n
   }
 });
 
-test('página inicial leva o admin ao painel e mantém as boas-vindas para os outros perfis', () => {
+test('página inicial leva cada perfil à sua primeira tela e orienta o fiscalizador a usar o app', () => {
+  // No SSR o <Navigate> não chega a renderizar o destino: basta não mostrar o aviso do app.
   const rotas = () => h(Routes, null,
     h(Route, { path: '/', element: h(PaginaInicial) }),
-    h(Route, { path: '/admin', element: 'PAINEL-ADMIN' }));
-  assert.ok(!render(rotas(), '/').includes('Bem-vindo'));
+    h(Route, { path: '/admin', element: 'PAINEL-ADMIN' }),
+    h(Route, { path: '/gestor/fiscalizadores', element: 'EQUIPE-GESTOR' }));
+  assert.ok(!render(rotas(), '/').includes('Use o app'));
   session.startSession(jwt('gestor'));
-  assert.ok(render(rotas(), '/').includes('Bem-vindo ao Sistema Procon'));
+  assert.ok(!render(rotas(), '/').includes('Use o app'));
+  session.startSession(jwt('fiscalizador'));
+  assert.ok(render(rotas(), '/').includes('Use o app no celular'));
 });

@@ -57,16 +57,16 @@ async function makeServer(value = 'undefined', dev = true, instrument = false) {
       name: 'review-regression-probe', enforce: 'pre',
       transform(source, id) {
         const path = id.replaceAll('\\', '/');
-        if (path.endsWith('/src/pages/GestorVisitaDetalhePage.jsx')) {
+        if (path.endsWith('/src/pages/GestorVisitaDetalhePage.tsx')) {
           return source.replace(mutationImport, mutationProbe) + '\nexport { ConclusaoVisita };';
         }
-        if (path.endsWith('/src/pages/GestorNovaVisitaPage.jsx')) {
+        if (path.endsWith('/src/pages/GestorNovaVisitaPage.tsx')) {
           return source.replace(mutationImport, mutationProbe).replace(
-            "import { useNavigate } from 'react-router-dom';",
-            'const useNavigate = () => (to) => { globalThis.__reviewTest.navigation = to; };',
+            "import { Link, useNavigate, useSearchParams } from 'react-router-dom';",
+            "import { Link, useSearchParams } from 'react-router-dom'; const useNavigate = () => (to) => { globalThis.__reviewTest.navigation = to; };",
           );
         }
-        if (path.endsWith('/src/pages/GestorVisitasPage.jsx')) {
+        if (path.endsWith('/src/pages/GestorVisitasPage.tsx')) {
           return source.replace(
             "import { useState } from 'react';",
             "import { useState as useRealState } from 'react'; const useState = (initial) => useRealState(globalThis.__reviewTest.listFilters?.shift() ?? initial);",
@@ -85,14 +85,14 @@ before(async () => {
     removeItem: (key) => storage.delete(key),
   } });
   globalThis.document = new EventTarget();
-  session = await server.ssrLoadModule('/src/lib/session.js');
-  ({ queryClient } = await server.ssrLoadModule('/src/lib/queryClient.js'));
-  ({ api } = await server.ssrLoadModule('/src/lib/api.js'));
-  ({ useNovaVisitaStore: selectionStore } = await server.ssrLoadModule('/src/store/novaVisitaStore.js'));
-  ({ default: Page, ConclusaoVisita: Conclusion } = await server.ssrLoadModule('/src/pages/GestorVisitaDetalhePage.jsx'));
-  ({ default: NovaVisita } = await server.ssrLoadModule('/src/pages/GestorNovaVisitaPage.jsx'));
-  ({ default: AppLayout } = await server.ssrLoadModule('/src/components/AppLayout.jsx'));
-  ({ default: VisitasPage, buscarVisitas } = await server.ssrLoadModule('/src/pages/GestorVisitasPage.jsx'));
+  session = await server.ssrLoadModule('/src/lib/session.ts');
+  ({ queryClient } = await server.ssrLoadModule('/src/lib/queryClient.ts'));
+  ({ api } = await server.ssrLoadModule('/src/lib/api.ts'));
+  ({ useNovaVisitaStore: selectionStore } = await server.ssrLoadModule('/src/store/novaVisitaStore.ts'));
+  ({ default: Page, ConclusaoVisita: Conclusion } = await server.ssrLoadModule('/src/pages/GestorVisitaDetalhePage.tsx'));
+  ({ default: NovaVisita } = await server.ssrLoadModule('/src/pages/GestorNovaVisitaPage.tsx'));
+  ({ default: AppLayout } = await server.ssrLoadModule('/src/components/AppLayout.tsx'));
+  ({ default: VisitasPage, buscarVisitas } = await server.ssrLoadModule('/src/pages/GestorVisitasPage.tsx'));
   defaults = queryClient.getDefaultOptions();
   // Mesma composição usada no bootstrap: sessão notifica; consumidores limpam dados.
   unsubscribeSession = session.onSessionChange(() => {
@@ -166,8 +166,8 @@ test('API usa localhost sem .env e não aceita origem implícita em produção',
   ]) {
     const instance = await makeServer(value, dev);
     try {
-      if (expected) assert.equal((await instance.ssrLoadModule('/src/lib/api.js')).api.defaults.baseURL, expected);
-      else await assert.rejects(instance.ssrLoadModule('/src/lib/api.js'), /Configure VITE_API_URL/);
+      if (expected) assert.equal((await instance.ssrLoadModule('/src/lib/api.ts')).api.defaults.baseURL, expected);
+      else await assert.rejects(instance.ssrLoadModule('/src/lib/api.ts'), /Configure VITE_API_URL/);
     } finally { await instance.close(); }
   }
 });
@@ -414,7 +414,7 @@ test('listagem usa GET /visitas sem filtros de usuário e exige um array direto'
 test('listagem apresenta visitas de gestores diferentes e links de criação e detalhes', () => {
   queryClient.setQueryData(['visitas'], visitasListagem);
   const html = renderList();
-  for (const text of ['Mercado São José', 'Padaria Central', 'Gestor A', 'Não informado', 'Data inválida']) {
+  for (const text of ['Mercado São José', 'Padaria Central', 'Gestor A', 'Gestor não informado', 'Data inválida']) {
     assert.ok(html.includes(text), text);
   }
   for (const id of [71, 72, 73]) assert.ok(html.includes(`href="/gestor/visitas/${id}"`));

@@ -1,5 +1,12 @@
-import axios from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { endSession, getSessionRequest, getSessionVersion } from './session';
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    skipAuth?: boolean;
+    _session?: { version: number; authenticated: boolean };
+  }
+}
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL ?? '').trim();
 if (!configuredApiUrl && !import.meta.env.DEV) {
@@ -10,7 +17,7 @@ export const api = axios.create({
   baseURL: configuredApiUrl || 'http://localhost:3000',
 });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const session = getSessionRequest();
   config._session = { version: session.version, authenticated: !config.skipAuth && Boolean(session.token) };
 
@@ -22,7 +29,7 @@ api.interceptors.request.use((config) => {
   }
 
   config.signal = config.signal
-    ? AbortSignal.any([config.signal, session.signal])
+    ? AbortSignal.any([config.signal as AbortSignal, session.signal])
     : session.signal;
   return config;
 });
@@ -34,7 +41,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  (error: AxiosError) => {
     const session = error.config?._session;
     if (session && session.version !== getSessionVersion()) {
       return Promise.reject(new axios.CanceledError('A sessão desta requisição foi encerrada.'));
@@ -45,3 +52,14 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// O logout encerra o token no back; a sessão local termina mesmo se a chamada falhar.
+export async function sair() {
+  try {
+    await api.post('/auth/logout');
+  } catch {
+    // Sem rede, token vencido ou sessão já encerrada: não há o que fazer além de sair.
+  } finally {
+    endSession();
+  }
+}

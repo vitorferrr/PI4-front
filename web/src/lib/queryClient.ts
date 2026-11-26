@@ -1,5 +1,6 @@
 import { isCancelledError, QueryClient } from '@tanstack/react-query';
 import { isCancel } from 'axios';
+import { statusDoErro } from './erros';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -8,8 +9,8 @@ export const queryClient = new QueryClient({
       retry: (falhas, erro) => falhas < 1
         && !isCancel(erro)
         && !isCancelledError(erro)
-        && erro?.code !== 'ERR_CANCELED'
-        && ![401, 403].includes(erro?.response?.status),
+        && (erro as { code?: string })?.code !== 'ERR_CANCELED'
+        && ![401, 403].includes(statusDoErro(erro) ?? 0),
     },
   },
 });
