@@ -1,64 +1,76 @@
-# React + Vite
+# Constata · Painel web (Procon Jaboatão)
 
-## Configuração da API do CONSTATA
+Painel do **admin** e do **gestor**, feito em **React Native** com **Expo** e
+rodando no navegador pelo **react-native-web**. Usa as mesmas bibliotecas do app
+mobile: Expo Router (rotas por arquivo), React Native Paper (componentes e
+tema), TanStack Query (dados da API), Zustand (estado global) e Axios.
 
-Execute os comandos desta aplicação dentro de `web/`.
+Execute os comandos dentro de `web/`.
 
-Para configurar a API, copie `.env.example` para `.env` e ajuste:
+## Como rodar
 
-```dotenv
-VITE_API_URL=http://localhost:3000
+```bash
+npm install
+cp .env.example .env   # e ajuste a URL da API
+npm run dev            # abre o painel no navegador (expo start --web)
 ```
 
-Em desenvolvimento (`npm run dev`), a ausência da variável, uma string vazia ou
-somente espaços usa `http://localhost:3000`. Uma URL configurada tem prioridade.
-Reinicie o Vite depois de alterar as variáveis.
+## Variável de ambiente
 
-Em produção, configure `VITE_API_URL` com a URL do backend no ambiente de build,
-antes de executar `npm run build`. O valor é incorporado ao bundle; alterar a
-variável depois exige novo build. Sem um valor, a aplicação interrompe a
-inicialização para evitar requisições à origem errada. Variáveis `VITE_` são
-públicas: não inclua tokens ou senhas. O `.env` local não deve ser versionado.
+```dotenv
+EXPO_PUBLIC_API_URL=http://localhost:3000
+```
 
-O gestor pode abrir **Visitas** pelo menu para acessar a listagem provisória em
-`/gestor/visitas`, pesquisar por estabelecimento, filtrar por status e abrir os
-detalhes. A listagem usa `GET /visitas`, sem filtro por gestor. Pesquisa e status
-são aplicados localmente ao array autorizado retornado pela API, sem paginação.
-**Nova Visita** abre o cadastro existente. Ao concluir o cadastro, o ID retornado
-pela API direciona para `/gestor/visitas/:id`.
+Em desenvolvimento, sem a variável, a API usada é `http://localhost:3000`. No
+build de produção a variável é obrigatória: sem ela, o painel não inicia, para
+não mandar requisições para o endereço errado. Variáveis `EXPO_PUBLIC_` vão para
+o código do navegador e são públicas: não coloque tokens nem senhas. Depois de
+mudar o `.env`, reinicie o `npm run dev`. O `.env` não é versionado.
 
-O admin acessa pelo menu:
+## Telas
 
-- **Painel** (`/admin`): indicadores gerais vindos de `GET /admin/dados-gerais`
-  (total de visitas, em andamento, concluídas, documentos e assinaturas) e
-  gráficos de visitas por status e de usuários por perfil.
-- **Visitas** (`/admin/visitas`): todas as visitas de `GET /visitas`, com pesquisa
-  por estabelecimento e filtros de status, gestor e fiscalizador aplicados
-  localmente. **Exportar CSV** usa `GET /admin/exportar` com os filtros de status,
-  gestor e fiscalizador (a pesquisa por nome não entra no arquivo). Se o back
-  limitar a exportação, a tela avisa o total de visitas.
-- **Usuários** (`/admin/usuarios`): cadastro de gestores e fiscalizadores.
+Sem sessão, qualquer endereço leva ao **login** (`/login`). Depois do login,
+cada perfil vai para a sua primeira tela.
 
-Nos testes (`npm test`), rode o comando a partir do caminho com a letra do drive
-em maiúscula (`C:\...`) no Windows; com `c:\...` o Node carrega duas cópias do
-React e os testes de renderização falham com "Invalid hook call".
+**Admin**
 
-O web é escrito em TypeScript, com Tailwind CSS para o visual do protótipo
-(cores e fontes em `tailwind.config.js` e `src/index.css`) e ícones do `lucide-react`.
+- **Painel** (`/admin`): indicadores de `GET /admin/dados-gerais`, gráficos de
+  visitas por status, por fiscal e de usuários por perfil, e avisos de visitas
+  atrasadas e em andamento.
+- **Usuários** (`/admin/usuarios`): lista de gestores e fiscalizadores, com
+  busca, filtros, aprovação, bloqueio e exclusão; cadastro em
+  `/admin/usuarios/novo` e edição em `/admin/usuarios/:id/editar`.
+- **Visitas** (`/admin/visitas`): todas as visitas, com filtros de status,
+  gestor, fiscalizador e atrasadas guardados no endereço. **Exportar CSV** usa
+  `GET /admin/exportar` com os filtros de status, gestor e fiscalizador.
 
-Validação: `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
+**Gestor** (o admin também acessa)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+- **Fiscalizadores** (`/gestor/fiscalizadores`): a equipe com a carga de visitas
+  de cada fiscal.
+- **Nova visita** (`/gestor/visitas/nova`): cadastro da visita e escolha do
+  fiscal. Ao salvar, abre o detalhe da visita criada.
+- **Visitas** (`/gestor/visitas`): lista com pesquisa e filtro de status.
+- **Detalhe** (`/gestor/visitas/:id`): andamento, dados do estabelecimento,
+  localização, respostas do questionário, documentos e conclusão da visita.
 
-Currently, two official plugins are available:
+O fiscalizador usa o app mobile; no painel ele vê só um aviso para usar o celular.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Estrutura
 
-## React Compiler
+- `src/app/`: as telas. O nome do arquivo é a rota (`login.tsx` → `/login`).
+  O grupo `(painel)` tem o menu lateral e exige sessão; `admin/` e `gestor/`
+  conferem o perfil.
+- `src/components/`: componentes reaproveitados (`ui.tsx`, `TabelaVisitas.tsx`,
+  `FormularioUsuario.tsx`, `ExigePerfil.tsx`).
+- `src/lib/`: API, sessão, consultas, exportação e funções de visitas.
+- `src/store/`: estado global com Zustand.
+- `src/theme.ts`: cores e tema do Paper.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Validação
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run typecheck   # TypeScript
+npm run format      # Prettier
+npm run build       # gera o site estático em dist/ (expo export --platform web)
+```
