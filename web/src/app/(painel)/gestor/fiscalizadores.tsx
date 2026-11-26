@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { ActivityIndicator, Button } from "react-native-paper";
@@ -25,7 +25,7 @@ export default function FiscalizadoresScreen() {
   const { fiscalizadores, isPending, isError, error, refetch, isFetching } = useFiscalizadores();
   const { data: visitas } = useVisitas();
 
-  const cargas = calcularCargas(visitas ?? []);
+  const cargas = useMemo(() => calcularCargas(visitas ?? []), [visitas]);
   const termo = normalizarPesquisa(busca);
   const lista = fiscalizadores.filter((fiscal) =>
     normalizarPesquisa(`${fiscal.nome} ${fiscal.matricula ?? ""}`).includes(termo)

@@ -3,19 +3,14 @@ import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { ActivityIndicator, Button, Card } from "react-native-paper";
 import { useVisitas } from "@/hooks/use-visitas";
-import { normalizarPesquisa, STATUS_VISITA } from "@/lib/formatadores";
-import { textoDaVisita } from "@/lib/visitas";
+import { OPCOES_STATUS } from "@/lib/formatadores";
+import { filtrarVisitas } from "@/lib/visitas";
 import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { Campo } from "@/components/Campo";
 import { MensagemErro } from "@/components/MensagemErro";
-import { Selecao, type OpcaoSelecao } from "@/components/Selecao";
+import { Selecao } from "@/components/Selecao";
 import { TabelaVisitas } from "@/components/TabelaVisitas";
 import { cores } from "@/theme";
-
-const OPCOES_STATUS: OpcaoSelecao[] = [
-  { valor: "", rotulo: "Todos os status" },
-  ...Object.entries(STATUS_VISITA).map(([valor, rotulo]) => ({ valor, rotulo })),
-];
 
 export default function VisitasGestorScreen() {
   const [pesquisa, setPesquisa] = useState("");
@@ -23,12 +18,7 @@ export default function VisitasGestorScreen() {
   const { data, isPending, isError, error, refetch, isFetching } = useVisitas();
 
   const visitas = data ?? [];
-  const termo = normalizarPesquisa(pesquisa);
-  const filtradas = visitas.filter(
-    (visita) =>
-      normalizarPesquisa(textoDaVisita(visita)).includes(termo) &&
-      (!status || visita.status === status)
-  );
+  const filtradas = filtrarVisitas(visitas, { pesquisa, status });
 
   return (
     <View style={styles.pagina}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import {
@@ -64,7 +64,7 @@ export default function UsuariosScreen() {
 
   const equipe = (data ?? []).filter((usuario) => usuario.role !== "admin");
   const pendentes = equipe.filter((usuario) => usuario.aprovado === false);
-  const cargas = calcularCargas(visitas ?? []);
+  const cargas = useMemo(() => calcularCargas(visitas ?? []), [visitas]);
   const termo = normalizarPesquisa(busca);
   const lista = equipe.filter(
     (usuario) =>

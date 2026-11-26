@@ -8,6 +8,11 @@ export const STATUS_VISITA: Record<StatusVisita, string> = {
   cancelada: "Cancelada",
 };
 
+export const OPCOES_STATUS = [
+  { valor: "", rotulo: "Todos os status" },
+  ...Object.entries(STATUS_VISITA).map(([valor, rotulo]) => ({ valor, rotulo })),
+];
+
 export const PERFIS: Record<Role, string> = {
   admin: "Admin",
   gestor: "Gestor",

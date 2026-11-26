@@ -1,3 +1,4 @@
+import { normalizarPesquisa } from "@/lib/formatadores";
 import { cores } from "@/theme";
 import type { StatusVisita, Visita } from "@/types/visita";
 
@@ -61,6 +62,29 @@ export function textoDaVisita(visita: Visita) {
   return [visita.denunciado, visita.razao_social, visita.nome_fantasia, visita.cnpj_cpf]
     .filter(Boolean)
     .join(" ");
+}
+
+export type FiltrosVisita = {
+  pesquisa?: string;
+  status?: string;
+  gestor?: string;
+  fiscalizador?: string;
+  atrasadas?: string;
+};
+
+export function filtrarVisitas(visitas: Visita[], filtros: FiltrosVisita) {
+  const termo = normalizarPesquisa(filtros.pesquisa);
+  return visitas.filter(
+    (visita) =>
+      normalizarPesquisa(textoDaVisita(visita)).includes(termo) &&
+      (!filtros.status || visita.status === filtros.status) &&
+      (!filtros.gestor || String(visita.gestor?.id) === filtros.gestor) &&
+      (!filtros.fiscalizador ||
+        (visita.fiscalizadores ?? []).some(
+          (fiscal) => String(fiscal.id) === filtros.fiscalizador
+        )) &&
+      (!filtros.atrasadas || estaAtrasada(visita))
+  );
 }
 
 export function calcularCargas(visitas: Visita[], agora = new Date()) {

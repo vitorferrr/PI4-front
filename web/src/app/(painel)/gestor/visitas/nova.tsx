@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Button } from "react-native-paper";
@@ -65,7 +65,7 @@ export default function NovaVisitaScreen() {
   const [hora, setHora] = useState("");
   const [tentouEnviar, setTentouEnviar] = useState(false);
 
-  const cargas = calcularCargas(visitas ?? []);
+  const cargas = useMemo(() => calcularCargas(visitas ?? []), [visitas]);
   const fiscal = fiscalizadores.find((usuario) => usuario.id === fiscalId);
   const dataAgendada = juntarDataHora(data, hora);
   const erros = {

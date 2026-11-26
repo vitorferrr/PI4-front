@@ -4,29 +4,16 @@ import { ActivityIndicator, Button, Card, Checkbox } from "react-native-paper";
 import { useMutation } from "@tanstack/react-query";
 import { useVisitas } from "@/hooks/use-visitas";
 import { baixarArquivo, exportarVisitas } from "@/lib/exportar";
-import { normalizarPesquisa, STATUS_VISITA } from "@/lib/formatadores";
-import { estaAtrasada, textoDaVisita } from "@/lib/visitas";
+import { OPCOES_STATUS } from "@/lib/formatadores";
+import { filtrarVisitas, type FiltrosVisita } from "@/lib/visitas";
 import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { Campo } from "@/components/Campo";
 import { MensagemErro } from "@/components/MensagemErro";
-import { Selecao, type OpcaoSelecao } from "@/components/Selecao";
+import { Selecao } from "@/components/Selecao";
 import { TabelaVisitas } from "@/components/TabelaVisitas";
 import { cores } from "@/theme";
 import type { UsuarioResumo } from "@/types/usuario";
 import type { Visita } from "@/types/visita";
-
-type Filtros = {
-  pesquisa?: string;
-  status?: string;
-  gestor?: string;
-  fiscalizador?: string;
-  atrasadas?: string;
-};
-
-const OPCOES_STATUS: OpcaoSelecao[] = [
-  { valor: "", rotulo: "Todos os status" },
-  ...Object.entries(STATUS_VISITA).map(([valor, rotulo]) => ({ valor, rotulo })),
-];
 
 function opcoesDePessoas(pessoas: (UsuarioResumo | null | undefined)[], todos: string) {
   const unicas = new Map<string, string>();
@@ -38,30 +25,15 @@ function opcoesDePessoas(pessoas: (UsuarioResumo | null | undefined)[], todos: s
   return [{ valor: "", rotulo: todos }, ...opcoes];
 }
 
-function filtrarVisitas(visitas: Visita[], filtros: Filtros) {
-  const termo = normalizarPesquisa(filtros.pesquisa);
-  return visitas.filter(
-    (visita) =>
-      normalizarPesquisa(textoDaVisita(visita)).includes(termo) &&
-      (!filtros.status || visita.status === filtros.status) &&
-      (!filtros.gestor || String(visita.gestor?.id) === filtros.gestor) &&
-      (!filtros.fiscalizador ||
-        (visita.fiscalizadores ?? []).some(
-          (fiscal) => String(fiscal.id) === filtros.fiscalizador
-        )) &&
-      (!filtros.atrasadas || estaAtrasada(visita))
-  );
-}
-
 export default function VisitasAdminScreen() {
-  const filtros = useLocalSearchParams<Filtros>();
+  const filtros = useLocalSearchParams<FiltrosVisita>();
   const { data, isPending, isError, error, refetch, isFetching } = useVisitas();
   const exportarMutation = useMutation({
     mutationFn: exportarVisitas,
     onSuccess: ({ arquivo }) => baixarArquivo(arquivo, "visitas.csv"),
   });
 
-  function mudarFiltro(nome: keyof Filtros, valor: string) {
+  function mudarFiltro(nome: keyof FiltrosVisita, valor: string) {
     router.setParams({ [nome]: valor || undefined });
   }
 
