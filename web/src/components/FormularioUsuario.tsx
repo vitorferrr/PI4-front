@@ -43,7 +43,14 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
   const [matricula, setMatricula] = useState(usuario?.matricula ?? "");
   const [email, setEmail] = useState(usuario?.email ?? "");
   const [senha, setSenha] = useState("");
+  const [tentouEnviar, setTentouEnviar] = useState(false);
   const senhaCurta = senha.length > 0 && senha.trim().length < SENHA_MINIMA;
+  const senhaFaltando = !edicao && !senha.trim();
+  const erroSenha = senhaCurta
+    ? `Mínimo de ${SENHA_MINIMA} caracteres.`
+    : tentouEnviar && senhaFaltando
+      ? "Informe uma senha inicial."
+      : null;
 
   const salvarMutation = useMutation({
     mutationFn: () =>
@@ -62,7 +69,8 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
   });
 
   function salvar() {
-    if (!senhaCurta && !salvarMutation.isPending) salvarMutation.mutate();
+    setTentouEnviar(true);
+    if (!senhaCurta && !senhaFaltando && !salvarMutation.isPending) salvarMutation.mutate();
   }
 
   return (
@@ -138,7 +146,7 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
             secureTextEntry
             autoComplete="new-password"
             onSubmitEditing={salvar}
-            erro={senhaCurta ? `Mínimo de ${SENHA_MINIMA} caracteres.` : null}
+            erro={erroSenha}
             ajuda={`Mínimo de ${SENHA_MINIMA} caracteres.`}
           />
         </CartaoSecao>
@@ -152,7 +160,7 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
           mode="contained"
           onPress={salvar}
           loading={salvarMutation.isPending}
-          disabled={salvarMutation.isPending || senhaCurta}
+          disabled={salvarMutation.isPending}
         >
           {edicao ? "Salvar alterações" : "Cadastrar usuário"}
         </Button>

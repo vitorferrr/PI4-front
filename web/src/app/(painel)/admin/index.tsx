@@ -83,7 +83,9 @@ export default function PainelAdminScreen() {
   });
 
   const atrasadas = visitas.filter((visita) => estaAtrasada(visita)).length;
-  const paraHoje = visitas.filter((visita) => venceHoje(visita)).length;
+  const paraHoje = visitas.filter(
+    (visita) => visita.status === "agendada" && venceHoje(visita)
+  ).length;
   const emAndamento = visitas.filter((visita) => visita.status === "em_andamento").length;
   const porFiscal = visitasPorFiscal(visitas);
 

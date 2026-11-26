@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { PaperProvider } from "react-native-paper";
@@ -12,12 +13,22 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
-import { queryClient } from "@/lib/queryClient";
+import { encerrarSessao, queryClient } from "@/lib/queryClient";
+import { expiracaoDoToken } from "@/lib/sessao";
 import { useSessaoStore } from "@/store/sessaoStore";
 import { tema } from "@/theme";
 
 export default function RootLayout() {
-  const autenticado = useSessaoStore((state) => state.token !== null);
+  const token = useSessaoStore((state) => state.token);
+  const autenticado = token !== null;
+
+  useEffect(() => {
+    const expiracao = expiracaoDoToken(token);
+    if (expiracao === null) return;
+    const restante = Math.min(Math.max(expiracao - Date.now(), 0), 2147483647);
+    const timer = setTimeout(encerrarSessao, restante);
+    return () => clearTimeout(timer);
+  }, [token]);
 
   const [fontesCarregadas, erroFontes] = useFonts({
     BarlowCondensed_800ExtraBold,

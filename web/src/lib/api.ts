@@ -1,5 +1,6 @@
 import axios from "axios";
 import { encerrarSessao } from "./queryClient";
+import { sinalDaSessao } from "./sessao";
 import { useSessaoStore } from "@/store/sessaoStore";
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -29,6 +30,9 @@ const ROTAS_SEM_SESSAO = ["/auth/login", "/auth/logout"];
 api.interceptors.request.use((config) => {
   const token = useSessaoStore.getState().token;
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  config.signal = config.signal
+    ? AbortSignal.any([config.signal as AbortSignal, sinalDaSessao()])
+    : sinalDaSessao();
   return config;
 });
 
@@ -57,6 +61,7 @@ interface CorpoDeErro {
 const MENSAGEM_ERRO_PADRAO = "Erro na comunicação com o servidor.";
 
 function converterErro(erro: unknown): Error {
+  if (axios.isCancel(erro)) return erro as Error;
   if (axios.isAxiosError(erro)) {
     if (erro.code === "ECONNABORTED") {
       return new ApiError("O servidor demorou para responder. Tente novamente em instantes.");

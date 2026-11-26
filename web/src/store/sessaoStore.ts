@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { tokenValido } from "@/lib/sessao";
 import type { UsuarioLogado } from "@/types/usuario";
 
 const TOKEN_KEY = "token";
@@ -15,7 +16,9 @@ function lerSessaoSalva() {
   try {
     const token = localStorage.getItem(TOKEN_KEY);
     const usuario = JSON.parse(localStorage.getItem(USUARIO_KEY) ?? "null");
-    if (token && typeof usuario?.id === "number") return { token, usuario };
+    if (tokenValido(token) && typeof usuario?.id === "number") return { token, usuario };
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USUARIO_KEY);
   } catch {
     return { token: null, usuario: null };
   }
