@@ -14,15 +14,22 @@ function deveRepetir(falhas: number, erro: unknown) {
   return (erro as { status?: number } | null)?.status !== 403;
 }
 
-export function encerrarSessao() {
+// manterArmazenamento: encerra só esta aba (memória e cache), sem apagar o
+// localStorage compartilhado, quando ele já pertence a outra sessão (DT-38).
+export function encerrarSessao({ manterArmazenamento = false } = {}) {
   cancelarRequisicoes();
-  useSessaoStore.getState().encerrar();
+  if (manterArmazenamento) {
+    useSessaoStore.getState().adotarSessao({ token: null, refreshToken: null, usuario: null });
+  } else {
+    useSessaoStore.getState().encerrar();
+  }
   queryClient.cancelQueries();
   queryClient.clear();
 }
 
 function aoFalhar(erro: unknown) {
-  if (ehSessaoExpirada(erro)) encerrarSessao();
+  // sessão já encerrada nesta aba (ex.: outra pessoa entrou em outra aba): nada a fazer
+  if (ehSessaoExpirada(erro) && useSessaoStore.getState().token !== null) encerrarSessao();
 }
 
 export const queryClient = new QueryClient({

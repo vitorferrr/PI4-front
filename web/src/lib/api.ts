@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { encerrarSessao } from "./queryClient";
-import { sinalDaSessao } from "./sessao";
+import { sinalDaSessao, tokenValido } from "./sessao";
 import { lerSessaoSalva, useSessaoStore } from "@/store/sessaoStore";
 import type { UsuarioLogado } from "@/types/usuario";
 
@@ -87,10 +87,19 @@ async function executarRenovacao(): Promise<string | null> {
   // outra aba encerrou a sessão
   if (!salva.refreshToken) return null;
 
-  // outra aba já renovou: usa o par que ela gravou, sem gastar o refresh de novo
   if (salva.refreshToken !== emMemoria.refreshToken) {
+    // outra aba saiu e outra pessoa entrou: esta aba não vira esse usuário. Sai só
+    // desta aba (memória e cache), sem apagar o localStorage, que agora é do outro.
+    if (salva.usuario?.id !== emMemoria.usuario?.id) {
+      encerrarSessao({ manterArmazenamento: true });
+      return null;
+    }
+
+    // outra aba já renovou: usa o par que ela gravou, sem gastar o refresh de novo
     useSessaoStore.getState().adotarSessao(salva);
-    return salva.token;
+    if (tokenValido(salva.token)) return salva.token;
+    // o access token da outra aba também já venceu: renova com o refresh dela,
+    // que ainda não foi usado (segue para a chamada abaixo)
   }
 
   let dados: RespostaRefresh;

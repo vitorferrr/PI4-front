@@ -88,10 +88,12 @@ export const useSessaoStore = create<SessaoState>((set) => ({
   },
 
   atualizarTokens: async (token, refreshToken, usuario) => {
-    // grava antes de atualizar o estado: se o app fechar no meio, o próximo
-    // carregar() já usa o par novo (o refresh antigo não vale mais no back)
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    // O refresh novo é gravado PRIMEIRO: o antigo já foi gasto no back. Se o app
+    // fechar no meio, o pior caso é token antigo + refresh novo, que renova normal.
+    // Ao contrário (token novo + refresh antigo), a próxima renovação seria vista
+    // como reuso e o back derrubaria todas as sessões.
     await salvarRefreshToken(refreshToken);
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
     await SecureStore.setItemAsync(USUARIO_KEY, JSON.stringify(usuario));
     set({ token, refreshToken, usuario });
   },
