@@ -31,3 +31,5 @@ dist-ssr
 # Expo
 .expo/
 expo-env.d.ts
+.vercel
+.env*

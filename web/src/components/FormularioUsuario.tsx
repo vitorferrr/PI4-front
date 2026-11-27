@@ -43,14 +43,7 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
   const [matricula, setMatricula] = useState(usuario?.matricula ?? "");
   const [email, setEmail] = useState(usuario?.email ?? "");
   const [senha, setSenha] = useState("");
-  const [tentouEnviar, setTentouEnviar] = useState(false);
   const senhaCurta = senha.length > 0 && senha.trim().length < SENHA_MINIMA;
-  const senhaFaltando = !edicao && !senha.trim();
-  const erroSenha = senhaCurta
-    ? `Mínimo de ${SENHA_MINIMA} caracteres.`
-    : tentouEnviar && senhaFaltando
-      ? "Informe uma senha inicial."
-      : null;
 
   const salvarMutation = useMutation({
     mutationFn: () =>
@@ -59,7 +52,7 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
         email: email.trim(),
         role: perfil,
         matricula: matricula.trim() || null,
-        ...(senha && { senha }),
+        ...(edicao && senha && { senha }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["usuarios"] });
@@ -69,8 +62,7 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
   });
 
   function salvar() {
-    setTentouEnviar(true);
-    if (!senhaCurta && !senhaFaltando && !salvarMutation.isPending) salvarMutation.mutate();
+    if (!senhaCurta && !salvarMutation.isPending) salvarMutation.mutate();
   }
 
   return (
@@ -84,7 +76,7 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
         descricao={
           edicao
             ? "Altere os dados do servidor. Deixe a senha em branco para manter a atual."
-            : "Informe uma senha inicial e repasse ao servidor; ele entra com o e-mail e essa senha."
+            : "O servidor recebe no e-mail uma senha gerada automaticamente para entrar."
         }
       />
 
@@ -138,17 +130,19 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
               style={styles.coluna}
             />
           </View>
-          <Campo
-            rotulo={edicao ? "Senha (opcional)" : "Senha"}
-            value={senha}
-            onChangeText={setSenha}
-            placeholder={edicao ? "Deixe em branco para manter a atual" : "Digite uma senha"}
-            secureTextEntry
-            autoComplete="new-password"
-            onSubmitEditing={salvar}
-            erro={erroSenha}
-            ajuda={`Mínimo de ${SENHA_MINIMA} caracteres.`}
-          />
+          {edicao && (
+            <Campo
+              rotulo="Senha (opcional)"
+              value={senha}
+              onChangeText={setSenha}
+              placeholder="Deixe em branco para manter a atual"
+              secureTextEntry
+              autoComplete="new-password"
+              onSubmitEditing={salvar}
+              erro={senhaCurta ? `Mínimo de ${SENHA_MINIMA} caracteres.` : null}
+              ajuda={`Mínimo de ${SENHA_MINIMA} caracteres.`}
+            />
+          )}
         </CartaoSecao>
       </View>
 
@@ -162,7 +156,7 @@ export function FormularioUsuario({ usuario }: { usuario?: Usuario }) {
           loading={salvarMutation.isPending}
           disabled={salvarMutation.isPending}
         >
-          {edicao ? "Salvar alterações" : "Cadastrar usuário"}
+          {edicao ? "Salvar alterações" : "Cadastrar e enviar senha"}
         </Button>
       </View>
     </View>
