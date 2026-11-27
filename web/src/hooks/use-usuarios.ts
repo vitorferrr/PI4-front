@@ -20,3 +20,9 @@ export function useFiscalizadores(habilitado = true) {
   const fiscalizadores = (query.data ?? []).filter((usuario) => usuario.role === "fiscalizador");
   return { ...query, fiscalizadores };
 }
+
+export function useFiscalizadoresAprovados(habilitado = true) {
+  const query = useFiscalizadores(habilitado);
+  const fiscalizadores = query.fiscalizadores.filter((usuario) => usuario.aprovado !== false);
+  return { ...query, fiscalizadores };
+}

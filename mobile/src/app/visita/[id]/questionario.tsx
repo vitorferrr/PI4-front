@@ -16,7 +16,6 @@ import {
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { ItemPerguntaQuestionario } from "@/components/ItemPerguntaQuestionario";
-import type { VisitaDetalhe } from "@/types/visita";
 
 interface RespostaEnviada {
   pergunta_id: number;
@@ -24,22 +23,8 @@ interface RespostaEnviada {
 }
 
 async function enviarRespostas(visitaId: string, respostas: RespostaEnviada[]) {
-  const { data: visita } = await api.get<VisitaDetalhe>(`/visitas/${visitaId}`);
-  const salvas = new Map((visita.respostas ?? []).map((salva) => [salva.pergunta_id, salva]));
-
-  const novas = respostas.filter((item) => !salvas.has(item.pergunta_id));
-  const alteradas = respostas.filter((item) => {
-    const salva = salvas.get(item.pergunta_id);
-    return salva !== undefined && salva.resposta !== item.resposta;
-  });
-
-  if (novas.length > 0) {
-    await api.post(`/visitas/${visitaId}/respostas`, { respostas: novas });
-  }
-  for (const item of alteradas) {
-    const salva = salvas.get(item.pergunta_id)!;
-    await api.put(`/visitas/${visitaId}/respostas/${salva.id}`, { resposta: item.resposta });
-  }
+  const response = await api.post(`/visitas/${visitaId}/respostas`, { respostas });
+  return response.data;
 }
 
 async function apagarResposta(visitaId: string, respostaId: number) {
@@ -394,7 +379,8 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
     color: cores.avisoForte,
-    backgroundColor: cores.avisoFundo,    borderRadius: 4,
+    backgroundColor: cores.avisoFundo,
+    borderRadius: 4,
     padding: 12,
   },
   apagarResposta: {
@@ -417,9 +403,7 @@ const styles = StyleSheet.create({
     minHeight: 96,
     backgroundColor: cores.branco,
   },
-  campoBorda: {    borderRadius: 4,
-    borderWidth: 1.5,
-  },
+  campoBorda: { borderRadius: 4, borderWidth: 1.5 },
 
   rodape: {
     flexDirection: "row",
@@ -431,7 +415,8 @@ const styles = StyleSheet.create({
     borderTopColor: cores.bordaClara,
   },
   botaoRodape: {
-    flex: 1,    borderRadius: 4,
+    flex: 1,
+    borderRadius: 4,
   },
   botaoRodapeConteudo: {
     height: 56,

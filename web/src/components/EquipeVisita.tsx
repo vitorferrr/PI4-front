@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Avatar, Button } from "react-native-paper";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useFiscalizadores } from "@/hooks/use-usuarios";
+import { useFiscalizadoresAprovados } from "@/hooks/use-usuarios";
 import { api } from "@/lib/api";
 import { iniciais } from "@/lib/formatadores";
 import { CartaoSecao } from "@/components/CartaoSecao";
@@ -17,11 +17,11 @@ type AcaoEquipe =
   | { tipo: "trocar"; fiscalId: number }
   | { tipo: "tirar"; fiscalId: number };
 
-function executarAcao(visitaId: number, acao: AcaoEquipe) {
+async function executarAcao(visitaId: number, acao: AcaoEquipe): Promise<void> {
   const rota = `/visitas/${visitaId}/fiscalizadores`;
-  if (acao.tipo === "colocar") return api.post(rota, { fiscalizadorId: acao.fiscalId });
-  if (acao.tipo === "trocar") return api.put(rota, { fiscalizadoresIds: [acao.fiscalId] });
-  return api.delete(`${rota}/${acao.fiscalId}`);
+  if (acao.tipo === "colocar") await api.post(rota, { fiscalizadorId: acao.fiscalId });
+  else if (acao.tipo === "trocar") await api.put(rota, { fiscalizadoresIds: [acao.fiscalId] });
+  else await api.delete(`${rota}/${acao.fiscalId}`);
 }
 
 function Pessoa({
@@ -66,7 +66,7 @@ export function EquipeVisita({ visita, editavel = false }: { visita: Visita; edi
   const queryClient = useQueryClient();
   const fiscalizadores = visita.fiscalizadores ?? [];
   const atual = fiscalizadores[0];
-  const { fiscalizadores: opcoes } = useFiscalizadores(editavel);
+  const { fiscalizadores: opcoes } = useFiscalizadoresAprovados(editavel);
   const [escolhido, setEscolhido] = useState("");
 
   const acaoMutation = useMutation({

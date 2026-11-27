@@ -1,5 +1,6 @@
 import { normalizarPesquisa } from "@/lib/formatadores";
 import { cores } from "@/theme";
+import type { UsuarioLogado } from "@/types/usuario";
 import type { StatusVisita, Visita } from "@/types/visita";
 
 export const STATUS_ABERTOS: StatusVisita[] = ["agendada", "em_andamento"];
@@ -63,8 +64,17 @@ export const CAMPOS_ESTABELECIMENTO = [
 export type CampoEstabelecimento = (typeof CAMPOS_ESTABELECIMENTO)[number]["chave"];
 export type Estabelecimento = Partial<Record<CampoEstabelecimento, string>>;
 
-export function podeAlterarVisita(visita: Visita) {
-  return visita.status === "agendada" && (visita.documentos?.length ?? 0) === 0;
+export function ehResponsavelPelaVisita(visita: Visita, usuario: UsuarioLogado | null) {
+  if (!usuario) return false;
+  return usuario.role === "admin" || visita.gestor_id === usuario.id;
+}
+
+export function podeAlterarVisita(visita: Visita, usuario: UsuarioLogado | null) {
+  return (
+    ehResponsavelPelaVisita(visita, usuario) &&
+    visita.status === "agendada" &&
+    (visita.documentos?.length ?? 0) === 0
+  );
 }
 
 export function nomeEstabelecimento(visita: Visita) {

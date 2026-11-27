@@ -90,14 +90,10 @@ export default function VisitasScreen() {
           sections={secoes}
           keyExtractor={(visita) => String(visita.id)}
           renderSectionHeader={({ section }) => (
-            <Text style={styles.secaoTitulo}>
-              {section.titulo}
-            </Text>
+            <Text style={styles.secaoTitulo}>{section.titulo}</Text>
           )}
           renderItem={({ item, index }) => (
-            <View
-              style={styles.item}
-            >
+            <View style={styles.item}>
               <VisitaCard visita={item} salvaNoAparelho={item.id === visitaNoAparelho} />
             </View>
           )}
@@ -105,11 +101,7 @@ export default function VisitasScreen() {
           contentContainerStyle={styles.lista}
           refreshing={isRefetching}
           onRefresh={refetch}
-          ListEmptyComponent={
-            <Text style={styles.mensagem}>
-              Nenhuma visita atribuída a você.
-            </Text>
-          }
+          ListEmptyComponent={<Text style={styles.mensagem}>Nenhuma visita atribuída a você.</Text>}
         />
       )}
 

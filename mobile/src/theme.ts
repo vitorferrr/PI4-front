@@ -38,7 +38,11 @@ const fontesBase = configureFonts({
 });
 
 const negrito = { fontFamily: "Inter_700Bold", fontWeight: "normal" } as const;
-const rotulo = { fontFamily: "Inter_600SemiBold", fontWeight: "normal", letterSpacing: 0.1 } as const;
+const rotulo = {
+  fontFamily: "Inter_600SemiBold",
+  fontWeight: "normal",
+  letterSpacing: 0.1,
+} as const;
 
 export const tema: MD3Theme = {
   ...MD3LightTheme,

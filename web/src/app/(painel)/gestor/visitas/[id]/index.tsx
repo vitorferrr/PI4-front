@@ -3,6 +3,7 @@ import { router, useLocalSearchParams, type Href } from "expo-router";
 import { ActivityIndicator, Button } from "react-native-paper";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useVisita } from "@/hooks/use-visita";
+import { useSessaoStore } from "@/store/sessaoStore";
 import { api } from "@/lib/api";
 import { formatarData, textoOuAusente } from "@/lib/formatadores";
 import { nomeEstabelecimento, podeAlterarVisita } from "@/lib/visitas";
@@ -30,6 +31,7 @@ export default function VisitaDetalheScreen() {
   const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
   const { data: visita, isPending, isError, error, refetch, isFetching } = useVisita(id);
+  const usuario = useSessaoStore((state) => state.usuario);
 
   const excluirMutation = useMutation({
     mutationFn: () => api.delete(`/visitas/${id}`),
@@ -66,7 +68,7 @@ export default function VisitaDetalheScreen() {
   const mapa = linkDoMapa(visita);
   const fiscal = visita.fiscalizadores?.[0]?.nome;
   const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(", ");
-  const alteravel = podeAlterarVisita(visita);
+  const alteravel = podeAlterarVisita(visita, usuario);
 
   return (
     <View style={styles.pagina}>

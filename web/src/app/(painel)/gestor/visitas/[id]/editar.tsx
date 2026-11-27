@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Button } from "react-native-paper";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useVisita } from "@/hooks/use-visita";
+import { useSessaoStore } from "@/store/sessaoStore";
 import { api } from "@/lib/api";
 import {
   formatarData,
@@ -15,6 +16,7 @@ import {
 import {
   CAMPOS_ESTABELECIMENTO,
   nomesFiscalizadores,
+  ehResponsavelPelaVisita,
   podeAlterarVisita,
   type CampoEstabelecimento,
   type Estabelecimento,
@@ -170,6 +172,7 @@ function FormularioEdicao({ visita }: { visita: Visita }) {
 export default function EditarVisitaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: visita, isPending, isError, error, refetch, isFetching } = useVisita(id);
+  const usuario = useSessaoStore((state) => state.usuario);
 
   return (
     <View style={styles.pagina}>
@@ -179,11 +182,17 @@ export default function EditarVisitaScreen() {
         <ActivityIndicator size="large" style={styles.carregando} />
       ) : isError ? (
         <MensagemErro erro={error} onTentar={() => refetch()} tentando={isFetching} />
-      ) : podeAlterarVisita(visita) ? (
+      ) : podeAlterarVisita(visita, usuario) ? (
         <FormularioEdicao visita={visita} />
       ) : (
         <MensagemErro
-          erro={new Error("Só dá para editar visitas agendadas que ainda não têm documento.")}
+          erro={
+            new Error(
+              ehResponsavelPelaVisita(visita, usuario)
+                ? "Só dá para editar visitas agendadas que ainda não têm documento."
+                : "Só o gestor que criou esta visita pode editá-la."
+            )
+          }
         />
       )}
     </View>

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Button } from "react-native-paper";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useFiscalizadores } from "@/hooks/use-usuarios";
+import { useFiscalizadoresAprovados } from "@/hooks/use-usuarios";
 import { useVisitas } from "@/hooks/use-visitas";
 import { api } from "@/lib/api";
 import { formatarData, juntarDataHora, mascaraData, mascaraHora } from "@/lib/formatadores";
@@ -42,7 +42,7 @@ export default function NovaVisitaScreen() {
   const params = useLocalSearchParams<{ fiscal?: string }>();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
-  const { fiscalizadores, isPending, isError, error } = useFiscalizadores();
+  const { fiscalizadores, isPending, isError, error } = useFiscalizadoresAprovados();
   const { data: visitas } = useVisitas();
 
   const [denunciado, setDenunciado] = useState("");

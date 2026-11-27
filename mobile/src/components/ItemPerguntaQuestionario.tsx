@@ -128,7 +128,8 @@ const styles = StyleSheet.create({
   },
 
   opcao: {
-    height: 58,    borderRadius: 4,
+    height: 58,
+    borderRadius: 4,
     paddingHorizontal: 18,
     flexDirection: "row",
     alignItems: "center",
@@ -169,7 +170,5 @@ const styles = StyleSheet.create({
   inputMultilinha: {
     minHeight: 120,
   },
-  campoBorda: {    borderRadius: 4,
-    borderWidth: 1.5,
-  },
+  campoBorda: { borderRadius: 4, borderWidth: 1.5 },
 });

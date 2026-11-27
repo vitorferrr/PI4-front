@@ -169,7 +169,9 @@ export default function UsuariosScreen() {
                     <SeloPerfil role={usuario.role} />
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    {usuario.role === "fiscalizador" ? (cargas.get(usuario.id)?.abertas ?? 0) : "Não se aplica"}
+                    {usuario.role === "fiscalizador"
+                      ? (cargas.get(usuario.id)?.abertas ?? 0)
+                      : "Não se aplica"}
                   </DataTable.Cell>
                   <DataTable.Cell style={styles.colunaStatus}>
                     <Text style={ativo ? styles.ativo : styles.aguardando}>
