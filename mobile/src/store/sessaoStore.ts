@@ -4,6 +4,8 @@ import { useVisitaEmAndamentoStore } from "./visitaEmAndamentoStore";
 
 export const TOKEN_KEY = "token";
 export const USUARIO_KEY = "usuario";
+// DT-38: refresh token (30 dias, uso único) para renovar o access token de 15 min
+export const REFRESH_TOKEN_KEY = "refresh_token";
 // id de quem estava com a visita em andamento: ela sobrevive à expiração do token,
 // mas não pode aparecer para outro fiscal que faça login no mesmo aparelho
 const DONO_VISITA_KEY = "visita_dono";
@@ -17,12 +19,21 @@ export interface UsuarioLogado {
 
 type SessaoState = {
   token: string | null;
+  // null quando o back ainda não envia refresh token (antes da DT-38)
+  refreshToken: string | null;
   usuario: UsuarioLogado | null;
   carregada: boolean;
   carregar: () => Promise<void>;
-  entrar: (token: string, usuario: UsuarioLogado) => Promise<void>;
+  entrar: (token: string, usuario: UsuarioLogado, refreshToken?: string | null) => Promise<void>;
+  // troca os tokens depois do POST /auth/refresh, sem mexer na visita em andamento
+  atualizarTokens: (token: string, refreshToken: string, usuario: UsuarioLogado) => Promise<void>;
   encerrar: (opcoes?: { manterVisita?: boolean }) => Promise<void>;
 };
+
+async function salvarRefreshToken(refreshToken: string | null | undefined) {
+  if (refreshToken) await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+  else await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY).catch(() => {});
+}
 
 function lerUsuarioSalvo(texto: string | null): UsuarioLogado | null {
   if (!texto) return null;
@@ -36,16 +47,19 @@ function lerUsuarioSalvo(texto: string | null): UsuarioLogado | null {
 
 export const useSessaoStore = create<SessaoState>((set) => ({
   token: null,
+  refreshToken: null,
   usuario: null,
   carregada: false,
 
   carregar: async () => {
     const token = await SecureStore.getItemAsync(TOKEN_KEY).catch(() => null);
     const usuario = lerUsuarioSalvo(await SecureStore.getItemAsync(USUARIO_KEY).catch(() => null));
+    const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY).catch(() => null);
 
     if (token && !usuario) {
       await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {});
-      set({ token: null, usuario: null, carregada: true });
+      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY).catch(() => {});
+      set({ token: null, refreshToken: null, usuario: null, carregada: true });
       return;
     }
 
@@ -58,10 +72,10 @@ export const useSessaoStore = create<SessaoState>((set) => ({
       }
     }
 
-    set({ token, usuario, carregada: true });
+    set({ token, refreshToken: token ? refreshToken : null, usuario, carregada: true });
   },
 
-  entrar: async (token, usuario) => {
+  entrar: async (token, usuario, refreshToken = null) => {
     const donoVisita = await SecureStore.getItemAsync(DONO_VISITA_KEY).catch(() => null);
     if (donoVisita !== String(usuario.id)) {
       useVisitaEmAndamentoStore.getState().limparVisitaStore();
@@ -69,7 +83,19 @@ export const useSessaoStore = create<SessaoState>((set) => ({
     await SecureStore.setItemAsync(DONO_VISITA_KEY, String(usuario.id));
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     await SecureStore.setItemAsync(USUARIO_KEY, JSON.stringify(usuario));
-    set({ token, usuario });
+    await salvarRefreshToken(refreshToken);
+    set({ token, refreshToken, usuario });
+  },
+
+  atualizarTokens: async (token, refreshToken, usuario) => {
+    // O refresh novo é gravado PRIMEIRO: o antigo já foi gasto no back. Se o app
+    // fechar no meio, o pior caso é token antigo + refresh novo, que renova normal.
+    // Ao contrário (token novo + refresh antigo), a próxima renovação seria vista
+    // como reuso e o back derrubaria todas as sessões.
+    await salvarRefreshToken(refreshToken);
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await SecureStore.setItemAsync(USUARIO_KEY, JSON.stringify(usuario));
+    set({ token, refreshToken, usuario });
   },
 
   // manterVisita: usado quando o token expira no meio da visita, para o fiscal
@@ -79,8 +105,9 @@ export const useSessaoStore = create<SessaoState>((set) => ({
       useVisitaEmAndamentoStore.getState().limparVisitaStore();
       await SecureStore.deleteItemAsync(DONO_VISITA_KEY).catch(() => {});
     }
-    set({ token: null, usuario: null });
+    set({ token: null, refreshToken: null, usuario: null });
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(USUARIO_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY).catch(() => {});
   },
 }));
