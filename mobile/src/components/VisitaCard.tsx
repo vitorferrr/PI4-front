@@ -5,6 +5,7 @@ import type { VisitaDetalhe } from "@/types/visita";
 import { formatarStatus } from "@/lib/formatadores";
 import { cores } from "@/theme";
 import { SeloStatus } from "@/components/SeloStatus";
+import { BolinhaPulsante } from "@/components/BolinhaPulsante";
 
 function formatarDiaMes(dataIso: string) {
   const data = new Date(dataIso);
@@ -54,7 +55,7 @@ export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps)
       {/* o back conclui a visita na última assinatura, antes de o store ser limpo */}
       {salvaNoAparelho && visita.status === "em_andamento" && (
         <View style={styles.linhaAparelho}>
-          <View style={styles.bolinha} />
+          <BolinhaPulsante cor={cores.avisoForte} />
           <Text style={styles.aparelhoTexto}>Em andamento · salva no aparelho</Text>
         </View>
       )}
@@ -103,12 +104,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-  },
-  bolinha: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: cores.avisoForte,
   },
   aparelhoTexto: {
     fontFamily: "Inter_600SemiBold",

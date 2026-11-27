@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import { Button } from "react-native-paper";
+import Animated, { FadeInDown, FadeInLeft, FadeInRight, FadeInUp } from "react-native-reanimated";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useSessaoStore } from "@/store/sessaoStore";
 import { Campo } from "@/components/Campo";
 import { FaixaTopo } from "@/components/FaixaTopo";
-import { Logo } from "@/components/Logo";
 import { cores } from "@/theme";
 import type { UsuarioLogado } from "@/types/usuario";
 
@@ -45,19 +45,26 @@ export default function LoginScreen() {
         <View style={styles.vitrine}>
           <FaixaTopo />
           <View style={styles.vitrineConteudo}>
-            <View style={styles.marca}>
-              <Logo tamanho={48} />
+            <Animated.View entering={FadeInDown.duration(600)} style={styles.marca}>
               <View>
                 <Text style={styles.marcaNome}>Constata</Text>
                 <Text style={styles.marcaOrgao}>Procon Jaboatão dos Guararapes</Text>
               </View>
-            </View>
+            </Animated.View>
 
             <View style={styles.chamada}>
-              <Text style={styles.chamadaTexto}>Fiscalização</Text>
-              <View style={styles.chamadaDestaque}>
+              <Animated.Text
+                entering={FadeInLeft.delay(150).duration(500)}
+                style={styles.chamadaTexto}
+              >
+                Fiscalização
+              </Animated.Text>
+              <Animated.View
+                entering={FadeInLeft.delay(300).springify()}
+                style={styles.chamadaDestaque}
+              >
                 <Text style={[styles.chamadaTexto, styles.chamadaDestaqueTexto]}>sem papel.</Text>
-              </View>
+              </Animated.View>
             </View>
 
             <Text style={styles.descricao}>
@@ -65,9 +72,9 @@ export default function LoginScreen() {
               e pronta para análise.
             </Text>
 
-            <View style={styles.selo}>
+            <Animated.View entering={FadeInUp.delay(500).springify()} style={styles.selo}>
               <Text style={styles.seloTexto}>Tudo num só painel</Text>
-            </View>
+            </Animated.View>
 
             <Text style={styles.rodape}>
               Acesso restrito a servidores do Procon. Problemas para entrar? Fale com a coordenação.
@@ -81,7 +88,7 @@ export default function LoginScreen() {
         contentContainerStyle={styles.ladoConteudo}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.formulario}>
+        <Animated.View entering={FadeInRight.delay(200).duration(600)} style={styles.formulario}>
           <Text style={styles.titulo} accessibilityRole="header">
             Entrar
           </Text>
@@ -125,7 +132,7 @@ export default function LoginScreen() {
           >
             {loginMutation.isPending ? "Entrando..." : "Entrar no painel"}
           </Button>
-        </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );

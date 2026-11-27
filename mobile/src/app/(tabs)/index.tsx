@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, SectionList, Pressable, StyleSheet } from "react-native";
+import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActivityIndicator, Avatar, Button, Chip } from "react-native-paper";
+import { ActivityIndicator, Avatar, Button } from "react-native-paper";
 import { useVisitas } from "@/hooks/use-visitas";
 import { iniciais } from "@/lib/formatadores";
 import { useSessaoStore } from "@/store/sessaoStore";
@@ -13,15 +13,18 @@ import { FaixaTopo } from "@/components/FaixaTopo";
 import { cores } from "@/theme";
 import type { StatusVisita, VisitaDetalhe } from "@/types/visita";
 
-type Filtro = "pendentes" | "finalizadas";
-
 const STATUS_FINALIZADOS: StatusVisita[] = ["concluida", "cancelada"];
 
-function filtrarVisitas(visitas: VisitaDetalhe[], filtro: Filtro) {
-  return visitas.filter((visita) => {
-    const finalizada = STATUS_FINALIZADOS.includes(visita.status);
-    return filtro === "finalizadas" ? finalizada : !finalizada;
-  });
+function separarEmSecoes(visitas: VisitaDetalhe[]) {
+  const secoes = [
+    { titulo: "Em andamento", data: visitas.filter((v) => v.status === "em_andamento") },
+    { titulo: "Próximas", data: visitas.filter((v) => v.status === "agendada") },
+    {
+      titulo: "Finalizadas",
+      data: visitas.filter((v) => STATUS_FINALIZADOS.includes(v.status)),
+    },
+  ];
+  return secoes.filter((secao) => secao.data.length > 0);
 }
 
 function dataDeHoje() {
@@ -38,12 +41,8 @@ export default function VisitasScreen() {
   const usuario = useSessaoStore((state) => state.usuario);
   const visitaNoAparelho = useVisitaEmAndamentoStore((state) => state.visitaId);
   const { data, isPending, isError, error, refetch, isRefetching } = useVisitas();
-  const [filtro, setFiltro] = useState<Filtro>("pendentes");
 
-  const visitas = data ?? [];
-  const pendentes = filtrarVisitas(visitas, "pendentes");
-  const finalizadas = filtrarVisitas(visitas, "finalizadas");
-  const visiveis = filtro === "pendentes" ? pendentes : finalizadas;
+  const secoes = separarEmSecoes(data ?? []);
   const primeiroNome = usuario?.nome?.trim().split(/\s+/)[0] ?? "";
 
   return (
@@ -52,7 +51,7 @@ export default function VisitasScreen() {
 
       <View style={styles.cabecalho}>
         <FaixaTopo />
-        <View style={styles.saudacao}>
+        <Animated.View entering={FadeInDown.duration(500)} style={styles.saudacao}>
           <View style={styles.saudacaoTextos}>
             <Text style={styles.data}>{dataDeHoje()}</Text>
             <Text style={styles.ola} accessibilityRole="header">
@@ -73,32 +72,7 @@ export default function VisitasScreen() {
               color={cores.azulEscuro}
             />
           </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.filtros} accessibilityRole="tablist">
-        <Chip
-          selected={filtro === "pendentes"}
-          showSelectedCheck={false}
-          onPress={() => setFiltro("pendentes")}
-          style={[styles.filtro, filtro === "pendentes" && styles.filtroAtivo]}
-          textStyle={[styles.filtroTexto, filtro === "pendentes" && styles.filtroTextoAtivo]}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: filtro === "pendentes" }}
-        >
-          {`Pendentes · ${pendentes.length}`}
-        </Chip>
-        <Chip
-          selected={filtro === "finalizadas"}
-          showSelectedCheck={false}
-          onPress={() => setFiltro("finalizadas")}
-          style={[styles.filtro, filtro === "finalizadas" && styles.filtroAtivo]}
-          textStyle={[styles.filtroTexto, filtro === "finalizadas" && styles.filtroTextoAtivo]}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: filtro === "finalizadas" }}
-        >
-          {`Finalizadas · ${finalizadas.length}`}
-        </Chip>
+        </Animated.View>
       </View>
 
       {isPending ? (
@@ -113,21 +87,30 @@ export default function VisitasScreen() {
           </Button>
         </View>
       ) : (
-        <FlatList
-          data={visiveis}
+        <SectionList
+          sections={secoes}
           keyExtractor={(visita) => String(visita.id)}
-          renderItem={({ item }) => (
-            <VisitaCard visita={item} salvaNoAparelho={item.id === visitaNoAparelho} />
+          renderSectionHeader={({ section }) => (
+            <Animated.Text entering={FadeIn.duration(400)} style={styles.secaoTitulo}>
+              {section.titulo}
+            </Animated.Text>
           )}
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInUp.delay(Math.min(index, 8) * 70).springify()}
+              style={styles.item}
+            >
+              <VisitaCard visita={item} salvaNoAparelho={item.id === visitaNoAparelho} />
+            </Animated.View>
+          )}
+          stickySectionHeadersEnabled={false}
           contentContainerStyle={styles.lista}
           refreshing={isRefetching}
           onRefresh={refetch}
           ListEmptyComponent={
-            <Text style={styles.mensagem}>
-              {filtro === "pendentes"
-                ? "Nenhuma visita pendente atribuída a você."
-                : "Nenhuma visita finalizada ainda."}
-            </Text>
+            <Animated.Text entering={FadeIn.duration(400)} style={styles.mensagem}>
+              Nenhuma visita atribuída a você.
+            </Animated.Text>
           }
         />
       )}
@@ -189,37 +172,20 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_800ExtraBold",
     fontSize: 16,
   },
-  filtros: {
-    flexDirection: "row",
-    gap: 6,
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-  },
-  filtro: {
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: cores.borda,
-    backgroundColor: cores.branco,
-  },
-  filtroAtivo: {
-    borderColor: cores.azulEscuro,
-    backgroundColor: cores.azulEscuro,
-  },
-  filtroTexto: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-    color: cores.textoMedio,
-  },
-  filtroTextoAtivo: {
+  secaoTitulo: {
+    marginTop: 16,
+    marginBottom: 10,
     fontFamily: "Inter_700Bold",
-    color: cores.branco,
+    fontSize: 16,
+    color: cores.texto,
+  },
+  item: {
+    marginBottom: 12,
   },
   lista: {
-    paddingTop: 8,
+    paddingTop: 4,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    gap: 12,
   },
   centro: {
     flex: 1,

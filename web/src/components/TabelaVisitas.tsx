@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { router, useGlobalSearchParams, usePathname } from "expo-router";
 import { Button, DataTable } from "react-native-paper";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { formatarData } from "@/lib/formatadores";
 import {
   detalheEstabelecimento,
@@ -42,39 +43,41 @@ export function TabelaVisitas({ visitas }: { visitas: Visita[] }) {
           <DataTable.Title numeric>Ações</DataTable.Title>
         </DataTable.Header>
 
-        {visitas.map((visita) => {
+        {visitas.map((visita, indice) => {
           const atrasada = estaAtrasada(visita);
           const detalhe = detalheEstabelecimento(visita);
           return (
-            <DataTable.Row key={visita.id} style={styles.linha} onPress={() => abrir(visita)}>
-              <DataTable.Cell style={styles.colunaEstabelecimento}>
-                <View>
-                  <Text style={styles.nome}>{nomeEstabelecimento(visita)}</Text>
-                  <Text style={styles.detalhe} numberOfLines={1}>
-                    #{visita.id}
-                    {detalhe && ` · ${detalhe}`}
+            <Animated.View key={visita.id} entering={FadeInUp.delay(Math.min(indice, 12) * 40)}>
+              <DataTable.Row style={styles.linha} onPress={() => abrir(visita)}>
+                <DataTable.Cell style={styles.colunaEstabelecimento}>
+                  <View>
+                    <Text style={styles.nome}>{nomeEstabelecimento(visita)}</Text>
+                    <Text style={styles.detalhe} numberOfLines={1}>
+                      #{visita.id}
+                      {detalhe && ` · ${detalhe}`}
+                    </Text>
+                  </View>
+                </DataTable.Cell>
+                <DataTable.Cell>{visita.gestor?.nome ?? "Não informado"}</DataTable.Cell>
+                <DataTable.Cell style={styles.colunaLarga}>
+                  {nomesFiscalizadores(visita)}
+                </DataTable.Cell>
+                <DataTable.Cell style={styles.colunaLarga}>
+                  <Text style={[styles.data, atrasada && styles.dataAtrasada]}>
+                    {formatarData(visita.data_agendada)}
+                    {atrasada && " · atrasada"}
                   </Text>
-                </View>
-              </DataTable.Cell>
-              <DataTable.Cell>{visita.gestor?.nome ?? "Não informado"}</DataTable.Cell>
-              <DataTable.Cell style={styles.colunaLarga}>
-                {nomesFiscalizadores(visita)}
-              </DataTable.Cell>
-              <DataTable.Cell style={styles.colunaLarga}>
-                <Text style={[styles.data, atrasada && styles.dataAtrasada]}>
-                  {formatarData(visita.data_agendada)}
-                  {atrasada && " · atrasada"}
-                </Text>
-              </DataTable.Cell>
-              <DataTable.Cell>
-                <SeloStatus status={visita.status} />
-              </DataTable.Cell>
-              <DataTable.Cell numeric>
-                <Button compact onPress={() => abrir(visita)}>
-                  Abrir
-                </Button>
-              </DataTable.Cell>
-            </DataTable.Row>
+                </DataTable.Cell>
+                <DataTable.Cell>
+                  <SeloStatus status={visita.status} />
+                </DataTable.Cell>
+                <DataTable.Cell numeric>
+                  <Button compact onPress={() => abrir(visita)}>
+                    Abrir
+                  </Button>
+                </DataTable.Cell>
+              </DataTable.Row>
+            </Animated.View>
           );
         })}
 

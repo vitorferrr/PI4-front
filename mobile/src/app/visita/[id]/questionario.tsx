@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Alert } from "react-native";
 import { useLocalSearchParams, router, Stack, useFocusEffect, usePreventRemove } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { SlideInLeft, SlideInRight } from "react-native-reanimated";
 import { ActivityIndicator, Button, TextInput } from "react-native-paper";
 import { cores } from "@/theme";
 import { useMutation } from "@tanstack/react-query";
 import { api, ApiError, SessaoExpiradaError } from "@/lib/api";
-import { formatarHora } from "@/lib/formatadores";
 import { useVisita } from "@/hooks/use-visita";
 import {
   usePerguntasQuestionario,
@@ -33,6 +33,7 @@ export default function QuestionarioScreen() {
   const insets = useSafeAreaInsets();
 
   const [indiceAtual, setIndiceAtual] = useState(0);
+  const [direcao, setDirecao] = useState<"frente" | "tras">("frente");
   const concluindoRef = useRef(false);
 
   const visitaIdStore = useVisitaEmAndamentoStore((state) => state.visitaId);
@@ -146,6 +147,7 @@ export default function QuestionarioScreen() {
     if (ehPrimeira) {
       router.back();
     } else {
+      setDirecao("tras");
       setIndiceAtual(indice - 1);
     }
   }
@@ -169,6 +171,7 @@ export default function QuestionarioScreen() {
 
   function irParaProxima() {
     if (!ehUltima) {
+      setDirecao("frente");
       setIndiceAtual(indice + 1);
       return;
     }
@@ -215,7 +218,6 @@ export default function QuestionarioScreen() {
         titulo={tituloCabecalho}
         subtitulo="Auto de Constatação"
         mostrarSelo
-        horaCheckIn={formatarHora(visita?.data_realizacao)}
         progresso={{ atual: indice + 1, total: totalPerguntas, respondidas: totalRespondidas }}
       />
 
@@ -226,13 +228,17 @@ export default function QuestionarioScreen() {
           </Text>
         )}
 
-        <ItemPerguntaQuestionario
+        <Animated.View
           key={pergunta.id}
-          pergunta={pergunta}
-          valorAtual={respostas[pergunta.id] ?? ""}
-          onResponder={(valor) => definirResposta(pergunta.id, valor)}
-          desabilitado={bloqueado}
-        />
+          entering={(direcao === "frente" ? SlideInRight : SlideInLeft).duration(280)}
+        >
+          <ItemPerguntaQuestionario
+            pergunta={pergunta}
+            valorAtual={respostas[pergunta.id] ?? ""}
+            onResponder={(valor) => definirResposta(pergunta.id, valor)}
+            desabilitado={bloqueado}
+          />
+        </Animated.View>
 
         {ehUltima && (
           <View style={styles.campoObservacoes}>
