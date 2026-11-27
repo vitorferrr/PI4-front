@@ -20,6 +20,12 @@ export class ApiError extends Error {
 }
 
 export async function sair() {
+  // Aguarda eventual renovação em andamento antes de ler o refreshToken e encerrar,
+  // evitando corrida com gravações assíncronas no SecureStore / set do store.
+  if (renovacaoEmAndamento) {
+    await renovacaoEmAndamento.catch(() => {});
+  }
+
   // DT-38: manda o refresh token para o back revogar também a sessão longa
   const { refreshToken } = useSessaoStore.getState();
   await api
@@ -82,13 +88,13 @@ export function renovarSessao(): Promise<string | null> {
 // Devolve o access token novo, ou null quando a sessão não pode ser renovada.
 // Erro de rede é repassado: o refresh token pode continuar válido, então não desloga.
 async function executarRenovacao(): Promise<string | null> {
-  const { refreshToken } = useSessaoStore.getState();
-  if (!refreshToken) return null;
+  const refreshTokenInicial = useSessaoStore.getState().refreshToken;
+  if (!refreshTokenInicial) return null;
 
   let dados: RespostaRefresh;
   try {
     ({ data: dados } = await clienteRefresh.post<RespostaRefresh>("/auth/refresh", {
-      refreshToken,
+      refreshToken: refreshTokenInicial,
     }));
   } catch (erro) {
     const status = axios.isAxiosError(erro) ? erro.response?.status : undefined;
@@ -96,8 +102,6 @@ async function executarRenovacao(): Promise<string | null> {
     throw erro;
   }
 
-  // a sessão pode ter sido encerrada ou trocada enquanto a renovação estava no ar
-  if (useSessaoStore.getState().refreshToken !== refreshToken) return null;
   if (
     typeof dados?.token !== "string" ||
     typeof dados.refreshToken !== "string" ||
@@ -106,7 +110,17 @@ async function executarRenovacao(): Promise<string | null> {
     return null;
   }
 
+  // Revalida imediatamente antes de persistir/atualizar o store, caso a sessão
+  // tenha sido encerrada ou alterada enquanto o POST /auth/refresh estava em voo.
+  if (useSessaoStore.getState().refreshToken !== refreshTokenInicial) return null;
+
   await useSessaoStore.getState().atualizarTokens(dados.token, dados.refreshToken, dados.usuario);
+
+  // Confere novamente após o await caso o usuário tenha encerrado a sessão durante as gravações.
+  if (useSessaoStore.getState().refreshToken !== dados.refreshToken) {
+    return null;
+  }
+
   return dados.token;
 }
 
