@@ -28,7 +28,6 @@ Procon de Jaboatão dos Guararapes: da denúncia ao documento assinado, sem pape
 - [Integração com o back-end](#integração-com-o-back-end)
 - [Publicação](#publicação)
 - [Validação do código](#validação-do-código)
-- [Limitações conhecidas](#limitações-conhecidas)
 
 ## Visão geral
 
