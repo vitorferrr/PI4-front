@@ -201,7 +201,7 @@ Acesso exclusivo para o perfil **fiscalizador**.
 ## Autenticação e sessão
 
 - Login com e-mail e senha (`POST /auth/login`).
-- O token de acesso dura pouco (15 minutos) e é renovado automaticamente com um
+- O token de acesso dura pouco (1 hora) e é renovado automaticamente com um
   **refresh token** de uso único (`POST /auth/refresh`). A requisição que falhou é
   repetida uma vez.
 - Só quando o back recusa a renovação o usuário volta para o login. Falha de rede
