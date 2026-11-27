@@ -1,4 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import { useCrescer } from "@/hooks/use-crescer";
 import { cores } from "@/theme";
 
 const ALTURA_MAXIMA = 171;
@@ -8,8 +10,14 @@ export interface ColunaGrafico {
   total: number;
 }
 
+function Coluna({ altura, progresso }: { altura: number; progresso: SharedValue<number> }) {
+  const estilo = useAnimatedStyle(() => ({ height: altura * progresso.get() }), [altura]);
+  return <Animated.View style={[styles.barra, estilo]} />;
+}
+
 export function GraficoColunas({ colunas }: { colunas: ColunaGrafico[] }) {
   const maior = Math.max(1, ...colunas.map((coluna) => coluna.total));
+  const progresso = useCrescer(200);
 
   return (
     <View>
@@ -17,7 +25,7 @@ export function GraficoColunas({ colunas }: { colunas: ColunaGrafico[] }) {
         {colunas.map((coluna) => (
           <View key={coluna.rotulo} style={styles.coluna}>
             <Text style={styles.valor}>{coluna.total}</Text>
-            <View style={[styles.barra, { height: (coluna.total / maior) * ALTURA_MAXIMA }]} />
+            <Coluna altura={(coluna.total / maior) * ALTURA_MAXIMA} progresso={progresso} />
           </View>
         ))}
       </View>

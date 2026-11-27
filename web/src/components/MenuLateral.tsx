@@ -5,7 +5,6 @@ import { useMutation } from "@tanstack/react-query";
 import { sair } from "@/lib/api";
 import { iniciais, PERFIS } from "@/lib/formatadores";
 import { useSessaoStore } from "@/store/sessaoStore";
-import { Logo } from "@/components/Logo";
 import { cores } from "@/theme";
 import type { Role } from "@/types/usuario";
 
@@ -45,7 +44,6 @@ export function MenuLateral() {
   return (
     <View style={styles.menu}>
       <View style={styles.marca}>
-        <Logo />
         <View>
           <Text style={styles.marcaNome}>Constata</Text>
           <Text style={styles.marcaOrgao}>Procon Jaboatão · {perfil}</Text>

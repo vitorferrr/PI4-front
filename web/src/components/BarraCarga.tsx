@@ -1,16 +1,20 @@
 import { View, StyleSheet } from "react-native";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { useCrescer } from "@/hooks/use-crescer";
 import { corDaCarga, larguraDaCarga } from "@/lib/visitas";
 import { cores } from "@/theme";
 
 export function BarraCarga({ abertas, altura = 10 }: { abertas: number; altura?: number }) {
+  const progresso = useCrescer(150);
+  const porcentagem = parseFloat(larguraDaCarga(abertas));
+  const estilo = useAnimatedStyle(
+    () => ({ width: `${porcentagem * progresso.get()}%` }),
+    [porcentagem]
+  );
+
   return (
     <View style={[styles.trilha, { height: altura }]} accessibilityElementsHidden>
-      <View
-        style={[
-          styles.barra,
-          { width: larguraDaCarga(abertas), backgroundColor: corDaCarga(abertas) },
-        ]}
-      />
+      <Animated.View style={[styles.barra, { backgroundColor: corDaCarga(abertas) }, estilo]} />
     </View>
   );
 }

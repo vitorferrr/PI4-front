@@ -9,7 +9,6 @@ interface CabecalhoVisitaProps {
   subtitulo?: string;
   rotuloVoltar?: string;
   mostrarSelo?: boolean;
-  horaCheckIn?: string | null;
   progresso?: { atual: number; total: number; respondidas: number };
 }
 
@@ -18,7 +17,6 @@ export function CabecalhoVisita({
   subtitulo,
   rotuloVoltar = "Voltar",
   mostrarSelo = false,
-  horaCheckIn,
   progresso,
 }: CabecalhoVisitaProps) {
   const insets = useSafeAreaInsets();
@@ -40,7 +38,7 @@ export function CabecalhoVisita({
         />
 
         <View style={styles.textos}>
-          <Text style={styles.titulo} numberOfLines={2}>
+          <Text style={styles.titulo} numberOfLines={1}>
             {titulo}
           </Text>
           {subtitulo ? <Text style={styles.subtitulo}>{subtitulo}</Text> : null}
@@ -49,16 +47,10 @@ export function CabecalhoVisita({
         {mostrarSelo && (
           <View style={styles.selo}>
             <Text style={styles.seloIcone}>✓</Text>
-            <Text style={styles.seloTexto}>Salvo no aparelho</Text>
+            <Text style={styles.seloTexto}>Salvo</Text>
           </View>
         )}
       </View>
-
-      {horaCheckIn ? (
-        <View style={styles.checkIn}>
-          <Text style={styles.checkInTexto}>Check-in às {horaCheckIn}</Text>
-        </View>
-      ) : null}
 
       {progresso ? (
         <View style={styles.progresso}>
@@ -117,11 +109,7 @@ const styles = StyleSheet.create({
   selo: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: cores.azulEscuro,
+    gap: 4,
   },
   seloIcone: {
     fontFamily: "Inter_800ExtraBold",
@@ -132,17 +120,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 12,
     color: cores.branco,
-  },
-  checkIn: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: cores.sucessoFundo,
-  },
-  checkInTexto: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    color: cores.sucessoEscuro,
   },
   progresso: {
     gap: 6,

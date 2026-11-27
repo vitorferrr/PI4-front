@@ -45,7 +45,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider theme={tema}>
-        <Stack>
+        <Stack screenOptions={{ animation: "slide_from_right" }}>
           <Stack.Protected guard={!autenticado}>
             <Stack.Screen name="login" />
           </Stack.Protected>

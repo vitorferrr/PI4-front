@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, Image, Alert, StyleSheet } from "react-native";
+import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 import { ActivityIndicator, Button, HelperText, TextInput } from "react-native-paper";
 import { SignaturePad } from "@/components/SignaturePad";
 import { cores } from "@/theme";
@@ -57,9 +58,12 @@ export function CartaoAssinante({
   if (assinatura) {
     const hora = formatarHora(assinatura.assinadoEm);
     return (
-      <View style={styles.cartao}>
+      <Animated.View entering={FadeIn.duration(300)} style={styles.cartao}>
         <View style={styles.linha}>
-          <View style={[styles.icone, assinatura.recusou ? styles.iconeRecusa : styles.iconeOk]}>
+          <Animated.View
+            entering={ZoomIn.delay(150).springify()}
+            style={[styles.icone, assinatura.recusou ? styles.iconeRecusa : styles.iconeOk]}
+          >
             <Text
               style={[
                 styles.iconeTexto,
@@ -68,7 +72,7 @@ export function CartaoAssinante({
             >
               {assinatura.recusou ? "!" : "✓"}
             </Text>
-          </View>
+          </Animated.View>
           <View style={styles.textos}>
             <Text style={styles.nome}>
               {rotulo} · {assinatura.nome}
@@ -91,7 +95,7 @@ export function CartaoAssinante({
             accessibilityLabel={`Assinatura de ${assinatura.nome}`}
           />
         )}
-      </View>
+      </Animated.View>
     );
   }
 

@@ -1,4 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import { useCrescer } from "@/hooks/use-crescer";
 import { formatarNumero } from "@/lib/formatadores";
 import { cores } from "@/theme";
 
@@ -8,8 +10,23 @@ export interface ItemGrafico {
   cor: string;
 }
 
+interface BarraProps {
+  porcentagem: number;
+  cor: string;
+  progresso: SharedValue<number>;
+}
+
+function Barra({ porcentagem, cor, progresso }: BarraProps) {
+  const estilo = useAnimatedStyle(
+    () => ({ width: `${porcentagem * progresso.get()}%` }),
+    [porcentagem]
+  );
+  return <Animated.View style={[styles.barra, { backgroundColor: cor }, estilo]} />;
+}
+
 export function GraficoBarras({ itens }: { itens: ItemGrafico[] }) {
   const maior = Math.max(1, ...itens.map((item) => item.total));
+  const progresso = useCrescer(200);
 
   return (
     <View style={styles.barras}>
@@ -17,12 +34,7 @@ export function GraficoBarras({ itens }: { itens: ItemGrafico[] }) {
         <View key={item.rotulo} style={styles.linha}>
           <Text style={styles.rotulo}>{item.rotulo}</Text>
           <View style={styles.trilha}>
-            <View
-              style={[
-                styles.barra,
-                { width: `${(item.total / maior) * 100}%`, backgroundColor: item.cor },
-              ]}
-            />
+            <Barra porcentagem={(item.total / maior) * 100} cor={item.cor} progresso={progresso} />
           </View>
           <Text style={styles.valor}>{formatarNumero(item.total)}</Text>
         </View>

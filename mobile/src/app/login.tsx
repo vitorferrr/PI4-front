@@ -1,14 +1,7 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Stack } from "expo-router";
+import Animated, { FadeInDown, FadeInLeft, FadeInUp } from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TextInput, Button, HelperText } from "react-native-paper";
@@ -77,25 +70,23 @@ export default function LoginScreen() {
           <FaixaTopo />
 
           <View style={styles.topo}>
-            <View style={styles.marca}>
-              <View style={styles.logo}>
-                <Image
-                  source={require("../../assets/images/logo-constata.png")}
-                  style={styles.logoImagem}
-                  accessibilityIgnoresInvertColors
-                />
-              </View>
+            <Animated.View entering={FadeInDown.duration(600)} style={styles.marca}>
               <View>
                 <Text style={styles.marcaNome}>Constata</Text>
                 <Text style={styles.marcaOrgao}>Procon Jaboatão</Text>
               </View>
-            </View>
+            </Animated.View>
 
             <View accessible accessibilityRole="header" accessibilityLabel="Bora pra fiscalização?">
-              <Text style={styles.chamada}>Bora pra</Text>
-              <View style={styles.chamadaDestaque}>
+              <Animated.Text entering={FadeInLeft.delay(150).duration(500)} style={styles.chamada}>
+                Bora pra
+              </Animated.Text>
+              <Animated.View
+                entering={FadeInLeft.delay(300).springify()}
+                style={styles.chamadaDestaque}
+              >
                 <Text style={[styles.chamada, styles.chamadaDestaqueTexto]}>Fiscalização?</Text>
-              </View>
+              </Animated.View>
             </View>
 
             <Text style={styles.subtitulo}>
@@ -105,7 +96,10 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        <View style={[styles.formulario, { paddingBottom: 32 + insets.bottom }]}>
+        <Animated.View
+          entering={FadeInUp.delay(450).duration(600)}
+          style={[styles.formulario, { paddingBottom: 32 + insets.bottom }]}
+        >
           <View style={styles.campo}>
             <Text style={styles.rotulo}>E-mail</Text>
             <TextInput
@@ -164,7 +158,7 @@ export default function LoginScreen() {
           <Text style={styles.ajuda}>
             Esqueceu a senha? Peça ao seu gestor para redefinir pelo painel.
           </Text>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -192,16 +186,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-  },
-  logo: {
-    width: 44,
-    height: 44,
-    borderRadius: 11,
-    overflow: "hidden",
-  },
-  logoImagem: {
-    width: "100%",
-    height: "100%",
   },
   marcaNome: {
     fontFamily: "BarlowCondensed_800ExtraBold",
