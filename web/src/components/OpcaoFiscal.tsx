@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   opcao: {
     gap: 6,
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: cores.borda,
     backgroundColor: cores.branco,

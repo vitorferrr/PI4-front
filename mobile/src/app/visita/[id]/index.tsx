@@ -184,7 +184,7 @@ export default function VisitaDetalheScreen() {
   const podeIniciar = visita.status === "agendada";
   const emAndamento = visita.status === "em_andamento";
   const processandoInicio = carregandoGps || iniciarMutation.isPending;
-  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(" · ");
+  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(", ");
   const fiscais = visita.fiscalizadores?.map((fiscal) => fiscal.nome).join(", ");
 
   return (
@@ -364,15 +364,14 @@ const styles = StyleSheet.create({
     backgroundColor: cores.branco,
     borderWidth: 1,
     borderColor: cores.bordaClara,
-    borderRadius: 16,
+    borderRadius: 4,
+    borderBottomRightRadius: 18,
     padding: 16,
     gap: 10,
   },
   secaoTitulo: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
     color: cores.textoSecundario,
   },
   linha: {
@@ -419,7 +418,7 @@ const styles = StyleSheet.create({
     color: cores.textoMedio,
   },
   botaoPrincipal: {
-    borderRadius: 16,
+    borderRadius: 4,
   },
   botaoPrincipalConteudo: {
     height: 60,

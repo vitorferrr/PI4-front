@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
     flexBasis: 220,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: cores.fundo,
   },
   termo: {

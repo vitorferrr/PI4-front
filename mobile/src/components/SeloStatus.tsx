@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: 3,
   },
   texto: {
     fontFamily: "Inter_700Bold",

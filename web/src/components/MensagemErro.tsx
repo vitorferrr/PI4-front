@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: cores.erroFundo,
   },
   textos: {

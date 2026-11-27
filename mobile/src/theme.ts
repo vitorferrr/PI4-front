@@ -38,10 +38,15 @@ const fontesBase = configureFonts({
 });
 
 const negrito = { fontFamily: "Inter_700Bold", fontWeight: "normal" } as const;
+const rotulo = {
+  fontFamily: "Inter_600SemiBold",
+  fontWeight: "normal",
+  letterSpacing: 0.1,
+} as const;
 
 export const tema: MD3Theme = {
   ...MD3LightTheme,
-  roundness: 3,
+  roundness: 0.8,
   colors: {
     ...MD3LightTheme.colors,
     primary: cores.azul,
@@ -70,7 +75,7 @@ export const tema: MD3Theme = {
     titleLarge: { ...fontesBase.titleLarge, ...negrito },
     titleMedium: { ...fontesBase.titleMedium, ...negrito },
     titleSmall: { ...fontesBase.titleSmall, ...negrito },
-    labelLarge: { ...fontesBase.labelLarge, ...negrito },
+    labelLarge: { ...fontesBase.labelLarge, ...rotulo },
     labelMedium: { ...fontesBase.labelMedium, ...negrito },
   },
 };

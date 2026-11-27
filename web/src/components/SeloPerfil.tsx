@@ -3,31 +3,38 @@ import { PERFIS } from "@/lib/formatadores";
 import { cores } from "@/theme";
 import type { Role } from "@/types/usuario";
 
-const CORES_PERFIL: Record<Role, { fundo: string; texto: string }> = {
-  admin: { fundo: cores.avisoFundo, texto: cores.aviso },
-  gestor: { fundo: cores.enviadaFundo, texto: cores.enviada },
-  fiscalizador: { fundo: cores.atribuidaFundo, texto: cores.atribuida },
+const COR_PERFIL: Record<Role, string> = {
+  admin: cores.amarelo,
+  gestor: cores.azulEscuro,
+  fiscalizador: cores.azulFaixa,
 };
 
 export function SeloPerfil({ role }: { role: Role }) {
-  const cor = CORES_PERFIL[role] ?? CORES_PERFIL.fiscalizador;
+  const cor = COR_PERFIL[role] ?? COR_PERFIL.fiscalizador;
 
   return (
-    <View style={[styles.selo, { backgroundColor: cor.fundo }]}>
-      <Text style={[styles.texto, { color: cor.texto }]}>{PERFIS[role] ?? role}</Text>
+    <View style={styles.selo}>
+      <View style={[styles.ponto, { backgroundColor: cor }]} />
+      <Text style={styles.texto}>{PERFIS[role] ?? role}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   selo: {
+    flexDirection: "row",
+    alignItems: "center",
     alignSelf: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    gap: 7,
+  },
+  ponto: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
   },
   texto: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_500Medium",
     fontSize: 13,
+    color: cores.textoMedio,
   },
 });

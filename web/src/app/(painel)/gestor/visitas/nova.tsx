@@ -3,11 +3,16 @@ import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Button } from "react-native-paper";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useFiscalizadores } from "@/hooks/use-usuarios";
+import { useFiscalizadoresAprovados } from "@/hooks/use-usuarios";
 import { useVisitas } from "@/hooks/use-visitas";
 import { api } from "@/lib/api";
 import { formatarData, juntarDataHora, mascaraData, mascaraHora } from "@/lib/formatadores";
-import { calcularCargas } from "@/lib/visitas";
+import {
+  CAMPOS_ESTABELECIMENTO,
+  calcularCargas,
+  type CampoEstabelecimento,
+  type Estabelecimento,
+} from "@/lib/visitas";
 import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { Campo } from "@/components/Campo";
 import { CartaoSecao } from "@/components/CartaoSecao";
@@ -19,24 +24,6 @@ import { cores } from "@/theme";
 import type { Visita } from "@/types/visita";
 
 const LARGURA_DUAS_COLUNAS = 1024;
-
-const CAMPOS_ESTABELECIMENTO = [
-  {
-    chave: "razao_social",
-    rotulo: "Razão social",
-    exemplo: "Boa Praça Comércio de Alimentos Ltda",
-  },
-  { chave: "nome_fantasia", rotulo: "Nome fantasia", exemplo: "Mercadinho Boa Praça" },
-  { chave: "cnpj_cpf", rotulo: "CNPJ/CPF", exemplo: "12.345.678/0001-90" },
-  { chave: "atividade", rotulo: "Atividade", exemplo: "Supermercado" },
-  { chave: "endereco", rotulo: "Endereço", exemplo: "Av. Bernardo Vieira de Melo, 1520" },
-  { chave: "bairro", rotulo: "Bairro", exemplo: "Piedade" },
-  { chave: "cep", rotulo: "CEP", exemplo: "54.410-010" },
-  { chave: "telefone", rotulo: "Telefone", exemplo: "(81) 3333-4444" },
-] as const;
-
-type CampoEstabelecimento = (typeof CAMPOS_ESTABELECIMENTO)[number]["chave"];
-type Estabelecimento = Partial<Record<CampoEstabelecimento, string>>;
 
 function semCamposVazios(estabelecimento: Estabelecimento) {
   const preenchidos = Object.entries(estabelecimento).map(([chave, valor]) => [
@@ -55,7 +42,7 @@ export default function NovaVisitaScreen() {
   const params = useLocalSearchParams<{ fiscal?: string }>();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
-  const { fiscalizadores, isPending, isError, error } = useFiscalizadores();
+  const { fiscalizadores, isPending, isError, error } = useFiscalizadoresAprovados();
   const { data: visitas } = useVisitas();
 
   const [denunciado, setDenunciado] = useState("");
@@ -98,7 +85,7 @@ export default function NovaVisitaScreen() {
     setEstabelecimento((atual) => ({ ...atual, [chave]: valor }));
   }
 
-  const endereco = [estabelecimento.endereco, estabelecimento.bairro].filter(Boolean).join(" · ");
+  const endereco = [estabelecimento.endereco, estabelecimento.bairro].filter(Boolean).join(", ");
 
   return (
     <View style={styles.pagina}>
@@ -136,7 +123,7 @@ export default function NovaVisitaScreen() {
           <CartaoSecao numero={2} titulo="Fiscalizador e data">
             <Text style={styles.rotulo}>
               Fiscalizador *{" "}
-              <Text style={styles.dica}>— a barra mostra as visitas abertas de cada um</Text>
+              <Text style={styles.dica}>(a barra mostra as visitas abertas de cada um)</Text>
             </Text>
             {isPending && <Text style={styles.dica}>Carregando fiscalizadores...</Text>}
             {isError && <MensagemErro erro={error} />}
@@ -175,10 +162,10 @@ export default function NovaVisitaScreen() {
         </View>
 
         <ResumoVisita
-          local={estabelecimento.nome_fantasia?.trim() || denunciado.trim() || "—"}
-          endereco={endereco || "—"}
-          fiscal={fiscal?.nome ?? "—"}
-          data={dataAgendada ? formatarData(dataAgendada.toISOString()) : "—"}
+          local={estabelecimento.nome_fantasia?.trim() || denunciado.trim() || "A definir"}
+          endereco={endereco || "A definir"}
+          fiscal={fiscal?.nome ?? "A definir"}
+          data={dataAgendada ? formatarData(dataAgendada.toISOString()) : "A definir"}
           style={width >= LARGURA_DUAS_COLUNAS && styles.resumoLateral}
         >
           <Button

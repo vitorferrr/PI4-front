@@ -1,7 +1,6 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { router, useGlobalSearchParams, usePathname } from "expo-router";
 import { Button, DataTable } from "react-native-paper";
-import Animated, { FadeInUp } from "react-native-reanimated";
 import { formatarData } from "@/lib/formatadores";
 import {
   detalheEstabelecimento,
@@ -47,14 +46,14 @@ export function TabelaVisitas({ visitas }: { visitas: Visita[] }) {
           const atrasada = estaAtrasada(visita);
           const detalhe = detalheEstabelecimento(visita);
           return (
-            <Animated.View key={visita.id} entering={FadeInUp.delay(Math.min(indice, 12) * 40)}>
+            <View key={visita.id}>
               <DataTable.Row style={styles.linha} onPress={() => abrir(visita)}>
                 <DataTable.Cell style={styles.colunaEstabelecimento}>
                   <View>
                     <Text style={styles.nome}>{nomeEstabelecimento(visita)}</Text>
                     <Text style={styles.detalhe} numberOfLines={1}>
-                      #{visita.id}
-                      {detalhe && ` · ${detalhe}`}
+                      nº {visita.id}
+                      {detalhe && `, ${detalhe}`}
                     </Text>
                   </View>
                 </DataTable.Cell>
@@ -65,7 +64,7 @@ export function TabelaVisitas({ visitas }: { visitas: Visita[] }) {
                 <DataTable.Cell style={styles.colunaLarga}>
                   <Text style={[styles.data, atrasada && styles.dataAtrasada]}>
                     {formatarData(visita.data_agendada)}
-                    {atrasada && " · atrasada"}
+                    {atrasada && " (atrasada)"}
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell>
@@ -77,7 +76,7 @@ export function TabelaVisitas({ visitas }: { visitas: Visita[] }) {
                   </Button>
                 </DataTable.Cell>
               </DataTable.Row>
-            </Animated.View>
+            </View>
           );
         })}
 
@@ -93,7 +92,7 @@ const styles = StyleSheet.create({
   },
   tabela: {
     minWidth: 980,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: cores.bordaClara,
     overflow: "hidden",

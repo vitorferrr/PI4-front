@@ -20,6 +20,13 @@ export interface VisitaDetalhe {
   gestor?: UsuarioResumo;
   fiscalizadores?: UsuarioResumo[];
   documentos?: { id: number }[];
+  respostas?: RespostaSalva[];
+}
+
+export interface RespostaSalva {
+  id: number;
+  pergunta_id: number;
+  resposta: string | null;
 }
 
 export interface Coordenadas {

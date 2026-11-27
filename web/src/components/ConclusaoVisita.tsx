@@ -62,15 +62,15 @@ const styles = StyleSheet.create({
   conclusao: {
     gap: 12,
     padding: 18,
-    borderRadius: 16,
-    borderWidth: 2,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: cores.azul,
     backgroundColor: cores.branco,
   },
   titulo: {
-    fontFamily: "BarlowCondensed_800ExtraBold",
-    fontSize: 23,
-    textTransform: "uppercase",
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    letterSpacing: -0.2,
     color: cores.azulEscuro,
   },
   texto: {
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   sucesso: {
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,

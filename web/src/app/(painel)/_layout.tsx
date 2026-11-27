@@ -1,6 +1,6 @@
 import { View, ScrollView, StyleSheet } from "react-native";
 import { Slot, usePathname } from "expo-router";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { MenuLateral } from "@/components/MenuLateral";
 import { cores } from "@/theme";
 
@@ -11,7 +11,7 @@ export default function PainelLayout() {
     <View style={styles.tela}>
       <MenuLateral />
       <ScrollView style={styles.principal} contentContainerStyle={styles.conteudo}>
-        <Animated.View key={caminho} entering={FadeInDown.duration(350)}>
+        <Animated.View key={caminho} entering={FadeIn.duration(220)}>
           <Slot />
         </Animated.View>
       </ScrollView>

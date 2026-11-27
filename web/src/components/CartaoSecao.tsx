@@ -32,34 +32,40 @@ export function CartaoSecao({ titulo, numero, children, style }: CartaoSecaoProp
 
 const styles = StyleSheet.create({
   cartao: {
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.branco,
+    boxShadow: `0 1px 2px ${cores.sombra}`,
   },
   conteudo: {
-    padding: 24,
+    padding: 22,
     gap: 16,
   },
   cabecalho: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: cores.linhaTabela,
   },
   numero: {
-    width: 28,
-    height: 28,
+    width: 22,
+    height: 22,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
-    backgroundColor: cores.azul,
+    borderRadius: 6,
+    backgroundColor: cores.amarelo,
   },
   numeroTexto: {
     fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: cores.branco,
+    fontSize: 12,
+    fontVariant: ["tabular-nums"],
+    color: cores.azulEscuro,
   },
   titulo: {
-    fontFamily: "BarlowCondensed_800ExtraBold",
-    fontSize: 23,
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    letterSpacing: -0.2,
     color: cores.azulEscuro,
   },
 });

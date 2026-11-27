@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, ScrollView, Alert, StyleSheet } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { ActivityIndicator, Button } from "react-native-paper";
+import { ActivityIndicator, Button, Icon } from "react-native-paper";
 import { cores } from "@/theme";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -407,11 +407,11 @@ export default function DocumentoVisitaScreen() {
         <View style={styles.previa} accessibilityLabel="Prévia do documento">
           <View style={styles.previaTopo}>
             <View style={styles.previaIcone}>
-              <Text style={styles.previaIconeTexto}>✓</Text>
+              <Icon source="check" size={16} color={cores.branco} />
             </View>
             <View>
               <Text style={styles.previaTitulo}>AUTO DE CONSTATAÇÃO</Text>
-              <Text style={styles.previaSubtitulo}>Nº atribuído após o envio · Prévia</Text>
+              <Text style={styles.previaSubtitulo}>Prévia. O número sai depois do envio.</Text>
             </View>
           </View>
 
@@ -421,7 +421,8 @@ export default function DocumentoVisitaScreen() {
 
           <Text style={styles.previaTexto}>
             <Text style={styles.negrito}>Data e hora:</Text> {formatarData(visita.data_realizacao)}
-            {" · "}
+          </Text>
+          <Text style={styles.previaTexto}>
             <Text style={styles.negrito}>Fiscal:</Text> {nomesFiscais}
           </Text>
 
@@ -521,7 +522,7 @@ export default function DocumentoVisitaScreen() {
       <View style={[styles.rodape, { paddingBottom: insets.bottom + 16 }]}>
         <Text style={styles.rodapeTexto}>
           {totalConcluidos} de {TOTAL_ASSINANTES} assinantes concluídos
-          {totalRecusas > 0 ? ` · ${totalRecusas} recusa` : ""}
+          {totalRecusas > 0 ? `, ${totalRecusas} recusa` : ""}
         </Text>
         {!todasAssinaturasColetadas && (
           <Text style={styles.rodapeDica}>Colete as assinaturas para encerrar a visita.</Text>
@@ -563,7 +564,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   botaoArredondado: {
-    borderRadius: 14,
+    borderRadius: 4,
   },
   botaoTexto: {
     fontFamily: "Inter_700Bold",
@@ -604,11 +605,6 @@ const styles = StyleSheet.create({
     backgroundColor: cores.azul,
     justifyContent: "center",
     alignItems: "center",
-  },
-  previaIconeTexto: {
-    fontFamily: "Inter_700Bold",
-    color: cores.branco,
-    fontSize: 14,
   },
   previaTitulo: {
     fontFamily: "BarlowCondensed_800ExtraBold",
@@ -663,7 +659,8 @@ const styles = StyleSheet.create({
   },
   cartaoAviso: {
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 4,
+    borderBottomRightRadius: 18,
     backgroundColor: cores.branco,
     borderWidth: 1,
     borderColor: cores.bordaClara,
@@ -676,7 +673,7 @@ const styles = StyleSheet.create({
   avisoAmarelo: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: cores.avisoFundo,
   },
   avisoAmareloTexto: {
@@ -701,7 +698,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   botaoEnviar: {
-    borderRadius: 16,
+    borderRadius: 4,
   },
   botaoEnviarConteudo: {
     height: 60,
@@ -726,6 +723,6 @@ const styles = StyleSheet.create({
   botaoSecundario: {
     borderWidth: 1.5,
     borderColor: cores.azul,
-    borderRadius: 14,
+    borderRadius: 4,
   },
 });

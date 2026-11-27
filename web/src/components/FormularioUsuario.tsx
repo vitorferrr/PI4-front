@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     padding: 12,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: cores.borda,
   },

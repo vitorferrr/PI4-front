@@ -110,9 +110,9 @@ export default function UsuariosScreen() {
           value={filtro}
           onValueChange={(valor) => setFiltro(valor as Filtro)}
           buttons={[
-            { value: "todos", label: `Todos · ${equipe.length}` },
-            { value: "gestor", label: `Gestores · ${contar("gestor")}` },
-            { value: "fiscalizador", label: `Fiscalizadores · ${contar("fiscalizador")}` },
+            { value: "todos", label: `Todos (${equipe.length})` },
+            { value: "gestor", label: `Gestores (${contar("gestor")})` },
+            { value: "fiscalizador", label: `Fiscalizadores (${contar("fiscalizador")})` },
           ]}
         />
         <Checkbox.Item
@@ -164,12 +164,14 @@ export default function UsuariosScreen() {
                       </View>
                     </View>
                   </DataTable.Cell>
-                  <DataTable.Cell>{usuario.matricula?.trim() || "—"}</DataTable.Cell>
+                  <DataTable.Cell>{usuario.matricula?.trim() || "Sem matrícula"}</DataTable.Cell>
                   <DataTable.Cell>
                     <SeloPerfil role={usuario.role} />
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    {usuario.role === "fiscalizador" ? (cargas.get(usuario.id)?.abertas ?? 0) : "—"}
+                    {usuario.role === "fiscalizador"
+                      ? (cargas.get(usuario.id)?.abertas ?? 0)
+                      : "Não se aplica"}
                   </DataTable.Cell>
                   <DataTable.Cell style={styles.colunaStatus}>
                     <Text style={ativo ? styles.ativo : styles.aguardando}>
@@ -244,7 +246,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingLeft: 18,
     paddingVertical: 8,
-    borderRadius: 14,
+    borderRadius: 12,
     backgroundColor: cores.avisoFundo,
   },
   pendentesTexto: {
@@ -278,7 +280,7 @@ const styles = StyleSheet.create({
   },
   tabela: {
     minWidth: 980,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: cores.bordaClara,
     overflow: "hidden",

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { IconButton, ProgressBar } from "react-native-paper";
+import { Icon, IconButton, ProgressBar } from "react-native-paper";
 import { cores } from "@/theme";
 
 interface CabecalhoVisitaProps {
@@ -46,7 +46,7 @@ export function CabecalhoVisita({
 
         {mostrarSelo && (
           <View style={styles.selo}>
-            <Text style={styles.seloIcone}>✓</Text>
+            <Icon source="check" size={14} color={cores.amarelo} />
             <Text style={styles.seloTexto}>Salvo</Text>
           </View>
         )}
@@ -111,11 +111,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  seloIcone: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 13,
-    color: cores.amarelo,
-  },
   seloTexto: {
     fontFamily: "Inter_700Bold",
     fontSize: 12,
@@ -131,6 +126,7 @@ const styles = StyleSheet.create({
   progressoTexto: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
+    fontVariant: ["tabular-nums"],
     color: cores.branco,
   },
   barra: {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Stack } from "expo-router";
-import Animated, { FadeInDown, FadeInLeft, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TextInput, Button, HelperText } from "react-native-paper";
@@ -70,23 +70,18 @@ export default function LoginScreen() {
           <FaixaTopo />
 
           <View style={styles.topo}>
-            <Animated.View entering={FadeInDown.duration(600)} style={styles.marca}>
+            <View style={styles.marca}>
               <View>
                 <Text style={styles.marcaNome}>Constata</Text>
                 <Text style={styles.marcaOrgao}>Procon Jaboatão</Text>
               </View>
-            </Animated.View>
+            </View>
 
             <View accessible accessibilityRole="header" accessibilityLabel="Bora pra fiscalização?">
-              <Animated.Text entering={FadeInLeft.delay(150).duration(500)} style={styles.chamada}>
-                Bora pra
-              </Animated.Text>
-              <Animated.View
-                entering={FadeInLeft.delay(300).springify()}
-                style={styles.chamadaDestaque}
-              >
+              <Text style={styles.chamada}>Bora pra</Text>
+              <View style={styles.chamadaDestaque}>
                 <Text style={[styles.chamada, styles.chamadaDestaqueTexto]}>Fiscalização?</Text>
-              </Animated.View>
+              </View>
             </View>
 
             <Text style={styles.subtitulo}>
@@ -97,7 +92,7 @@ export default function LoginScreen() {
         </View>
 
         <Animated.View
-          entering={FadeInUp.delay(450).duration(600)}
+          entering={FadeIn.delay(250).duration(450)}
           style={[styles.formulario, { paddingBottom: 32 + insets.bottom }]}
         >
           <View style={styles.campo}>
@@ -250,7 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: cores.branco,
   },
   campoBorda: {
-    borderRadius: 14,
+    borderRadius: 4,
     borderWidth: 1.5,
   },
   erro: {
@@ -260,7 +255,7 @@ const styles = StyleSheet.create({
     marginVertical: -8,
   },
   botao: {
-    borderRadius: 14,
+    borderRadius: 4,
     marginTop: 4,
   },
   botaoConteudo: {

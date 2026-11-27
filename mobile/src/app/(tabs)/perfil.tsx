@@ -151,7 +151,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 4,
+    borderBottomRightRadius: 18,
     borderWidth: 1,
     borderColor: cores.bordaClara,
     backgroundColor: cores.branco,
@@ -190,7 +191,8 @@ const styles = StyleSheet.create({
     color: cores.agendadaTexto,
   },
   opcoes: {
-    borderRadius: 16,
+    borderRadius: 4,
+    borderBottomRightRadius: 18,
     borderWidth: 1,
     borderColor: cores.bordaClara,
     backgroundColor: cores.branco,
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   botaoSair: {
-    borderRadius: 16,
+    borderRadius: 4,
     borderWidth: 1.5,
     borderColor: cores.erroBorda,
     backgroundColor: cores.branco,

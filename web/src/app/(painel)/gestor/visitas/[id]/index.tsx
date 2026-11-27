@@ -1,9 +1,12 @@
 import { View, Text, Linking, StyleSheet, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { ActivityIndicator, Button } from "react-native-paper";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useVisita } from "@/hooks/use-visita";
+import { useSessaoStore } from "@/store/sessaoStore";
+import { api } from "@/lib/api";
 import { formatarData, textoOuAusente } from "@/lib/formatadores";
-import { nomeEstabelecimento } from "@/lib/visitas";
+import { nomeEstabelecimento, podeAlterarVisita } from "@/lib/visitas";
 import { AndamentoVisita } from "@/components/AndamentoVisita";
 import { CartaoSecao } from "@/components/CartaoSecao";
 import { ConclusaoVisita } from "@/components/ConclusaoVisita";
@@ -26,10 +29,27 @@ function linkDoMapa({ latitude, longitude }: Visita) {
 export default function VisitaDetalheScreen() {
   const { id, voltarPara } = useLocalSearchParams<{ id: string; voltarPara?: string }>();
   const { width } = useWindowDimensions();
+  const queryClient = useQueryClient();
   const { data: visita, isPending, isError, error, refetch, isFetching } = useVisita(id);
+  const usuario = useSessaoStore((state) => state.usuario);
+
+  const excluirMutation = useMutation({
+    mutationFn: () => api.delete(`/visitas/${id}`),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ["visita", id] });
+      queryClient.invalidateQueries({ queryKey: ["visitas"] });
+      router.navigate("/gestor/visitas");
+    },
+  });
 
   function voltar() {
     router.navigate((voltarPara?.startsWith("/") ? voltarPara : "/") as Href);
+  }
+
+  function excluir() {
+    if (!visita) return;
+    const pergunta = `Excluir a visita a ${nomeEstabelecimento(visita)}? Ela some da lista e do app do fiscal.`;
+    if (window.confirm(pergunta)) excluirMutation.mutate();
   }
 
   if (isPending) return <ActivityIndicator size="large" style={styles.carregando} />;
@@ -47,7 +67,8 @@ export default function VisitaDetalheScreen() {
 
   const mapa = linkDoMapa(visita);
   const fiscal = visita.fiscalizadores?.[0]?.nome;
-  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(" · ");
+  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(", ");
+  const alteravel = podeAlterarVisita(visita, usuario);
 
   return (
     <View style={styles.pagina}>
@@ -55,17 +76,48 @@ export default function VisitaDetalheScreen() {
         <Button icon="chevron-left" onPress={voltar} style={styles.voltar} compact>
           Voltar
         </Button>
-        <View style={styles.titulo}>
-          <Text style={styles.tituloTexto} accessibilityRole="header">
-            {nomeEstabelecimento(visita)}
-          </Text>
-          <SeloStatus status={visita.status} grande />
+        <View style={styles.topo}>
+          <View style={styles.topoTextos}>
+            <View style={styles.titulo}>
+              <Text style={styles.tituloTexto} accessibilityRole="header">
+                {nomeEstabelecimento(visita)}
+              </Text>
+              <SeloStatus status={visita.status} grande />
+            </View>
+            <Text style={styles.subtitulo}>
+              Visita nº {visita.id}, agendada para {formatarData(visita.data_agendada)}
+              {fiscal ? `, com ${fiscal}.` : "."}
+            </Text>
+          </View>
+          {alteravel && (
+            <View style={styles.acoes}>
+              <Button
+                mode="outlined"
+                icon="pencil-outline"
+                onPress={() =>
+                  router.push({
+                    pathname: "/gestor/visitas/[id]/editar",
+                    params: { id: visita.id },
+                  })
+                }
+              >
+                Editar
+              </Button>
+              <Button
+                icon="delete-outline"
+                textColor={cores.erroForte}
+                onPress={excluir}
+                loading={excluirMutation.isPending}
+                disabled={excluirMutation.isPending}
+              >
+                Excluir
+              </Button>
+            </View>
+          )}
         </View>
-        <Text style={styles.subtitulo}>
-          Visita #{visita.id} · Agendada para {formatarData(visita.data_agendada)}
-          {fiscal && ` · Fiscal: ${fiscal}`}
-        </Text>
       </View>
+
+      {excluirMutation.isError && <MensagemErro erro={excluirMutation.error} />}
 
       <AndamentoVisita visita={visita} />
 
@@ -117,7 +169,7 @@ export default function VisitaDetalheScreen() {
         <View style={[styles.lateral, width >= LARGURA_DUAS_COLUNAS && styles.lateralFixa]}>
           <ConclusaoVisita visita={visita} />
           <DocumentosVisita documentos={visita.documentos ?? []} />
-          <EquipeVisita visita={visita} />
+          <EquipeVisita visita={visita} editavel={alteravel} />
         </View>
       </View>
     </View>
@@ -134,6 +186,21 @@ const styles = StyleSheet.create({
   voltar: {
     alignSelf: "flex-start",
   },
+  topo: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  topoTextos: {
+    flexShrink: 1,
+  },
+  acoes: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   titulo: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -143,7 +210,7 @@ const styles = StyleSheet.create({
   tituloTexto: {
     flexShrink: 1,
     fontFamily: "BarlowCondensed_800ExtraBold",
-    fontSize: 42,
+    fontSize: 44,
     lineHeight: 48,
     textTransform: "uppercase",
     color: cores.azulEscuro,

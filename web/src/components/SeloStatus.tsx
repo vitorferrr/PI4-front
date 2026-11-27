@@ -3,19 +3,20 @@ import { STATUS_VISITA } from "@/lib/formatadores";
 import { cores } from "@/theme";
 import type { StatusVisita } from "@/types/visita";
 
-const CORES_STATUS: Record<StatusVisita, { fundo: string; texto: string }> = {
-  agendada: { fundo: cores.atribuidaFundo, texto: cores.atribuida },
-  em_andamento: { fundo: cores.infoFundo, texto: cores.info },
-  concluida: { fundo: cores.sucessoFundo, texto: cores.sucesso },
-  cancelada: { fundo: cores.neutroFundo, texto: cores.textoMedio },
+const COR_STATUS: Record<StatusVisita, string> = {
+  agendada: cores.azulFaixa,
+  em_andamento: cores.amarelo,
+  concluida: cores.verdeFaixa,
+  cancelada: cores.graficoCinza,
 };
 
 export function SeloStatus({ status, grande = false }: { status: StatusVisita; grande?: boolean }) {
-  const cor = CORES_STATUS[status] ?? CORES_STATUS.cancelada;
+  const cor = COR_STATUS[status] ?? COR_STATUS.cancelada;
 
   return (
-    <View style={[styles.selo, grande && styles.seloGrande, { backgroundColor: cor.fundo }]}>
-      <Text style={[styles.texto, grande && styles.textoGrande, { color: cor.texto }]}>
+    <View style={styles.selo}>
+      <View style={[styles.ponto, grande && styles.pontoGrande, { backgroundColor: cor }]} />
+      <Text style={[styles.texto, grande && styles.textoGrande]}>
         {STATUS_VISITA[status] ?? status}
       </Text>
     </View>
@@ -24,20 +25,29 @@ export function SeloStatus({ status, grande = false }: { status: StatusVisita; g
 
 const styles = StyleSheet.create({
   selo: {
+    flexDirection: "row",
+    alignItems: "center",
     alignSelf: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    gap: 7,
   },
-  seloGrande: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  ponto: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  pontoGrande: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   texto: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_500Medium",
     fontSize: 13,
+    color: cores.textoMedio,
   },
   textoGrande: {
-    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
+    color: cores.texto,
   },
 });

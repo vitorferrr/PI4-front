@@ -42,7 +42,7 @@ export function CartaoFiscal({ fiscal, carga }: { fiscal: Usuario; carga: CargaF
             {fiscal.nome}
           </Text>
           <Text style={styles.detalhe} numberOfLines={1}>
-            {matricula} · {fiscal.email}
+            {matricula}, {fiscal.email}
           </Text>
         </View>
       </View>
@@ -73,7 +73,7 @@ export function CartaoFiscal({ fiscal, carga }: { fiscal: Usuario; carga: CargaF
 
 const styles = StyleSheet.create({
   cartao: {
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.branco,
   },
   conteudo: {

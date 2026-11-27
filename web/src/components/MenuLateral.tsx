@@ -4,6 +4,7 @@ import { Avatar, Icon, IconButton } from "react-native-paper";
 import { useMutation } from "@tanstack/react-query";
 import { sair } from "@/lib/api";
 import { iniciais, PERFIS } from "@/lib/formatadores";
+import { FaixaTopo } from "@/components/FaixaTopo";
 import { useSessaoStore } from "@/store/sessaoStore";
 import { cores } from "@/theme";
 import type { Role } from "@/types/usuario";
@@ -20,6 +21,7 @@ const MENU: Record<Role, ItemMenu[]> = {
     { href: "/admin", rotulo: "Painel", icone: "view-grid-outline", exato: true },
     { href: "/admin/usuarios", rotulo: "Usuários", icone: "account-group-outline" },
     { href: "/admin/visitas", rotulo: "Visitas", icone: "map-marker-outline" },
+    { href: "/admin/questionario", rotulo: "Questionário", icone: "clipboard-list-outline" },
   ],
   gestor: [
     { href: "/gestor/fiscalizadores", rotulo: "Fiscalizadores", icone: "account-group-outline" },
@@ -43,10 +45,13 @@ export function MenuLateral() {
 
   return (
     <View style={styles.menu}>
+      <View style={styles.faixa}>
+        <FaixaTopo altura={18} />
+      </View>
       <View style={styles.marca}>
         <View>
           <Text style={styles.marcaNome}>Constata</Text>
-          <Text style={styles.marcaOrgao}>Procon Jaboatão · {perfil}</Text>
+          <Text style={styles.marcaOrgao}>Procon Jaboatão</Text>
         </View>
       </View>
 
@@ -65,7 +70,7 @@ export function MenuLateral() {
                 <Icon
                   source={item.icone}
                   size={20}
-                  color={ativo ? cores.azulEscuro : cores.branco}
+                  color={ativo ? cores.amarelo : cores.azulMenuTexto}
                 />
                 <Text style={[styles.itemTexto, ativo && styles.itemTextoAtivo]}>
                   {item.rotulo}
@@ -88,7 +93,7 @@ export function MenuLateral() {
             {usuario?.nome}
           </Text>
           <Text style={styles.usuarioEmail} numberOfLines={1}>
-            {usuario?.email}
+            {perfil}
           </Text>
         </View>
         <IconButton
@@ -112,6 +117,11 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     backgroundColor: cores.azulEscuro,
   },
+  faixa: {
+    marginTop: -28,
+    marginHorizontal: -16,
+    marginBottom: 28,
+  },
   marca: {
     flexDirection: "row",
     alignItems: "center",
@@ -132,37 +142,38 @@ const styles = StyleSheet.create({
     color: cores.azulMenuTexto,
   },
   itens: {
-    marginTop: 28,
-    gap: 4,
+    marginTop: 32,
+    gap: 2,
   },
   item: {
-    height: 46,
+    height: 42,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
   itemAtivo: {
-    backgroundColor: cores.branco,
+    backgroundColor: "rgba(255, 255, 255, 0.09)",
   },
   itemTexto: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_500Medium",
     fontSize: 15,
-    color: cores.branco,
+    color: cores.azulMenuTexto,
   },
   itemTextoAtivo: {
-    fontFamily: "Inter_700Bold",
-    color: cores.azulEscuro,
+    fontFamily: "Inter_600SemiBold",
+    color: cores.branco,
   },
   usuario: {
     marginTop: "auto",
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: cores.azulMenu,
+    paddingTop: 16,
+    paddingHorizontal: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
   },
   avatar: {
     backgroundColor: cores.amarelo,

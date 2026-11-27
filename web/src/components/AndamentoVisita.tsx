@@ -15,7 +15,7 @@ const COR_ESTADO: Record<Estado, string> = {
 };
 
 function quando(dataIso?: string | null) {
-  return dataIso ? formatarData(dataIso) : "—";
+  return dataIso ? formatarData(dataIso) : "Ainda não";
 }
 
 function montarEtapas(visita: Visita) {
@@ -40,7 +40,7 @@ function montarEtapas(visita: Visita) {
     },
     {
       rotulo: cancelada ? "Cancelada" : "Concluída",
-      quando: visita.status === "concluida" ? quando(visita.updatedAt) : "—",
+      quando: visita.status === "concluida" ? quando(visita.updatedAt) : "Ainda não",
       estado: cancelada ? "atual" : estado(3),
     },
   ];
@@ -76,7 +76,7 @@ export function AndamentoVisita({ visita }: { visita: Visita }) {
 
 const styles = StyleSheet.create({
   cartao: {
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.branco,
   },
   etapas: {
