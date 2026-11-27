@@ -24,8 +24,7 @@ const styles = StyleSheet.create({
   selo: {
     alignSelf: "flex-start",
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingVertical: 4,    borderRadius: 3,
   },
   texto: {
     fontFamily: "Inter_700Bold",

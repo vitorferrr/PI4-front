@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { SlideInLeft, SlideInRight } from "react-native-reanimated";
 import { ActivityIndicator, Button, TextInput } from "react-native-paper";
 import { cores } from "@/theme";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, SessaoExpiradaError } from "@/lib/api";
 import { useVisita } from "@/hooks/use-visita";
 import {
@@ -16,6 +16,7 @@ import {
 import { useVisitaEmAndamentoStore } from "@/store/visitaEmAndamentoStore";
 import { CabecalhoVisita } from "@/components/CabecalhoVisita";
 import { ItemPerguntaQuestionario } from "@/components/ItemPerguntaQuestionario";
+import type { VisitaDetalhe } from "@/types/visita";
 
 interface RespostaEnviada {
   pergunta_id: number;
@@ -23,8 +24,26 @@ interface RespostaEnviada {
 }
 
 async function enviarRespostas(visitaId: string, respostas: RespostaEnviada[]) {
-  const response = await api.post(`/visitas/${visitaId}/respostas`, { respostas });
-  return response.data;
+  const { data: visita } = await api.get<VisitaDetalhe>(`/visitas/${visitaId}`);
+  const salvas = new Map((visita.respostas ?? []).map((salva) => [salva.pergunta_id, salva]));
+
+  const novas = respostas.filter((item) => !salvas.has(item.pergunta_id));
+  const alteradas = respostas.filter((item) => {
+    const salva = salvas.get(item.pergunta_id);
+    return salva !== undefined && salva.resposta !== item.resposta;
+  });
+
+  if (novas.length > 0) {
+    await api.post(`/visitas/${visitaId}/respostas`, { respostas: novas });
+  }
+  for (const item of alteradas) {
+    const salva = salvas.get(item.pergunta_id)!;
+    await api.put(`/visitas/${visitaId}/respostas/${salva.id}`, { resposta: item.resposta });
+  }
+}
+
+async function apagarResposta(visitaId: string, respostaId: number) {
+  await api.delete(`/visitas/${visitaId}/respostas/${respostaId}`);
 }
 
 export default function QuestionarioScreen() {
@@ -64,9 +83,26 @@ export default function QuestionarioScreen() {
     refetch,
   } = usePerguntasQuestionario();
 
+  const queryClient = useQueryClient();
+
+  const apagarRespostaMutation = useMutation({
+    mutationFn: ({ respostaId }: { perguntaId: number; respostaId: number }) =>
+      apagarResposta(id, respostaId),
+    onSuccess: (_resultado, { perguntaId }) => {
+      definirResposta(perguntaId, "");
+      definirRespostasEnviadas("");
+      queryClient.invalidateQueries({ queryKey: ["visita", id] });
+    },
+    onError: (erro) => {
+      if (erro instanceof SessaoExpiradaError) return;
+      Alert.alert("Erro ao apagar resposta", erro.message);
+    },
+  });
+
   const enviarRespostasMutation = useMutation({
     mutationFn: (lista: RespostaEnviada[]) => enviarRespostas(id, lista),
     onSuccess: (_resultado, lista) => {
+      queryClient.invalidateQueries({ queryKey: ["visita", id] });
       definirRespostasEnviadas(JSON.stringify(lista));
       router.push(`/visita/${id}/documento`);
     },
@@ -79,7 +115,7 @@ export default function QuestionarioScreen() {
     },
   });
 
-  const enviando = enviarRespostasMutation.isPending;
+  const enviando = enviarRespostasMutation.isPending || apagarRespostaMutation.isPending;
   const documentoGerado = (visita?.documentos?.length ?? 0) > 0;
   const bloqueado = enviando || documentoGerado;
 
@@ -137,6 +173,28 @@ export default function QuestionarioScreen() {
     .map((p, i) => (estaRespondida(respostas[p.id]) ? -1 : i))
     .filter((i) => i !== -1);
   const totalRespondidas = totalPerguntas - indicesEmBranco.length;
+
+  const respostaSalva = visita?.respostas?.find((salva) => salva.pergunta_id === pergunta.id);
+
+  function confirmarApagarResposta() {
+    if (!respostaSalva) return;
+    Alert.alert(
+      "Apagar resposta enviada?",
+      "A resposta desta pergunta é apagada no sistema. Você vai precisar responder de novo antes de concluir.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Apagar",
+          style: "destructive",
+          onPress: () =>
+            apagarRespostaMutation.mutate({
+              perguntaId: pergunta.id,
+              respostaId: respostaSalva.id,
+            }),
+        },
+      ]
+    );
+  }
 
   function irParaDocumento() {
     router.push(`/visita/${id}/documento`);
@@ -238,6 +296,17 @@ export default function QuestionarioScreen() {
             onResponder={(valor) => definirResposta(pergunta.id, valor)}
             desabilitado={bloqueado}
           />
+          {respostaSalva && !bloqueado && (
+            <Button
+              mode="text"
+              icon="delete-outline"
+              textColor={cores.erro}
+              onPress={confirmarApagarResposta}
+              style={styles.apagarResposta}
+            >
+              Apagar resposta enviada
+            </Button>
+          )}
         </Animated.View>
 
         {ehUltima && (
@@ -310,7 +379,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   botaoArredondado: {
-    borderRadius: 14,
+    borderRadius: 999,
   },
   botaoTexto: {
     fontFamily: "Inter_700Bold",
@@ -325,9 +394,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
     color: cores.avisoForte,
-    backgroundColor: cores.avisoFundo,
-    borderRadius: 12,
+    backgroundColor: cores.avisoFundo,    borderRadius: 4,
     padding: 12,
+  },
+  apagarResposta: {
+    alignSelf: "flex-start",
+    marginTop: 8,
   },
   campoObservacoes: {
     gap: 8,
@@ -345,8 +417,7 @@ const styles = StyleSheet.create({
     minHeight: 96,
     backgroundColor: cores.branco,
   },
-  campoBorda: {
-    borderRadius: 14,
+  campoBorda: {    borderRadius: 4,
     borderWidth: 1.5,
   },
 
@@ -360,8 +431,7 @@ const styles = StyleSheet.create({
     borderTopColor: cores.bordaClara,
   },
   botaoRodape: {
-    flex: 1,
-    borderRadius: 14,
+    flex: 1,    borderRadius: 4,
   },
   botaoRodapeConteudo: {
     height: 56,

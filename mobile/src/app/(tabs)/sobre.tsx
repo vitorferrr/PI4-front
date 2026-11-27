@@ -19,7 +19,7 @@ const EQUIPE = [
 
 export default function SobreScreen() {
   const insets = useSafeAreaInsets();
-  const versao = Constants.expoConfig?.version ?? "—";
+  const versao = Constants.expoConfig?.version ?? "Não informada";
 
   return (
     <View style={styles.tela}>
@@ -28,7 +28,7 @@ export default function SobreScreen() {
       <View style={styles.cabecalho}>
         <FaixaTopo />
         <View style={styles.titulos}>
-          <Text style={styles.sobretitulo}>Constata · Procon Jaboatão</Text>
+          <Text style={styles.sobretitulo}>Procon Jaboatão</Text>
           <Text style={styles.titulo} accessibilityRole="header">
             Sobre
           </Text>
@@ -118,7 +118,8 @@ const styles = StyleSheet.create({
   secao: {
     padding: 16,
     gap: 10,
-    borderRadius: 16,
+    borderRadius: 4,
+    borderBottomRightRadius: 18,
     borderWidth: 1,
     borderColor: cores.bordaClara,
     backgroundColor: cores.branco,
@@ -130,10 +131,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   secaoTitulo: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 13,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
     color: cores.textoSecundario,
   },
   equipeTitulo: {

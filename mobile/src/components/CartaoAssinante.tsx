@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, Image, Alert, StyleSheet } from "react-native";
 import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
-import { ActivityIndicator, Button, HelperText, TextInput } from "react-native-paper";
+import { ActivityIndicator, Button, HelperText, Icon, TextInput } from "react-native-paper";
 import { SignaturePad } from "@/components/SignaturePad";
 import { cores } from "@/theme";
 import { formatarHora } from "@/lib/formatadores";
@@ -61,24 +61,21 @@ export function CartaoAssinante({
       <Animated.View entering={FadeIn.duration(300)} style={styles.cartao}>
         <View style={styles.linha}>
           <Animated.View
-            entering={ZoomIn.delay(150).springify()}
+            entering={ZoomIn.delay(120).duration(260)}
             style={[styles.icone, assinatura.recusou ? styles.iconeRecusa : styles.iconeOk]}
           >
-            <Text
-              style={[
-                styles.iconeTexto,
-                assinatura.recusou ? styles.iconeTextoRecusa : styles.iconeTextoOk,
-              ]}
-            >
-              {assinatura.recusou ? "!" : "✓"}
-            </Text>
+            <Icon
+              source={assinatura.recusou ? "exclamation-thick" : "check-bold"}
+              size={16}
+              color={assinatura.recusou ? cores.erro : cores.sucesso}
+            />
           </Animated.View>
           <View style={styles.textos}>
             <Text style={styles.nome}>
-              {rotulo} · {assinatura.nome}
+              {rotulo}: {assinatura.nome}
             </Text>
             <Text style={styles.detalhe}>
-              {assinatura.recusou ? `Recusou-se a assinar · ${hora}` : `Assinado às ${hora}`}
+              {assinatura.recusou ? `Recusou-se a assinar às ${hora}` : `Assinado às ${hora}`}
             </Text>
           </View>
           {onRefazer && (
@@ -102,7 +99,7 @@ export function CartaoAssinante({
   if (situacao === "aguardando") {
     return (
       <View style={[styles.cartao, styles.cartaoAguardando]}>
-        <Text style={styles.nome}>{nomeFixo ? `${rotulo} · ${nomeFixo}` : rotulo}</Text>
+        <Text style={styles.nome}>{nomeFixo ? `${rotulo}: ${nomeFixo}` : rotulo}</Text>
         <Text style={styles.detalhe}>Aguardando a assinatura anterior</Text>
       </View>
     );
@@ -143,7 +140,7 @@ export function CartaoAssinante({
     <View style={[styles.cartao, styles.cartaoAtivo]}>
       {nomeFixo ? (
         <Text style={styles.rotuloAtivo}>
-          {rotulo} · {nomeFixo}
+          {rotulo}: {nomeFixo}
         </Text>
       ) : (
         <View style={styles.campoNome}>
@@ -257,7 +254,8 @@ const styles = StyleSheet.create({
   cartao: {
     gap: 10,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 4,
+    borderBottomRightRadius: 18,
     backgroundColor: cores.branco,
     borderWidth: 1,
     borderColor: cores.bordaClara,
@@ -287,16 +285,6 @@ const styles = StyleSheet.create({
   },
   iconeRecusa: {
     backgroundColor: cores.erroFundo,
-  },
-  iconeTexto: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 16,
-  },
-  iconeTextoOk: {
-    color: cores.sucesso,
-  },
-  iconeTextoRecusa: {
-    color: cores.erro,
   },
   textos: {
     flex: 1,
@@ -331,7 +319,7 @@ const styles = StyleSheet.create({
     backgroundColor: cores.branco,
   },
   campoBorda: {
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1.5,
   },
   aviso: {

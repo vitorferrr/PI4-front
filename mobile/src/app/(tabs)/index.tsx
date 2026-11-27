@@ -1,5 +1,4 @@
 import { View, Text, SectionList, Pressable, StyleSheet } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -51,7 +50,7 @@ export default function VisitasScreen() {
 
       <View style={styles.cabecalho}>
         <FaixaTopo />
-        <Animated.View entering={FadeInDown.duration(500)} style={styles.saudacao}>
+        <View style={styles.saudacao}>
           <View style={styles.saudacaoTextos}>
             <Text style={styles.data}>{dataDeHoje()}</Text>
             <Text style={styles.ola} accessibilityRole="header">
@@ -72,7 +71,7 @@ export default function VisitasScreen() {
               color={cores.azulEscuro}
             />
           </Pressable>
-        </Animated.View>
+        </View>
       </View>
 
       {isPending ? (
@@ -91,26 +90,25 @@ export default function VisitasScreen() {
           sections={secoes}
           keyExtractor={(visita) => String(visita.id)}
           renderSectionHeader={({ section }) => (
-            <Animated.Text entering={FadeIn.duration(400)} style={styles.secaoTitulo}>
+            <Text style={styles.secaoTitulo}>
               {section.titulo}
-            </Animated.Text>
+            </Text>
           )}
           renderItem={({ item, index }) => (
-            <Animated.View
-              entering={FadeInUp.delay(Math.min(index, 8) * 70).springify()}
+            <View
               style={styles.item}
             >
               <VisitaCard visita={item} salvaNoAparelho={item.id === visitaNoAparelho} />
-            </Animated.View>
+            </View>
           )}
           stickySectionHeadersEnabled={false}
           contentContainerStyle={styles.lista}
           refreshing={isRefetching}
           onRefresh={refetch}
           ListEmptyComponent={
-            <Animated.Text entering={FadeIn.duration(400)} style={styles.mensagem}>
+            <Text style={styles.mensagem}>
               Nenhuma visita atribuída a você.
-            </Animated.Text>
+            </Text>
           }
         />
       )}
@@ -173,11 +171,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   secaoTitulo: {
-    marginTop: 16,
+    marginTop: 20,
     marginBottom: 10,
-    fontFamily: "Inter_700Bold",
-    fontSize: 16,
-    color: cores.texto,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: cores.textoSecundario,
   },
   item: {
     marginBottom: 12,
@@ -209,8 +207,8 @@ const styles = StyleSheet.create({
     borderTopColor: cores.bordaClara,
   },
   botaoAtualizar: {
-    borderRadius: 14,
-    borderWidth: 1.5,
+    borderRadius: 4,
+    borderWidth: 1,
     borderColor: cores.azul,
     backgroundColor: cores.branco,
   },
@@ -218,7 +216,7 @@ const styles = StyleSheet.create({
     height: 52,
   },
   botaoAtualizarTexto: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_600SemiBold",
     fontSize: 16,
   },
 });

@@ -28,7 +28,7 @@ interface VisitaCardProps {
 export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps) {
   const diaMes = formatarDiaMes(visita.data_agendada);
   const atrasada = estaAtrasada(visita);
-  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(" · ");
+  const endereco = [visita.endereco, visita.bairro].filter(Boolean).join(", ");
 
   return (
     <Card
@@ -42,7 +42,7 @@ export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps)
         <SeloStatus status={visita.status} />
         {diaMes && (
           <Text style={[styles.prazo, atrasada && styles.prazoAtrasado]}>
-            {atrasada ? `Atrasada · ${diaMes}` : `Agendada para ${diaMes}`}
+            {atrasada ? `Atrasada desde ${diaMes}` : `Agendada para ${diaMes}`}
           </Text>
         )}
       </View>
@@ -56,7 +56,7 @@ export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps)
       {salvaNoAparelho && visita.status === "em_andamento" && (
         <View style={styles.linhaAparelho}>
           <BolinhaPulsante cor={cores.avisoForte} />
-          <Text style={styles.aparelhoTexto}>Em andamento · salva no aparelho</Text>
+          <Text style={styles.aparelhoTexto}>Em andamento, salva no aparelho</Text>
         </View>
       )}
     </Card>
@@ -65,7 +65,8 @@ export function VisitaCard({ visita, salvaNoAparelho = false }: VisitaCardProps)
 
 const styles = StyleSheet.create({
   cartao: {
-    borderRadius: 16,
+    borderRadius: 4,
+    borderBottomRightRadius: 18,
     borderColor: cores.bordaClara,
     backgroundColor: cores.branco,
   },
@@ -80,8 +81,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   prazo: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_600SemiBold",
     fontSize: 13,
+    fontVariant: ["tabular-nums"],
     color: cores.textoMedio,
   },
   prazoAtrasado: {
@@ -93,6 +95,7 @@ const styles = StyleSheet.create({
   nome: {
     fontFamily: "Inter_700Bold",
     fontSize: 17,
+    letterSpacing: -0.2,
     color: cores.texto,
   },
   detalhe: {
