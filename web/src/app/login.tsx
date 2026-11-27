@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import { Button } from "react-native-paper";
-import Animated, { FadeInDown, FadeInLeft, FadeInRight, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useSessaoStore } from "@/store/sessaoStore";
@@ -45,26 +45,18 @@ export default function LoginScreen() {
         <View style={styles.vitrine}>
           <FaixaTopo />
           <View style={styles.vitrineConteudo}>
-            <Animated.View entering={FadeInDown.duration(600)} style={styles.marca}>
+            <View style={styles.marca}>
               <View>
                 <Text style={styles.marcaNome}>Constata</Text>
                 <Text style={styles.marcaOrgao}>Procon Jaboatão dos Guararapes</Text>
               </View>
-            </Animated.View>
+            </View>
 
             <View style={styles.chamada}>
-              <Animated.Text
-                entering={FadeInLeft.delay(150).duration(500)}
-                style={styles.chamadaTexto}
-              >
-                Fiscalização
-              </Animated.Text>
-              <Animated.View
-                entering={FadeInLeft.delay(300).springify()}
-                style={styles.chamadaDestaque}
-              >
+              <Text style={styles.chamadaTexto}>Fiscalização</Text>
+              <View style={styles.chamadaDestaque}>
                 <Text style={[styles.chamadaTexto, styles.chamadaDestaqueTexto]}>sem papel.</Text>
-              </Animated.View>
+              </View>
             </View>
 
             <Text style={styles.descricao}>
@@ -72,9 +64,9 @@ export default function LoginScreen() {
               e pronta para análise.
             </Text>
 
-            <Animated.View entering={FadeInUp.delay(500).springify()} style={styles.selo}>
+            <View style={styles.selo}>
               <Text style={styles.seloTexto}>Tudo num só painel</Text>
-            </Animated.View>
+            </View>
 
             <Text style={styles.rodape}>
               Acesso restrito a servidores do Procon. Problemas para entrar? Fale com a coordenação.
@@ -88,7 +80,7 @@ export default function LoginScreen() {
         contentContainerStyle={styles.ladoConteudo}
         keyboardShouldPersistTaps="handled"
       >
-        <Animated.View entering={FadeInRight.delay(200).duration(600)} style={styles.formulario}>
+        <Animated.View entering={FadeIn.delay(250).duration(450)} style={styles.formulario}>
           <Text style={styles.titulo} accessibilityRole="header">
             Entrar
           </Text>
@@ -188,7 +180,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingHorizontal: 14,
     paddingTop: 8,
-    borderRadius: 10,
+    borderRadius: 4,
     backgroundColor: cores.azulEscuro,
   },
   chamadaDestaqueTexto: {
@@ -208,7 +200,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 4,
     backgroundColor: cores.branco,
   },
   seloTexto: {
@@ -237,7 +229,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 420,
     padding: 40,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: cores.bordaClara,
     backgroundColor: cores.branco,
@@ -262,7 +254,7 @@ const styles = StyleSheet.create({
   erro: {
     marginTop: 16,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     fontFamily: "Inter_500Medium",
     fontSize: 14,

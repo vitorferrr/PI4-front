@@ -45,12 +45,34 @@ export function concluidaNoMes(visita: Visita, agora = new Date()) {
   );
 }
 
+export const CAMPOS_ESTABELECIMENTO = [
+  {
+    chave: "razao_social",
+    rotulo: "Razão social",
+    exemplo: "Boa Praça Comércio de Alimentos Ltda",
+  },
+  { chave: "nome_fantasia", rotulo: "Nome fantasia", exemplo: "Mercadinho Boa Praça" },
+  { chave: "cnpj_cpf", rotulo: "CNPJ/CPF", exemplo: "12.345.678/0001-90" },
+  { chave: "atividade", rotulo: "Atividade", exemplo: "Supermercado" },
+  { chave: "endereco", rotulo: "Endereço", exemplo: "Av. Bernardo Vieira de Melo, 1520" },
+  { chave: "bairro", rotulo: "Bairro", exemplo: "Piedade" },
+  { chave: "cep", rotulo: "CEP", exemplo: "54.410-010" },
+  { chave: "telefone", rotulo: "Telefone", exemplo: "(81) 3333-4444" },
+] as const;
+
+export type CampoEstabelecimento = (typeof CAMPOS_ESTABELECIMENTO)[number]["chave"];
+export type Estabelecimento = Partial<Record<CampoEstabelecimento, string>>;
+
+export function podeAlterarVisita(visita: Visita) {
+  return visita.status === "agendada" && (visita.documentos?.length ?? 0) === 0;
+}
+
 export function nomeEstabelecimento(visita: Visita) {
   return visita.nome_fantasia?.trim() || visita.denunciado?.trim() || "Não informado";
 }
 
 export function detalheEstabelecimento(visita: Visita) {
-  return [visita.bairro, visita.cnpj_cpf].filter((valor) => valor?.trim()).join(" · ");
+  return [visita.bairro, visita.cnpj_cpf].filter((valor) => valor?.trim()).join(", ");
 }
 
 export function nomesFiscalizadores(visita: Visita) {

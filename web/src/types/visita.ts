@@ -2,10 +2,13 @@ import type { Role, UsuarioResumo } from "./usuario";
 
 export type StatusVisita = "agendada" | "em_andamento" | "concluida" | "cancelada";
 
+export type TipoResposta = "sim_nao" | "numero" | "data" | "texto";
+
 export interface Pergunta {
   id: number;
   texto: string;
   ordem?: number;
+  tipo_resposta?: TipoResposta;
 }
 
 export interface Resposta {

@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   observacoes: {
     marginTop: 12,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     fontFamily: "Inter_400Regular",
     fontSize: 14,

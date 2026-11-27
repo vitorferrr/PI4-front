@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
   },
   rotulo: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
+    fontSize: 13,
     color: cores.texto,
   },
   entrada: {
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   borda: {
-    borderRadius: 12,
+    borderRadius: 10,
   },
   erro: {
     fontFamily: "Inter_600SemiBold",

@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: cores.bordaCampo,
     backgroundColor: cores.branco,

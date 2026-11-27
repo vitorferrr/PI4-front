@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   filtrosCartao: {
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.branco,
   },
   filtros: {

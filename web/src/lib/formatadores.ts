@@ -52,6 +52,16 @@ export function mascaraHora(texto: string) {
   return [numeros.slice(0, 2), numeros.slice(2)].filter(Boolean).join(":");
 }
 
+export function separarDataHora(dataIso?: string | null) {
+  const data = dataIso ? new Date(dataIso) : null;
+  if (!data || Number.isNaN(data.getTime())) return { data: "", hora: "" };
+  const doisDigitos = (numero: number) => String(numero).padStart(2, "0");
+  return {
+    data: `${doisDigitos(data.getDate())}/${doisDigitos(data.getMonth() + 1)}/${data.getFullYear()}`,
+    hora: `${doisDigitos(data.getHours())}:${doisDigitos(data.getMinutes())}`,
+  };
+}
+
 export function juntarDataHora(data: string, hora: string) {
   const [dia, mes, ano] = data.split("/").map(Number);
   const [horas, minutos] = hora.split(":").map(Number);

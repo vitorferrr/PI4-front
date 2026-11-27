@@ -7,20 +7,20 @@ export const cores = {
   azulMenuTexto: "#BFD6F2",
   azulClaro: "#D6E6F8",
   amarelo: "#FFCC00",
-  fundo: "#F3F7FB",
-  fundoTabela: "#F7FAFD",
-  linhaTabela: "#E8EEF5",
-  trilha: "#EDF2F8",
-  selecionado: "#F2F7FD",
+  fundo: "#F2F2F7",
+  fundoTabela: "#F7F7FA",
+  linhaTabela: "#E6E6EB",
+  trilha: "#EBEBF0",
+  selecionado: "#EEF2FB",
   branco: "#FFFFFF",
   texto: "#0F1E33",
   textoSecundario: "#4A5B73",
   textoMedio: "#33435A",
   borda: "#C5D0E3",
-  bordaCampo: "#C5D3E3",
-  bordaClara: "#DCE5EF",
-  verdeTitulo: "#2F7A4D",
-  sucesso: "#17803F",
+  bordaCampo: "#D1D1D6",
+  bordaClara: "#E3E3E8",
+  verdeTitulo: "#18793A",
+  sucesso: "#18793A",
   sucessoFundo: "#E2F5EA",
   aviso: "#7A5300",
   avisoFundo: "#FFF4D6",
@@ -33,18 +33,20 @@ export const cores = {
   infoFundo: "#E3F4FB",
   atribuida: "#0B4F96",
   atribuidaFundo: "#E6F0FB",
-  enviada: "#4B2E9E",
-  enviadaFundo: "#EEE9FB",
+  enviada: "#2F5BC4",
+  enviadaFundo: "#E8EEFA",
   neutroFundo: "#EDEFF3",
   graficoAzul: "#1677D2",
   graficoCeu: "#3AB0E6",
   graficoVerde: "#2F9E5B",
   graficoAmarelo: "#D9A400",
   graficoCinza: "#7B8799",
-  graficoRoxo: "#6A4FC9",
+  graficoRoxo: "#2F5BC4",
   etapaAtual: "#F5C518",
   etapaPendente: "#DFE6EF",
-  sombra: "rgba(23, 47, 110, 0.1)",
+  sombra: "rgba(23, 47, 110, 0.08)",
+  azulFaixa: "#2F5BC4",
+  verdeFaixa: "#1E9040",
 };
 
 const fontesBase = configureFonts({
@@ -52,10 +54,11 @@ const fontesBase = configureFonts({
 });
 
 const negrito = { fontFamily: "Inter_700Bold", fontWeight: "normal" } as const;
+const rotulo = { fontFamily: "Inter_600SemiBold", fontWeight: "normal", letterSpacing: 0.1 } as const;
 
 export const tema: MD3Theme = {
   ...MD3LightTheme,
-  roundness: 3,
+  roundness: 5,
   colors: {
     ...MD3LightTheme.colors,
     primary: cores.azul,
@@ -84,7 +87,7 @@ export const tema: MD3Theme = {
     titleLarge: { ...fontesBase.titleLarge, ...negrito },
     titleMedium: { ...fontesBase.titleMedium, ...negrito },
     titleSmall: { ...fontesBase.titleSmall, ...negrito },
-    labelLarge: { ...fontesBase.labelLarge, ...negrito },
+    labelLarge: { ...fontesBase.labelLarge, ...rotulo },
     labelMedium: { ...fontesBase.labelMedium, ...negrito },
   },
 };

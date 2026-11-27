@@ -7,15 +7,16 @@ async function buscarUsuarios() {
   return response.data;
 }
 
-export function useUsuarios() {
+export function useUsuarios(habilitado = true) {
   return useQuery({
     queryKey: ["usuarios"],
     queryFn: buscarUsuarios,
+    enabled: habilitado,
   });
 }
 
-export function useFiscalizadores() {
-  const query = useUsuarios();
+export function useFiscalizadores(habilitado = true) {
+  const query = useUsuarios(habilitado);
   const fiscalizadores = (query.data ?? []).filter((usuario) => usuario.role === "fiscalizador");
   return { ...query, fiscalizadores };
 }

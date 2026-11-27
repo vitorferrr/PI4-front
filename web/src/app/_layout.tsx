@@ -16,7 +16,21 @@ import {
 import { encerrarSessao, queryClient } from "@/lib/queryClient";
 import { expiracaoDoToken } from "@/lib/sessao";
 import { useSessaoStore } from "@/store/sessaoStore";
-import { tema } from "@/theme";
+import { cores, tema } from "@/theme";
+
+const ESTILO_NAVEGADOR = `
+::selection { background: ${cores.amarelo}; color: ${cores.azulEscuro}; }
+* { scrollbar-width: thin; scrollbar-color: ${cores.borda} transparent; }
+:focus-visible { outline: 2px solid ${cores.azul}; outline-offset: 2px; }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+`;
+
+if (typeof document !== "undefined" && !document.getElementById("estilo-constata")) {
+  const estilo = document.createElement("style");
+  estilo.id = "estilo-constata";
+  estilo.textContent = ESTILO_NAVEGADOR;
+  document.head.appendChild(estilo);
+}
 
 export default function RootLayout() {
   const token = useSessaoStore((state) => state.token);

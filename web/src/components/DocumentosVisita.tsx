@@ -52,9 +52,8 @@ function CartaoDocumento({ documento }: { documento: Documento }) {
         <Icon source="file-document-outline" size={24} color={cores.azul} />
         <View style={styles.textos}>
           <Text style={styles.titulo}>Documento #{documento.id}</Text>
-          <Text style={styles.detalhe}>
-            Gerado em {formatarData(documento.data_geracao)} · {situacao()}
-          </Text>
+          <Text style={styles.detalhe}>Gerado em {formatarData(documento.data_geracao)}</Text>
+          <Text style={styles.detalhe}>{situacao()}</Text>
         </View>
         {temPdf && <Icon source="open-in-new" size={18} color={cores.azul} />}
       </Card>
@@ -83,7 +82,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cartao: {
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.branco,
   },
   conteudo: {

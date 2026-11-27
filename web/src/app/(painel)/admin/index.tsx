@@ -92,7 +92,7 @@ export default function PainelAdminScreen() {
   return (
     <View style={styles.pagina}>
       <CabecalhoPagina
-        sobretitulo={`Painel administrativo · ${mesAtual()}`}
+        sobretitulo={mesAtual()}
         titulo={`${saudacao()}, ${primeiroNome(usuario?.nome)}`}
         acoes={
           <>
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   indicador: {
     flexGrow: 1,
     flexBasis: 230,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.branco,
   },
   indicadorConteudo: {
@@ -235,8 +235,9 @@ const styles = StyleSheet.create({
   indicadorValor: {
     marginTop: 8,
     fontFamily: "BarlowCondensed_800ExtraBold",
-    fontSize: 34,
-    lineHeight: 36,
+    fontSize: 38,
+    lineHeight: 40,
+    fontVariant: ["tabular-nums"],
     color: cores.azulEscuro,
   },
   indicadorNota: {

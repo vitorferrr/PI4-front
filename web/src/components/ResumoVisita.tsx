@@ -7,6 +7,7 @@ interface ResumoVisitaProps {
   endereco: string;
   fiscal: string;
   data: string;
+  aviso?: string;
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
@@ -25,6 +26,7 @@ export function ResumoVisita({
   endereco,
   fiscal,
   data,
+  aviso = "A visita aparece no app do fiscalizador assim que for criada.",
   children,
   style,
 }: ResumoVisitaProps) {
@@ -37,9 +39,7 @@ export function ResumoVisita({
         <Linha termo="Fiscal" valor={fiscal} />
         <Linha termo="Data" valor={data} />
       </View>
-      <Text style={styles.aviso}>
-        A visita aparece no app do fiscalizador assim que for criada.
-      </Text>
+      <Text style={styles.aviso}>{aviso}</Text>
       {children}
     </View>
   );
@@ -49,13 +49,13 @@ const styles = StyleSheet.create({
   resumo: {
     gap: 16,
     padding: 24,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.azulEscuro,
   },
   titulo: {
-    fontFamily: "BarlowCondensed_800ExtraBold",
-    fontSize: 23,
-    textTransform: "uppercase",
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    letterSpacing: -0.2,
     color: cores.branco,
   },
   linhas: {

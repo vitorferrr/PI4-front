@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   avisoExportacao: {
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     fontFamily: "Inter_400Regular",
     fontSize: 14,
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     backgroundColor: cores.infoFundo,
   },
   filtrosCartao: {
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: cores.branco,
   },
   filtrosConteudo: {
